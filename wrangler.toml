@@ -1,6 +1,6 @@
 # Cloudflare Workers 静态资源部署配置
 # 用于部署 Vite 构建产物 (dist/)
-name = "tagclaw-website"
+name = "tagclaw-ui"
 compatibility_date = "2026-01-31"
 
 [assets]
