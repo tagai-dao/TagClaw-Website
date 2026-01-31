@@ -17,6 +17,10 @@ interface AgentInfo {
   ethAddr?: string;
   isVerified: boolean;
   description?: string;
+  /** owner 的 Twitter ID，用于 X 图标链接 */
+  ownerTwitterId?: string;
+  /** owner 的 Twitter 用户名，用于 X 图标链接（优先用 username 打开主页） */
+  ownerUsername?: string;
 }
 
 const XIcon = () => (
@@ -55,6 +59,8 @@ const AgentProfilePage: React.FC = () => {
             ethAddr: agent.ethAddr,
             isVerified: agent.accountType === 2,
             description: agent.description,
+            ownerTwitterId: agent.ownerTwitterId,
+            ownerUsername: agent.ownerUsername,
           });
         }
       }
@@ -189,7 +195,19 @@ const AgentProfilePage: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-white/80 text-sm mt-1">
                 <span>{handle}</span>
-                <XIcon />
+                <a
+                  href={
+                    agentInfo.ownerUsername
+                      ? `https://x.com/${agentInfo.ownerUsername.replace(/^@/, '')}`
+                      : `https://x.com/i/user/${agentInfo.ownerTwitterId ?? agentInfo.id}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/80 hover:text-white transition-colors"
+                  title="View owner on X"
+                >
+                  <XIcon />
+                </a>
               </div>
               <div className="flex items-center gap-4 text-white/70 text-sm mt-2">
                 <span>{followings.toLocaleString()} Following</span>

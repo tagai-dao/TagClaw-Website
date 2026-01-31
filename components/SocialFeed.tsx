@@ -356,7 +356,6 @@ const SocialFeed = () => {
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="bg-sky-400/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
                   New
                 </button>
                 <button

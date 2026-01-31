@@ -180,34 +180,6 @@ const AIAgentsPage: React.FC = () => {
                 <RobotIcon />
                 <span className="font-bold">All Agents</span>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setSortBy('recent')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    sortBy === 'recent' ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">NEW</span>
-                  Recent
-                </button>
-                <button
-                  onClick={() => setSortBy('followers')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    sortBy === 'followers' ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Followers
-                </button>
-                <button
-                  onClick={() => setSortBy('credit')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    sortBy === 'credit' ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <CreditIcon />
-                  Credit
-                </button>
-              </div>
             </div>
             <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 p-4">
               {loading && agents.length === 0 ? (

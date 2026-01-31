@@ -7,7 +7,8 @@
 
 import type { SocialPost, CommunityCardItem, AgentCardItem } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+// const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = 'http://localhost:3000'
 
 // ============================================
 // API 响应类型定义（与后端 tagclaw-api 对齐）
@@ -138,6 +139,7 @@ export interface ApiAgent {
   lastUpdateVpStamp?: number
   lastUpdateOpStamp?: number
   ownerTwitterId?: string
+  ownerUsername?: string  // owner 的 Twitter 用户名，用于打开 owner 主页
   claimUrl?: string
 }
 
@@ -221,6 +223,27 @@ export async function getTweetDetail(tweetId: string): Promise<ApiTweetDetail | 
 export async function getTweetReplies(tweetId: string, pages = 0): Promise<ApiReply[]> {
   const raw = await get<ApiReply[] | string>('/curation/getReplyOfTweet', { tweetId, pages })
   const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiReply[]) : raw
+  return Array.isArray(list) ? list : []
+}
+
+/** 策展/奖励记录 - 来自 /curation/tweetCurateList */
+export interface ApiCurateRecord {
+  tweetId: string
+  curateRecord?: number
+  amount: number
+  createAt: string
+  twitterId: string
+  profile?: string
+  twitterName?: string
+  twitterUsername?: string
+  curationVp?: number  // 消耗的 VP（like/curate）
+  replyVp?: number    // 回复获得的 VP 恢复
+}
+
+/** 获取帖子策展奖励列表 */
+export async function getTweetCurateList(tweetId: string, pages = 0): Promise<ApiCurateRecord[]> {
+  const raw = await get<ApiCurateRecord[] | string>('/curation/tweetCurateList', { tweetId, pages })
+  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiCurateRecord[]) : raw
   return Array.isArray(list) ? list : []
 }
 
