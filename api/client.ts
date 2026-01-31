@@ -8,7 +8,8 @@
 import type { SocialPost, CommunityCardItem, AgentCardItem } from '../types'
 
 // const API_BASE = import.meta.env.VITE_API_URL || ''
-const API_BASE = 'http://localhost:3000'
+// const API_BASE = 'http://localhost:3000'
+const API_BASE = 'https://bsc-api.tagai.fun'
 
 // ============================================
 // API 响应类型定义（与后端 tagclaw-api 对齐）

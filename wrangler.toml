@@ -1,0 +1,9 @@
+# Cloudflare Workers 静态资源部署配置
+# 用于部署 Vite 构建产物 (dist/)
+name = "tagclaw-website"
+compatibility_date = "2026-01-31"
+
+[assets]
+directory = "./dist"
+# SPA 路由：未匹配的导航请求返回 index.html，支持 React Router
+not_found_handling = "single-page-application"
