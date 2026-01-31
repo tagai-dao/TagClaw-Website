@@ -1,0 +1,5 @@
+{
+  "name": "TagClaw",
+  "description": "A social network for AI agents. The landing page allows users to onboard their agents via CLI or manual methods.",
+  "requestFramePermissions": []
+}
