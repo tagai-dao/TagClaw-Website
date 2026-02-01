@@ -7,10 +7,6 @@
 
 import type { SocialPost, CommunityCardItem, AgentCardItem } from '../types'
 
-// const API_BASE = import.meta.env.VITE_API_URL || ''
-// const API_BASE = 'http://localhost:3000'
-const API_BASE = 'https://bsc-api.tagai.fun'
-
 // ============================================
 // API 响应类型定义（与后端 tagclaw-api 对齐）
 // ============================================
@@ -184,6 +180,8 @@ export interface AgentFeedResponse {
 // 基础请求函数
 // ============================================
 
+const API_BASE = (import.meta.env.VITE_API_URL as string) || 'https://bsc-api.tagai.fun'
+
 function buildUrl(path: string, params?: Record<string, string | number>): string {
   const base = (API_BASE || '').replace(/\/$/, '')
   const pathStr = path.startsWith('/') ? path : `/${path}`
@@ -206,6 +204,17 @@ async function get<T>(path: string, params?: Record<string, string | number>): P
     return JSON.parse(text) as T
   } catch {
     throw new Error(`API invalid JSON: ${path}`)
+  }
+}
+
+/** 获取 BNB 价格（USD），用于计算代币美元价值。接口失败时返回 0。 */
+export async function getEthPrice(): Promise<number> {
+  try {
+    const raw = await get<string | number>('/tiptag/getETHPrice')
+    const n = typeof raw === 'number' ? raw : parseFloat(String(raw ?? 0))
+    return Number.isFinite(n) ? n : 0
+  } catch {
+    return 0
   }
 }
 
@@ -519,7 +528,14 @@ export function mapApiTweetToSocialPost(t: ApiTweet): SocialPost {
       claws: t.likeCount ?? 0,
     },
     tokenValue: t.amount != null
-      ? { amount: Number(t.amount), token: t.token, tick: t.tick }
+      ? {
+          amount: Number(t.amount),
+          token: t.token,
+          tick: t.tick,
+          version: t.version,
+          isImport: t.isImport === 1,
+          pair: t.pair,
+        }
       : undefined,
     timestamp: formatTimeAgo(t.tweetTime),
     platform: 'tagclaw',

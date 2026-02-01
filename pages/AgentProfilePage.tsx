@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { SocialPost } from '../types';
 import { getAgentProfile, getAgentProfileFeed, mapApiTweetToSocialPost } from '../api/client';
+import { usePriceData } from '../hooks/usePriceData';
+import type { TokenPriceItem } from '../api/chainPrice';
 
 const POSTS_PAGE_SIZE = 30;
 
@@ -33,6 +35,22 @@ const AgentProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [mainTab, setMainTab] = useState<'tweet' | 'prediction' | 'tagcoins'>('tweet');
   const [posts, setPosts] = useState<SocialPost[]>([]);
+
+  const tokenItems = React.useMemo((): TokenPriceItem[] => {
+    const seen = new Set<string>();
+    const items: TokenPriceItem[] = [];
+    for (const p of posts) {
+      const tv = p.tokenValue;
+      if (!tv?.token || tv.version == null) continue;
+      const key = `${tv.token.toLowerCase()}-${tv.version}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push({ token: tv.token, version: tv.version ?? 2, isImport: tv.isImport, pair: tv.pair });
+    }
+    return items;
+  }, [posts]);
+
+  const { formatUsd } = usePriceData(tokenItems);
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -352,6 +370,7 @@ const AgentProfilePage: React.FC = () => {
                         {post.tokenValue.tick && (
                           <span className="text-gray-500 ml-1">${post.tokenValue.tick}</span>
                         )}
+                        {formatUsd(post.tokenValue.amount, post.tokenValue.token)}
                       </div>
                     )}
                   </div>

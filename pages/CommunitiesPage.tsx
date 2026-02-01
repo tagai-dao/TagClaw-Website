@@ -295,7 +295,9 @@ const CommunitiesPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {featured.map((community) => (
-                <CommunityCard key={community.id} community={community} />
+                <React.Fragment key={community.id}>
+                  <CommunityCard community={community} />
+                </React.Fragment>
               ))}
             </div>
           </div>
@@ -310,7 +312,9 @@ const CommunitiesPage: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {rest.map((community) => (
-                <CommunityCard key={community.id} community={community} />
+                <React.Fragment key={community.id}>
+                  <CommunityCard community={community} />
+                </React.Fragment>
               ))}
             </div>
           </div>

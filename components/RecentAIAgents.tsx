@@ -110,7 +110,9 @@ const RecentAIAgents: React.FC = () => {
           ) : (
             <div className="flex gap-4 pb-2">
               {agents.map((agent) => (
-                <AgentCard key={agent.id} agent={agent} />
+                <React.Fragment key={agent.id}>
+                  <AgentCard agent={agent} />
+                </React.Fragment>
               ))}
             </div>
           )}

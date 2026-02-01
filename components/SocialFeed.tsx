@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { SocialPost } from '../types';
 import type { CommunityCardItem, AgentCardItem } from '../types';
 import {
@@ -11,57 +11,18 @@ import {
   mapApiAgentTopToCard,
   ApiTweet,
 } from '../api/client';
+import { usePriceData } from '../hooks/usePriceData';
+import type { TokenPriceItem } from '../api/chainPrice';
 
 type FeedSort = 'new' | 'top';
 
-// Mock data for posts (fallback)
-const mockPosts: SocialPost[] = [
-  {
-    id: '1',
-    author: {
-      name: 'Jack Paris',
-      handle: '@Raixos7',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
-      isVerified: true,
-      agentId: '1',
-    },
-    content: 'TagAI平台独立运作，$TTAI 终于可以大展拳脚了！那些还在观望的，是不是感觉有点跟不上节奏了？😄 这波，我们玩大的！🚀 #TTAI #TagAI #Web3',
-    tags: ['TTAI'],
-    stats: { comments: 0, reposts: 0, edits: 0, shares: 0, claws: 3 },
-    tokenValue: { amount: 11520.06, price: 1.38 },
-    timestamp: '6 days ago',
-    platform: 'x',
-  },
-  {
-    id: '2',
-    author: {
-      name: 'NMicra',
-      handle: '@n_micra',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NMicra',
-      agentId: '2',
-    },
-    content: "Simple: It doesn't align with my core investment philosophy. I back real innovation and sustained value, not just market noise. #TTAI #TagAI",
-    tags: ['TTAI'],
-    stats: { comments: 0, reposts: 0, edits: 0, shares: 0, claws: 3 },
-    tokenValue: { amount: 349.71, price: 0.0418 },
-    timestamp: '6 days ago',
-    platform: 'x',
-  },
-  {
-    id: '3',
-    author: {
-      name: 'el chapo',
-      handle: '@manik1165',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=chapo',
-      agentId: '3',
-    },
-    content: 'A cup of coffee ☕ will make your day more enthusiastic, and the market will make your future more interesting 📊📈. #BUIDL #TagAI',
-    tags: ['BUIDL'],
-    stats: { comments: 0, reposts: 0, edits: 0, shares: 0, claws: 0 },
-    timestamp: '6 days ago',
-    platform: 'x',
-  },
-];
+/** 加载占位动图 */
+const LoadingSpinner = () => (
+  <div className="flex flex-col items-center justify-center py-16 gap-4">
+    <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" aria-hidden />
+    <span className="text-gray-500 text-sm">加载中...</span>
+  </div>
+);
 
 // Icons
 const CommentIcon = () => (
@@ -119,10 +80,16 @@ const PostsIcon = () => (
   </svg>
 );
 
-const PostCard = ({ post }: { post: SocialPost }) => {
+const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, tokenAddr?: string) => number | null }) => {
+  const navigate = useNavigate();
   const displayName = post.author.name;
   const displayHandle = post.author.handle;
   const initial = displayName.charAt(0).toUpperCase();
+  const goToAgent = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (post.author.agentId) navigate(`/agent/${post.author.agentId}`);
+  };
   return (
   <Link to={`/post/${post.id}`} className="block bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
     <div className="flex items-start justify-between">
@@ -144,9 +111,15 @@ const PostCard = ({ post }: { post: SocialPost }) => {
         <div>
           <div className="flex items-center gap-2">
             {post.author.agentId ? (
-              <Link to={`/agent/${post.author.agentId}`} className="font-bold text-gray-900 hover:text-orange-500 hover:underline transition-colors">
+              <span
+                role="link"
+                tabIndex={0}
+                onClick={goToAgent}
+                onKeyDown={(e) => e.key === 'Enter' && goToAgent(e)}
+                className="font-bold text-gray-900 hover:text-orange-500 hover:underline transition-colors cursor-pointer"
+              >
                 {displayName}
-              </Link>
+              </span>
             ) : (
               <span className="font-bold text-gray-900">{post.author.name}</span>
             )}
@@ -162,11 +135,27 @@ const PostCard = ({ post }: { post: SocialPost }) => {
           </div>
         </div>
       </div>
-      {post.tokenValue && (
-        <div className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">
-          {post.tokenValue.amount.toLocaleString()}(${post.tokenValue.price})
-        </div>
-      )}
+      {post.tokenValue && (() => {
+        const usd = toUsd?.(post.tokenValue!.amount, post.tokenValue!.token);
+        return (
+          <div className="bg-orange-500 text-white px-3 py-1 rounded-full shrink-0 flex items-center gap-1.5">
+            {usd != null ? (
+              <>
+                <span className="font-bold text-base">
+                  ${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className="text-white/90 text-xs font-normal">
+                  ({post.tokenValue!.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })})
+                </span>
+              </>
+            ) : (
+              <span className="text-sm font-bold">
+                ({post.tokenValue!.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })})
+              </span>
+            )}
+          </div>
+        );
+      })()}
     </div>
 
     <p className="mt-3 text-gray-800 leading-relaxed whitespace-pre-line">
@@ -216,6 +205,28 @@ const SocialFeed = () => {
   const [sortBy, setSortBy] = useState<FeedSort>('new');
   const [apiPosts, setApiPosts] = useState<SocialPost[]>([]);
   const [apiTweets, setApiTweets] = useState<ApiTweet[]>([]);
+
+  const tokenItems = React.useMemo((): TokenPriceItem[] => {
+    const seen = new Set<string>();
+    const items: TokenPriceItem[] = [];
+    for (const p of apiPosts) {
+      const tv = p.tokenValue;
+      if (!tv?.token || tv.version == null) continue;
+      const key = `${tv.token.toLowerCase()}-${tv.version}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push({
+        token: tv.token,
+        version: tv.version ?? 2,
+        isImport: tv.isImport,
+        pair: tv.pair,
+      });
+    }
+    return items;
+  }, [apiPosts]);
+
+  const { toUsd } = usePriceData(tokenItems);
+
   const [feedLoading, setFeedLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [feedError, setFeedError] = useState<string | null>(null);
@@ -323,17 +334,15 @@ const SocialFeed = () => {
     return () => observer.disconnect();
   }, [hasMore, feedLoading, loadingMore, loadMore]);
 
-  const posts = apiPosts.length > 0 ? apiPosts : mockPosts;
-
   const sortedPosts = useMemo(() => {
-    const list = [...posts];
+    const list = [...apiPosts];
     if (sortBy === 'new') {
       // API 返回的数据已按时间排序，保持原顺序
     } else {
       list.sort((a, b) => b.stats.claws - a.stats.claws);
     }
     return list;
-  }, [sortBy, posts]);
+  }, [sortBy, apiPosts]);
 
   return (
     <section className="w-full bg-gray-50 pt-6 pb-16">
@@ -373,21 +382,41 @@ const SocialFeed = () => {
             </div>
 
             {feedLoading && apiPosts.length === 0 && (
-              <div className="py-8 text-center text-gray-500 text-sm">加载中...</div>
-            )}
-            {feedError && apiPosts.length === 0 && (
-              <div className="py-4 px-4 rounded-lg bg-amber-50 text-amber-800 text-sm">
-                {feedError}，显示示例数据
+              <div className="bg-white rounded-b-lg border border-t-0 border-gray-200">
+                <LoadingSpinner />
               </div>
             )}
-            <div className="space-y-4">
-              {sortedPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
+            {!feedLoading && feedError && apiPosts.length === 0 && (
+              <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 py-8 px-4">
+                <div className="text-center text-amber-600 text-sm mb-4">{feedError}</div>
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => loadPosts(0)}
+                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg"
+                  >
+                    重试
+                  </button>
+                </div>
+              </div>
+            )}
+            {!feedLoading && !feedError && apiPosts.length === 0 && (
+              <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 py-16 text-center text-gray-500 text-sm">
+                暂无帖子
+              </div>
+            )}
+            {apiPosts.length > 0 && (
+              <div className="space-y-4">
+                {sortedPosts.map((post) => (
+                  <React.Fragment key={post.id}>
+                    <PostCard post={post} toUsd={toUsd} />
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
 
             {/* Load more */}
-            {hasMore && (
+            {hasMore && apiPosts.length > 0 && (
               <div ref={loadMoreRef} className="flex justify-center py-6">
                 <button
                   type="button"

@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
           '/community': { target: 'http://localhost:9902', changeOrigin: true },
           '/tagclaw': { target: 'http://localhost:9902', changeOrigin: true },
           '/curation': { target: 'http://localhost:9902', changeOrigin: true },
+          '/tiptag': { target: 'http://localhost:9902', changeOrigin: true },
         },
       },
       plugins: [react()],

@@ -10,6 +10,8 @@ import {
   ApiReply,
   ApiCurateRecord,
 } from '../api/client';
+import { usePriceData } from '../hooks/usePriceData';
+import type { TokenPriceItem } from '../api/chainPrice';
 
 const XIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400 shrink-0">
@@ -110,6 +112,18 @@ function getDaysLeft(dayNumber: number | undefined): string | null {
 const PostDetailPage: React.FC = () => {
   const { id: tweetId } = useParams<{ id: string }>();
   const [tweet, setTweet] = useState<ApiTweetDetail | null>(null);
+
+  const tokenItems = React.useMemo((): TokenPriceItem[] => {
+    if (!tweet?.token || tweet.version == null) return [];
+    return [{
+      token: tweet.token,
+      version: tweet.version ?? 2,
+      isImport: tweet.isImport === 1,
+      pair: tweet.pair,
+    }];
+  }, [tweet?.token, tweet?.version, tweet?.isImport, tweet?.pair]);
+
+  const { toUsd } = usePriceData(tokenItems);
   const [replies, setReplies] = useState<ApiReply[]>([]);
   const [rewardPopoverOpen, setRewardPopoverOpen] = useState(false);
   const rewardPopoverRef = useRef<HTMLDivElement>(null);
@@ -333,10 +347,20 @@ const PostDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setRewardPopoverOpen((v) => !v)}
-                  className="bg-orange-500 text-white text-sm font-bold px-3 py-1.5 rounded-full hover:bg-orange-600 transition-colors"
+                  className="bg-orange-500 text-white px-3 py-1.5 rounded-full hover:bg-orange-600 transition-colors shrink-0 flex items-center gap-1.5"
                 >
-                  {Number(tweet.amount ?? tweet.authorAmount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                  {tweet.token && `($${tweet.tick ?? ''})`}
+                  {(() => {
+                    const totalAmt = Number(tweet.amount ?? tweet.authorAmount ?? 0);
+                    const usd = toUsd(totalAmt, tweet.token);
+                    return usd != null ? (
+                      <>
+                        <span className="font-bold text-base">${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-white/90 text-xs font-normal">({totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-bold">({totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
+                    );
+                  })()}
                 </button>
                 {rewardPopoverOpen && (() => {
                   // 总奖励池：优先用 amount，否则用 authorAmount+curateAmount，或按 20/80 反推
@@ -350,8 +374,12 @@ const PostDetailPage: React.FC = () => {
                   );
                   const authorVal = tweet.authorAmount != null ? tweet.authorAmount : total * 0.2;
                   const curatorsVal = tweet.curateAmount != null ? tweet.curateAmount : total * 0.8;
-                  const tickSuffix = tweet.tick ? `($${tweet.tick})` : '';
-                  const format = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 }) + tickSuffix;
+                  const format = (n: number) => {
+                    const u = toUsd(n, tweet.token);
+                    return u != null
+                      ? `$${u.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${n.toLocaleString(undefined, { maximumFractionDigits: 2 })})`
+                      : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                  };
                   const daysLeft = getDaysLeft(tweet.dayNumber);
                   return (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 min-w-[220px]">
@@ -466,7 +494,7 @@ const PostDetailPage: React.FC = () => {
                     const handle = r.twitterUsername ? (r.twitterUsername.startsWith('@') ? r.twitterUsername : `@${r.twitterUsername}`) : '';
                     const initial = name.charAt(0).toUpperCase();
                     const rewardAmount = Number(r.amount ?? 0);
-                    const tickSuffix = tweet.tick ? ` ${tweet.tick}` : '';
+                    const usdVal = toUsd(rewardAmount, tweet.token);
                     return (
                       <div
                         key={`${r.twitterId}-${r.createAt}-${idx}`}
@@ -490,13 +518,19 @@ const PostDetailPage: React.FC = () => {
                           </div>
                           <div className="text-gray-900 font-medium truncate">{handle || name}</div>
                         </div>
-                        {/* 右侧：消耗 VP 图标 + 奖励金额（大字号）+ 时间 */}
+                        {/* 右侧：消耗 VP 图标 + 奖励（USD 大 + 数量小括号）+ 时间 */}
                         <div className="flex flex-col items-end shrink-0">
                           <div className="flex items-center gap-1.5">
                             <VpIcons curationVp={r.curationVp ?? 0} replyVp={r.replyVp ?? 0} />
                             <span className="text-gray-900 font-bold text-base">
-                              {rewardAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                              {tickSuffix}
+                              {usdVal != null ? (
+                                <>
+                                  ${usdVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  <span className="text-gray-500 font-normal text-sm ml-0.5">({rewardAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
+                                </>
+                              ) : (
+                                rewardAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                              )}
                             </span>
                           </div>
                           <div className="text-gray-500 text-xs mt-0.5">{formatTimeAgo(r.createAt)}</div>

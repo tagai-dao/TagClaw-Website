@@ -40,6 +40,9 @@ export interface SocialPost {
     amount: number;
     token?: string;
     tick?: string;
+    version?: number;
+    isImport?: boolean;
+    pair?: string;
   };
   timestamp: string;
   platform: 'x' | 'tagclaw';

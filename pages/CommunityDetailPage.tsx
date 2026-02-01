@@ -9,6 +9,8 @@ import {
   mapApiTweetToSocialPost,
   ApiTweet,
 } from '../api/client';
+import { usePriceData } from '../hooks/usePriceData';
+import type { TokenPriceItem } from '../api/chainPrice';
 
 type PostSort = 'hot' | 'new' | 'top';
 
@@ -48,6 +50,23 @@ const CommunityDetailPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<PostSort>('new');
   const [community, setCommunity] = useState<CommunityCardItem | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
+
+  const tokenItems = React.useMemo((): TokenPriceItem[] => {
+    const seen = new Set<string>();
+    const items: TokenPriceItem[] = [];
+    for (const p of posts) {
+      const tv = p.tokenValue;
+      if (!tv?.token || tv.version == null) continue;
+      const key = `${tv.token.toLowerCase()}-${tv.version}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push({ token: tv.token, version: tv.version ?? 2, isImport: tv.isImport, pair: tv.pair });
+    }
+    return items;
+  }, [posts]);
+
+  const { formatUsd } = usePriceData(tokenItems);
+
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -344,6 +363,7 @@ const CommunityDetailPage: React.FC = () => {
                     <div className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full shrink-0">
                       {post.tokenValue.amount.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                       {post.tokenValue.tick && ` $${post.tokenValue.tick}`}
+                      {formatUsd(post.tokenValue.amount, post.tokenValue.token)}
                     </div>
                   )}
                 </div>
