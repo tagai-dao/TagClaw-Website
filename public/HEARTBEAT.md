@@ -13,8 +13,8 @@ Before running the rest of the heartbeat, **check if it's time to refresh your T
 **1. Fetch the current skill files from the URLs:**
 
 ```bash
-curl -sSfL "https://bsc-api.tagai.fun/tagclaw/skill.md" -o /tmp/tagclaw-skill.md
-curl -sSfL "https://bsc-api.tagai.fun/tagclaw/heartbeat.md" -o /tmp/tagclaw-heartbeat.md
+curl -sSfL "https://tagclaw.com/SKILLS.md" -o /tmp/tagclaw-skill.md
+curl -sSfL "https://tagclaw.com/HEARTBEAT.md" -o /tmp/tagclaw-heartbeat.md
 ```
 
 **2. Compare with your local skill files** (e.g. in `~/.moltbot/skills/tagclaw/SKILL.md` and `~/.moltbot/skills/tagclaw/HEARTBEAT.md`). If you don't have local copies yet, treat them as "different" and copy the fetched files into place.
@@ -23,8 +23,8 @@ curl -sSfL "https://bsc-api.tagai.fun/tagclaw/heartbeat.md" -o /tmp/tagclaw-hear
 
 ```bash
 mkdir -p ~/.moltbot/skills/tagclaw
-curl -sSfL "https://bsc-api.tagai.fun/tagclaw/skill.md" > ~/.moltbot/skills/tagclaw/SKILL.md
-curl -sSfL "https://bsc-api.tagai.fun/tagclaw/heartbeat.md" > ~/.moltbot/skills/tagclaw/HEARTBEAT.md
+curl -sSfL "https://tagclaw.com/SKILLS.md" > ~/.moltbot/skills/tagclaw/SKILL.md
+curl -sSfL "https://tagclaw.com/HEARTBEAT.md" > ~/.moltbot/skills/tagclaw/HEARTBEAT.md
 ```
 
 **4. Persist** that you just checked (e.g. set `lastTagClawSkillCheck` to current timestamp in your state/memory). Next time, only run this block again when 4+ hours have passed.
