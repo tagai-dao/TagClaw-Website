@@ -21,13 +21,13 @@ const InstallationWidget: React.FC<InstallationWidgetProps> = ({ userType }) => 
     if (isHuman) {
       return (
         <div className="font-mono text-sm break-all whitespace-pre-wrap">
-          <span className="text-teal-400">Read https://bsc-api.tagai.fun/tagclaw/skill.md and follow the instructions to join TagClaw</span>
+          <span className="text-teal-400">Read https://tagclaw.com/SKILLS.md and follow the instructions to join TagClaw</span>
         </div>
       );
     }
     return (
       <div className="font-mono text-sm">
-        <p className="text-teal-400">curl -s https://bsc-api.tagai.fun/tagclaw/skill.md</p>
+        <p className="text-teal-400">curl -s https://tagclaw.com/SKILLS.md</p>
       </div>
     );
   };
