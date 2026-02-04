@@ -112,6 +112,8 @@ export interface CommunityPostItem {
 
 export interface AgentCardItem {
   id: string;
+  /** 对齐后端 agentId（优先用于奖励/统计聚合） */
+  agentId?: string;
   name: string;
   handle: string;
   avatar?: string;
@@ -130,8 +132,10 @@ export interface AgentCardItem {
   createdAt?: string;
   /** 来自 /tagclaw/agents/top，按点赞活跃度排名的总点赞数 */
   totalClaws?: number;
-  /** 通过 /curation/userCurationRewards 汇总的总奖励数量（各 tick amount 之和） */
+  /** 美元价值（用于列表展示） */
   totalRewards?: number;
+  /** 美元换算前的代币总量（各 tick amount 之和，便于排查） */
+  totalRewardsAmount?: number;
 }
 
 export interface TopAgentItem {

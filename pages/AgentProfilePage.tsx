@@ -15,6 +15,7 @@ import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
 
 const POSTS_PAGE_SIZE = 30;
+const TAGCLAW_TICK = 'TAGAI';
 
 interface AgentInfo {
   id: string;
@@ -43,22 +44,6 @@ const AgentProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [mainTab, setMainTab] = useState<'tweet' | 'prediction' | 'tagcoins'>('tweet');
   const [posts, setPosts] = useState<SocialPost[]>([]);
-
-  const tokenItems = React.useMemo((): TokenPriceItem[] => {
-    const seen = new Set<string>();
-    const items: TokenPriceItem[] = [];
-    for (const p of posts) {
-      const tv = p.tokenValue;
-      if (!tv?.token || tv.version == null) continue;
-      const key = `${tv.token.toLowerCase()}-${tv.version}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      items.push({ token: tv.token, version: tv.version ?? 2, isImport: tv.isImport, pair: tv.pair });
-    }
-    return items;
-  }, [posts]);
-
-  const { formatUsd } = usePriceData(tokenItems);
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +61,37 @@ const AgentProfilePage: React.FC = () => {
   const [unclaimableLoading, setUnclaimableLoading] = useState(false);
   const [unclaimableError, setUnclaimableError] = useState<string | null>(null);
 
+  const tokenItems = React.useMemo((): TokenPriceItem[] => {
+    const seen = new Set<string>();
+    const items: TokenPriceItem[] = [];
+
+    const addToken = (token?: string, version?: number, isImport?: number | boolean, pair?: string) => {
+      if (!token) return;
+      const v = version ?? 2;
+      const key = `${token.toLowerCase()}-${v}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ token, version: v, isImport: Boolean(isImport), pair });
+    };
+
+    for (const p of posts) {
+      const tv = p.tokenValue;
+      if (!tv?.token) continue;
+      addToken(tv.token, tv.version, tv.isImport, tv.pair);
+    }
+
+    for (const r of rewards) {
+      addToken(r.token, r.version, r.isImport === 1, r.pair);
+    }
+
+    for (const r of unclaimableRewards) {
+      addToken(r.token, r.version, r.isImport === 1, r.pair);
+    }
+    return items;
+  }, [posts, rewards, unclaimableRewards]);
+
+  const { formatUsd, toUsd } = usePriceData(tokenItems);
+
   const totalRewards = useMemo(
     () =>
       rewards.reduce((sum, r) => {
@@ -92,6 +108,55 @@ const AgentProfilePage: React.FC = () => {
         return Number.isFinite(n) ? sum + n : sum;
       }, 0),
     [unclaimableRewards]
+  );
+
+  const tagclawUnclaimableRewards = useMemo(
+    () =>
+      unclaimableRewards.reduce((sum, r) => {
+        if ((r.tick ?? '').toUpperCase() !== TAGCLAW_TICK) return sum;
+        const n = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+        return Number.isFinite(n) ? sum + n : sum;
+      }, 0),
+    [unclaimableRewards]
+  );
+
+  const formatUsdTotal = useCallback((usd: number) => {
+    const safe = Number.isFinite(usd) ? usd : 0;
+    return `$${safe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, []);
+
+  const totalRewardsUsd = useMemo(
+    () =>
+      rewards.reduce((sum, r) => {
+        const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+        if (!Number.isFinite(amount) || amount <= 0) return sum;
+        const usd = toUsd(amount, r.token);
+        return usd == null ? sum : sum + usd;
+      }, 0),
+    [rewards, toUsd]
+  );
+
+  const totalUnclaimableRewardsUsd = useMemo(
+    () =>
+      unclaimableRewards.reduce((sum, r) => {
+        const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+        if (!Number.isFinite(amount) || amount <= 0) return sum;
+        const usd = toUsd(amount, r.token);
+        return usd == null ? sum : sum + usd;
+      }, 0),
+    [unclaimableRewards, toUsd]
+  );
+
+  const tagclawUnclaimableRewardsUsd = useMemo(
+    () =>
+      unclaimableRewards.reduce((sum, r) => {
+        if ((r.tick ?? '').toUpperCase() !== TAGCLAW_TICK) return sum;
+        const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+        if (!Number.isFinite(amount) || amount <= 0) return sum;
+        const usd = toUsd(amount, r.token);
+        return usd == null ? sum : sum + usd;
+      }, 0),
+    [unclaimableRewards, toUsd]
   );
 
   const loadAgentData = useCallback(async (pageNum: number, append = false) => {
@@ -331,102 +396,34 @@ const AgentProfilePage: React.FC = () => {
             <div className="bg-white/5 rounded-xl border border-white/10 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-white text-sm">Rewards</span>
-                {(rewardsLoading || unclaimableLoading) && (
-                  <span className="text-xs text-white/60">Loading...</span>
-                )}
-                {!rewardsLoading && rewards.length > 0 && (
-                  <span className="text-xs text-teal-300 font-medium">
-                    Total:{' '}
-                    {totalRewards.toLocaleString(undefined, {
-                      maximumFractionDigits: 4,
-                    })}
-                  </span>
-                )}
               </div>
 
-              {/* 可领取奖励 */}
-              {rewardsError && (
-                <div className="text-xs text-red-200 mb-2">
-                  {rewardsError}
+              <div className="text-xs text-white/70 mb-2">
+                <div className="flex items-center justify-between">
+                  <span>Claimable Sum</span>
+                  <span className="font-medium text-white">
+                    {totalRewards.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
+                    ({formatUsdTotal(totalRewardsUsd)})
+                  </span>
                 </div>
-              )}
-              {(!rewardsLoading && rewards.length === 0 && !rewardsError) && (
-                <div className="text-xs text-white/60 mb-2">No claimable rewards found.</div>
-              )}
-              {rewards.length > 0 && (
-                <div className="max-h-40 overflow-auto space-y-2 mt-1 mb-3">
-                  {rewards.map((r) => (
-                    <div key={`claimable-${r.tick}`} className="flex items-center justify-between text-xs text-white/80">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {r.logo ? (
-                          <img
-                            src={r.logo}
-                            alt={r.tick}
-                            className="w-6 h-6 rounded-full object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] font-bold shrink-0">
-                            {r.tick.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{r.tick}</div>
-                          {r.token && (
-                            <div className="text-[10px] text-white/60 truncate">
-                              {r.token.slice(0, 6)}...{r.token.slice(-4)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0 ml-2">
-                        <div className="font-semibold">
-                          {r.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              </div>
+              <div className="text-xs text-white/70 mb-2">
+                <div className="flex items-center justify-between">
+                  <span>Pending settled Sum</span>
+                  <span className="font-medium text-white">
+                    {totalUnclaimableRewards.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
+                    ({formatUsdTotal(totalUnclaimableRewardsUsd)})
+                  </span>
                 </div>
-              )}
-
-              {/* 不可领取奖励 */}
-              <div className="border-t border-white/10 pt-2 mt-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-white text-xs">Unclaimable</span>
-                  {!unclaimableLoading && unclaimableRewards.length > 0 && (
-                    <span className="text-[11px] text-amber-300 font-medium">
-                      Sum:{' '}
-                      {totalUnclaimableRewards.toLocaleString(undefined, {
-                        maximumFractionDigits: 4,
-                      })}
-                    </span>
-                  )}
+              </div>
+              <div className="text-xs text-white/70">
+                <div className="flex items-center justify-between">
+                  <span>TagClaw Pending settled</span>
+                  <span className="font-medium text-white">
+                    {tagclawUnclaimableRewards.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
+                    ({formatUsdTotal(tagclawUnclaimableRewardsUsd)})
+                  </span>
                 </div>
-                {unclaimableError && (
-                  <div className="text-[11px] text-red-200 mb-1">
-                    {unclaimableError}
-                  </div>
-                )}
-                {(!unclaimableLoading && unclaimableRewards.length === 0 && !unclaimableError) && (
-                  <div className="text-[11px] text-white/60">
-                    No unclaimable rewards.
-                  </div>
-                )}
-                {unclaimableRewards.length > 0 && (
-                  <div className="max-h-32 overflow-auto space-y-1 mt-1">
-                    {unclaimableRewards.map((r) => (
-                      <div key={`unclaimable-${r.tick}`} className="flex items-center justify-between text-[11px] text-white/80">
-                        <div className="min-w-0 truncate">
-                          <span className="font-medium">{r.tick}</span>
-                        </div>
-                        <div className="text-right shrink-0 ml-2">
-                          <span className="font-normal">
-                            {r.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>

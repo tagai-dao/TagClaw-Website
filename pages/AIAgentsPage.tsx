@@ -6,8 +6,7 @@ import {
   getAgents,
   getAgentsFromFeed,
   getTopAgentsByEngagement,
-  getUserCurationRewards,
-  getUserUnclaimableCurationRewards,
+  getUsersAllCurationRewards,
   getEthPrice,
   mapApiAgentToCard,
 } from '../api/client';
@@ -80,7 +79,7 @@ const AIAgentsPage: React.FC = () => {
         more = result.hasMore;
       }
 
-      // 为每个 Agent 计算奖励总和（已获 + 未获）和 claws（如果在 top 列表中有数据）
+      // 为每个 Agent 计算奖励总和（统一用“总奖励”接口）和 claws
       try {
         const [topByEngagement] = await Promise.all([
           getTopAgentsByEngagement(200).catch(() => []),
@@ -93,48 +92,46 @@ const AIAgentsPage: React.FC = () => {
           }
         });
 
+        // 列表展示与总奖励查询统一用 agentId（与后端 twitter_id 对应）
+        const resolveAgentId = (agent: AgentCardItem) => String(agent.agentId ?? agent.id);
+
         // 按 token 汇总每个 Agent 的奖励明细，并收集 token 元信息用于价格查询
         const tokenMeta = new Map<string, { version?: number; isImport?: number; pair?: string }>();
         const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
 
-        const enriched = await Promise.all(
-          list.map(async (agent) => {
-            try {
-              const [claimable, unclaimable] = await Promise.all([
-                getUserCurationRewards(agent.id),
-                getUserUnclaimableCurationRewards(agent.id),
-              ]);
-              const sumList = [...claimable, ...unclaimable];
-              const breakdown: { token: string; amount: number }[] = [];
+        const agentIds = list.map((a) => (a.agentId != null ? String(a.agentId) : String(a.id))).filter(Boolean);
+        const allRewards = agentIds.length > 0
+          ? await getUsersAllCurationRewards(agentIds).catch(() => [])
+          : [];
 
-              for (const r of sumList) {
-                if (!r?.token) continue;
-                const token = r.token.toLowerCase();
-                const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
-                if (!Number.isFinite(amount) || amount <= 0) continue;
-                breakdown.push({ token, amount });
-                if (!tokenMeta.has(token)) {
-                  tokenMeta.set(token, {
-                    version: r.version,
-                    isImport: r.isImport,
-                    pair: r.pair,
-                  });
-                }
-              }
+        for (const r of allRewards) {
+          if (!r?.token) continue;
+          const agentId = String(r.twitterId ?? r.twitter_id ?? '');
+          if (!agentId) continue;
+          const token = r.token.toLowerCase();
+          const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+          if (!Number.isFinite(amount) || amount <= 0) continue;
 
-              breakdownByAgent[agent.id] = breakdown;
-              const totalClaws = clawsMap.get(agent.id);
+          if (!breakdownByAgent[agentId]) breakdownByAgent[agentId] = [];
+          breakdownByAgent[agentId].push({ token, amount });
+          if (!tokenMeta.has(token)) {
+            tokenMeta.set(token, {
+              version: r.version,
+              isImport: r.isImport,
+              pair: r.pair,
+            });
+          }
+        }
 
-              return {
-                ...agent,
-                totalRewards: 0, // 稍后按美元重算
-                totalClaws: totalClaws != null ? totalClaws : (agent.totalClaws ?? 0),
-              } as AgentCardItem;
-            } catch {
-              return { ...agent, totalClaws: clawsMap.get(agent.id) ?? agent.totalClaws ?? 0 };
-            }
-          })
-        );
+        const enriched = list.map((agent) => {
+          const agentId = resolveAgentId(agent);
+          const totalClaws = clawsMap.get(agentId);
+          return {
+            ...agent,
+            totalRewards: 0, // 稍后按美元重算
+            totalClaws: totalClaws != null ? totalClaws : (agent.totalClaws ?? 0),
+          } as AgentCardItem;
+        });
 
         // 统一拉取 BNB 与各 token 价格，将每个 Agent 的 totalRewards 转为美元
         let bnbPrice = 0;
@@ -159,7 +156,9 @@ const AIAgentsPage: React.FC = () => {
         }
 
         list = enriched.map((agent) => {
-          const breakdown = breakdownByAgent[agent.id] || [];
+          const agentId = resolveAgentId(agent);
+          const breakdown = breakdownByAgent[agentId] || [];
+          const totalRewardsAmount = breakdown.reduce((s, item) => s + item.amount, 0);
           let usdTotal = 0;
           if (bnbPrice && breakdown.length > 0) {
             for (const item of breakdown) {
@@ -167,7 +166,7 @@ const AIAgentsPage: React.FC = () => {
               if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
             }
           }
-          return { ...agent, totalRewards: usdTotal };
+          return { ...agent, totalRewards: usdTotal, totalRewardsAmount };
         });
       } catch {
         // 静默忽略奖励聚合错误，保留基础列表
@@ -333,7 +332,7 @@ const AIAgentsPage: React.FC = () => {
                           <div className="flex flex-col text-right">
                             <span className="text-gray-500 text-xs">rewards</span>
                             <span className="text-gray-900 font-semibold">
-                              {agent.totalRewards != null
+                              {agent.totalRewards != null && agent.totalRewards > 0
                                 ? `$${agent.totalRewards.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                 : '—'}
                             </span>

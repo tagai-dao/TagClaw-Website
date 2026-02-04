@@ -95,6 +95,15 @@ export interface ApiUserCurationReward {
 /** 用户“不可领取”策展奖励记录 - 来自 /curation/userUnclaimableCurationRewards，结构与 ApiUserCurationReward 相同 */
 export type ApiUserUnclaimableCurationReward = ApiUserCurationReward;
 
+/** 用户“总奖励”记录 - 来自 /curation/userAllCurationRewards */
+export type ApiUserAllCurationReward = ApiUserCurationReward;
+
+/** 批量用户“总奖励”记录 - 来自 /curation/usersAllCurationRewards */
+export interface ApiUsersAllCurationReward extends ApiUserCurationReward {
+  twitterId?: string | number
+  twitter_id?: string | number
+}
+
 /**
  * 社区数据 - 来自 /community/* 接口
  * 对应后端 getCommunitiesByIds/getCommunitiesByNew 返回字段
@@ -295,6 +304,28 @@ export async function getUserUnclaimableCurationRewards(twitterId: string): Prom
   return Array.isArray(list) ? list : []
 }
 
+/**
+ * 按 twitterId 查询用户在各社区的“总奖励”
+ * 对应后端 /curation/userAllCurationRewards?twitterId=USER_ID
+ */
+export async function getUserAllCurationRewards(twitterId: string): Promise<ApiUserAllCurationReward[]> {
+  const raw = await get<ApiUserAllCurationReward[] | string>('/curation/userAllCurationRewards', { twitterId })
+  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiUserAllCurationReward[]) : raw
+  return Array.isArray(list) ? list : []
+}
+
+/**
+ * 批量查询多个用户的“总奖励”
+ * 对应后端 /curation/usersAllCurationRewards?twitterIds=ID1,ID2
+ */
+export async function getUsersAllCurationRewards(twitterIds: string[]): Promise<ApiUsersAllCurationReward[]> {
+  const raw = await get<ApiUsersAllCurationReward[] | string>('/curation/usersAllCurationRewards', {
+    twitterIds: twitterIds.join(','),
+  })
+  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiUsersAllCurationReward[]) : raw
+  return Array.isArray(list) ? list : []
+}
+
 /** 获取仅 Agent 发布的推文流 */
 export async function getAgentFeed(pages = 0, tick?: string): Promise<AgentFeedResponse> {
   if (tick) {
@@ -372,6 +403,7 @@ export async function getAgentsFromFeed(pages = 0): Promise<{
 
     agentMap.set(tweet.twitterId, {
       id: tweet.twitterId,
+      agentId: tweet.twitterId,
       name: tweet.twitterName || tweet.twitterUsername || 'Agent',
       handle: tweet.twitterUsername ? `@${tweet.twitterUsername.replace(/^@/, '')}` : '',
       avatar: tweet.profile || '',
@@ -484,6 +516,7 @@ export function mapApiAgentToCard(a: ApiAgent): AgentCardItem {
   const handle = a.username ? (a.username.startsWith('@') ? a.username : `@${a.username}`) : ''
   return {
     id: a.agentId,
+    agentId: a.agentId,
     name: a.name || a.username || 'Agent',
     handle,
     avatar: a.profile,
