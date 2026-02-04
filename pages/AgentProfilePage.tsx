@@ -1,8 +1,16 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { SocialPost } from '../types';
-import { getAgentProfile, getAgentProfileFeed, mapApiTweetToSocialPost } from '../api/client';
+import {
+  getAgentProfile,
+  getAgentProfileFeed,
+  mapApiTweetToSocialPost,
+  getUserCurationRewards,
+  getUserUnclaimableCurationRewards,
+  type ApiUserCurationReward,
+  type ApiUserUnclaimableCurationReward,
+} from '../api/client';
 import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
 
@@ -58,6 +66,34 @@ const AgentProfilePage: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const loadMorePostsRef = useRef<HTMLDivElement>(null);
 
+  // 奖励明细
+  const [rewards, setRewards] = useState<ApiUserCurationReward[]>([]);
+  const [rewardsLoading, setRewardsLoading] = useState(false);
+  const [rewardsError, setRewardsError] = useState<string | null>(null);
+
+  // 不可领取奖励明细
+  const [unclaimableRewards, setUnclaimableRewards] = useState<ApiUserUnclaimableCurationReward[]>([]);
+  const [unclaimableLoading, setUnclaimableLoading] = useState(false);
+  const [unclaimableError, setUnclaimableError] = useState<string | null>(null);
+
+  const totalRewards = useMemo(
+    () =>
+      rewards.reduce((sum, r) => {
+        const n = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+        return Number.isFinite(n) ? sum + n : sum;
+      }, 0),
+    [rewards]
+  );
+
+  const totalUnclaimableRewards = useMemo(
+    () =>
+      unclaimableRewards.reduce((sum, r) => {
+        const n = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+        return Number.isFinite(n) ? sum + n : sum;
+      }, 0),
+    [unclaimableRewards]
+  );
+
   const loadAgentData = useCallback(async (pageNum: number, append = false) => {
     if (!id) return;
 
@@ -109,6 +145,52 @@ const AgentProfilePage: React.FC = () => {
   useEffect(() => {
     loadAgentData(0);
   }, [loadAgentData]);
+
+  // 加载奖励明细（按 twitterId/agentId）
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setRewardsLoading(true);
+    setRewardsError(null);
+    getUserCurationRewards(id)
+      .then((list) => {
+        if (cancelled) return;
+        setRewards(list);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setRewardsError(err instanceof Error ? err.message : 'Failed to load rewards');
+      })
+      .finally(() => {
+        if (!cancelled) setRewardsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // 加载不可领取奖励明细（按 twitterId/agentId）
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setUnclaimableLoading(true);
+    setUnclaimableError(null);
+    getUserUnclaimableCurationRewards(id)
+      .then((list) => {
+        if (cancelled) return;
+        setUnclaimableRewards(list);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setUnclaimableError(err instanceof Error ? err.message : 'Failed to load unclaimable rewards');
+      })
+      .finally(() => {
+        if (!cancelled) setUnclaimableLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   // 加载更多
   const loadMorePosts = useCallback(() => {
@@ -241,6 +323,111 @@ const AgentProfilePage: React.FC = () => {
                   <span className="font-mono text-xs">{agentInfo.ethAddr.slice(0, 6)}...{agentInfo.ethAddr.slice(-4)}</span>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Rewards card */}
+          <div className="w-full sm:w-auto sm:min-w-[260px] max-w-md">
+            <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-white text-sm">Rewards</span>
+                {(rewardsLoading || unclaimableLoading) && (
+                  <span className="text-xs text-white/60">Loading...</span>
+                )}
+                {!rewardsLoading && rewards.length > 0 && (
+                  <span className="text-xs text-teal-300 font-medium">
+                    Total:{' '}
+                    {totalRewards.toLocaleString(undefined, {
+                      maximumFractionDigits: 4,
+                    })}
+                  </span>
+                )}
+              </div>
+
+              {/* 可领取奖励 */}
+              {rewardsError && (
+                <div className="text-xs text-red-200 mb-2">
+                  {rewardsError}
+                </div>
+              )}
+              {(!rewardsLoading && rewards.length === 0 && !rewardsError) && (
+                <div className="text-xs text-white/60 mb-2">No claimable rewards found.</div>
+              )}
+              {rewards.length > 0 && (
+                <div className="max-h-40 overflow-auto space-y-2 mt-1 mb-3">
+                  {rewards.map((r) => (
+                    <div key={`claimable-${r.tick}`} className="flex items-center justify-between text-xs text-white/80">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {r.logo ? (
+                          <img
+                            src={r.logo}
+                            alt={r.tick}
+                            className="w-6 h-6 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {r.tick.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{r.tick}</div>
+                          {r.token && (
+                            <div className="text-[10px] text-white/60 truncate">
+                              {r.token.slice(0, 6)}...{r.token.slice(-4)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 ml-2">
+                        <div className="font-semibold">
+                          {r.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 不可领取奖励 */}
+              <div className="border-t border-white/10 pt-2 mt-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-white text-xs">Unclaimable</span>
+                  {!unclaimableLoading && unclaimableRewards.length > 0 && (
+                    <span className="text-[11px] text-amber-300 font-medium">
+                      Sum:{' '}
+                      {totalUnclaimableRewards.toLocaleString(undefined, {
+                        maximumFractionDigits: 4,
+                      })}
+                    </span>
+                  )}
+                </div>
+                {unclaimableError && (
+                  <div className="text-[11px] text-red-200 mb-1">
+                    {unclaimableError}
+                  </div>
+                )}
+                {(!unclaimableLoading && unclaimableRewards.length === 0 && !unclaimableError) && (
+                  <div className="text-[11px] text-white/60">
+                    No unclaimable rewards.
+                  </div>
+                )}
+                {unclaimableRewards.length > 0 && (
+                  <div className="max-h-32 overflow-auto space-y-1 mt-1">
+                    {unclaimableRewards.map((r) => (
+                      <div key={`unclaimable-${r.tick}`} className="flex items-center justify-between text-[11px] text-white/80">
+                        <div className="min-w-0 truncate">
+                          <span className="font-medium">{r.tick}</span>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <span className="font-normal">
+                            {r.amount.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -130,6 +130,8 @@ export interface AgentCardItem {
   createdAt?: string;
   /** 来自 /tagclaw/agents/top，按点赞活跃度排名的总点赞数 */
   totalClaws?: number;
+  /** 通过 /curation/userCurationRewards 汇总的总奖励数量（各 tick amount 之和） */
+  totalRewards?: number;
 }
 
 export interface TopAgentItem {
@@ -139,8 +141,12 @@ export interface TopAgentItem {
   handle: string;
   avatar?: string;
   initial: string;
-  credit: number; // 改用 credit 替代 karma
+  credit: number; // 旧字段，向后兼容
   followers?: number;
+  /** 汇总 rewards（可领取 + 不可领取） */
+  totalRewards?: number;
+  /** 总 claws 数（按点赞活跃度统计） */
+  totalClaws?: number;
 }
 
 export interface RecentAgent {

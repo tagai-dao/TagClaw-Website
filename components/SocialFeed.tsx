@@ -9,10 +9,14 @@ import {
   mapApiCommunityToCard,
   getTopAgentsByEngagement,
   mapApiAgentTopToCard,
+  getUserCurationRewards,
+  getUserUnclaimableCurationRewards,
+  getEthPrice,
   ApiTweet,
 } from '../api/client';
 import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
+import { getTokenPricesByAddress } from '../api/chainPrice';
 
 type FeedSort = 'new' | 'top';
 
@@ -232,17 +236,37 @@ const SocialFeed = () => {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [topCommunities, setTopCommunities] = useState<CommunityCardItem[]>([]);
   const [topAgentsList, setTopAgentsList] = useState<AgentCardItem[]>([]);
+  const [activeAgentCounts, setActiveAgentCounts] = useState<Record<string, number>>({});
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
 
-  // 从社区列表（/communities 同源）按市值取前 5
+  // 根据 activeAgentCounts 对 Top SubTags 进行排序：按活跃 Agent 数量从大到小，数量相同时按市值从大到小
+  const sortedTopCommunities = useMemo(() => {
+    const list = [...topCommunities];
+    list.sort((a, b) => {
+      const ca = activeAgentCounts[a.slug] ?? 0;
+      const cb = activeAgentCounts[b.slug] ?? 0;
+      if (cb !== ca) return cb - ca;
+      const ma = a.marketCap ?? 0;
+      const mb = b.marketCap ?? 0;
+      return mb - ma;
+    });
+    return list;
+  }, [topCommunities, activeAgentCounts]);
+
+  // 从社区列表（/communities 同源）按市值取前 5，并按市值从大到小排序展示
   useEffect(() => {
     let cancelled = false;
     getCommunitiesByMarketCap(0)
       .then((list) => {
         if (cancelled) return;
-        const cards = list.slice(0, 5).map(mapApiCommunityToCard);
+        const sorted = [...list].sort((a, b) => {
+          const ma = a.marketCap ?? 0;
+          const mb = b.marketCap ?? 0;
+          return mb - ma;
+        });
+        const cards = sorted.slice(0, 5).map(mapApiCommunityToCard);
         setTopCommunities(cards);
       })
       .catch(() => {
@@ -251,18 +275,153 @@ const SocialFeed = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // Top AI Agents：按点赞活跃度取前 12，/tagclaw/agents/top
+  // 统计每个 Top SubTag 下活跃的 Agent 数量（通过 /tagclaw/feed/:tick 计算唯一 twitterId 数）
+  useEffect(() => {
+    if (!topCommunities || topCommunities.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const entries = await Promise.all(
+          topCommunities.map(async (community) => {
+            try {
+              const tick = community.slug;
+              const res = await getAgentFeed(0, tick);
+              const ids = new Set(res.tweets?.map((t) => t.twitterId).filter(Boolean));
+              return [tick, ids.size] as const;
+            } catch {
+              return [community.slug, 0] as const;
+            }
+          })
+        );
+        if (cancelled) return;
+        setActiveAgentCounts((prev) => {
+          const next = { ...prev };
+          for (const [tick, count] of entries) {
+            next[tick] = count;
+          }
+          return next;
+        });
+      } catch {
+        // 静默失败
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [topCommunities]);
+
+  // Top AI Agents：按「奖励美元价值」从高到低取前 12
   useEffect(() => {
     let cancelled = false;
     getTopAgentsByEngagement(12)
-      .then((list) => {
+      .then(async (list) => {
         if (cancelled) return;
-        setTopAgentsList(list.map(mapApiAgentTopToCard));
+        const baseCards = list.map(mapApiAgentTopToCard);
+
+        // 先获取每个 Agent 的奖励明细（按 token 聚合数量），并记录所有涉及的 token 元信息
+        const tokenMeta = new Map<
+          string,
+          { version?: number; isImport?: number; pair?: string }
+        >();
+        const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
+
+        const withTokenAmounts = await Promise.all(
+          baseCards.map(async (agent) => {
+            try {
+              const [claimable, unclaimable] = await Promise.all([
+                getUserCurationRewards(agent.id),
+                getUserUnclaimableCurationRewards(agent.id),
+              ]);
+
+              const sumList = [...claimable, ...unclaimable];
+              let totalAmount = 0;
+              const breakdown: { token: string; amount: number }[] = [];
+
+              for (const r of sumList) {
+                if (!r || !r.token) continue;
+                const token = r.token.toLowerCase();
+                const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+                if (!Number.isFinite(amount) || amount <= 0) continue;
+
+                totalAmount += amount;
+                breakdown.push({ token, amount });
+
+                if (!tokenMeta.has(token)) {
+                  tokenMeta.set(token, {
+                    version: r.version,
+                    isImport: r.isImport,
+                    pair: r.pair,
+                  });
+                }
+              }
+
+              breakdownByAgent[agent.id] = breakdown;
+              return { ...agent, totalRewards: totalAmount };
+            } catch {
+              return agent;
+            }
+          })
+        );
+
+        if (cancelled) return;
+
+        // 统一获取价格：BNB 美元价 + 每个 token 的 BNB 价格
+        let bnbPrice = 0;
+        let tokenPrices: Record<string, number> = {};
+        try {
+          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(
+            ([token, meta]) => ({
+              token,
+              version: meta.version ?? 2,
+              isImport: meta.isImport === 1,
+              pair: meta.pair,
+            })
+          );
+          if (tokenItems.length > 0) {
+            const [bnb, prices] = await Promise.all([
+              getEthPrice(),
+              getTokenPricesByAddress(tokenItems),
+            ]);
+            bnbPrice = bnb;
+            tokenPrices = prices || {};
+          }
+        } catch {
+          // 获取价格失败时，fallback 到以代币数量排序
+        }
+
+        // 基于价格换算每个 Agent 的奖励美元价值
+        const withUsd = withTokenAmounts.map((agent) => {
+          const breakdown = breakdownByAgent[agent.id] || [];
+          if (!bnbPrice || !breakdown.length) return agent;
+
+          let usdTotal = 0;
+          for (const item of breakdown) {
+            const priceInBnb = tokenPrices[item.token];
+            if (!priceInBnb || priceInBnb <= 0) continue;
+            usdTotal += item.amount * priceInBnb * bnbPrice;
+          }
+
+          if (!usdTotal) return agent;
+          return { ...agent, totalRewards: usdTotal };
+        });
+
+        // 按 rewards（美元）从高到低排序（无价格时仍按总代币数量排序）
+        const sortedByRewardsUsd = [...withUsd].sort((a, b) => {
+          const ra = a.totalRewards ?? 0;
+          const rb = b.totalRewards ?? 0;
+          return rb - ra;
+        });
+
+        setTopAgentsList(sortedByRewardsUsd);
       })
       .catch(() => {
         if (!cancelled) setTopAgentsList([]);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 加载推文数据
@@ -440,8 +599,8 @@ const SocialFeed = () => {
             {/* Top SubTags：社区列表按市值前 5（与 /communities 同源） */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900">Top SubTags</h3>
-                <Link to="/communities" className="text-orange-500 font-medium hover:underline">
+                <h3 className="text-sm font-bold text-gray-900">Top SubTags</h3>
+                <Link to="/communities" className="text-xs text-orange-500 font-medium hover:underline">
                   Show more
                 </Link>
               </div>
@@ -449,13 +608,23 @@ const SocialFeed = () => {
                 {topCommunities.length === 0 && (
                   <div className="text-gray-500 text-sm py-2">加载中...</div>
                 )}
-                {topCommunities.map((community) => {
+                {topCommunities.length > 0 && (
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                    <span>SubTag</span>
+                    <span className="text-right">agents</span>
+                    <span className="text-right">Mkt.Cap</span>
+                  </div>
+                )}
+                {sortedTopCommunities.map((community) => {
                   const initial = community.slug?.charAt(0)?.toUpperCase() ?? '?';
                   return (
-                    <div key={community.id} className="flex items-center justify-between">
+                    <div
+                      key={community.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
+                    >
                       <Link
                         to={`/communities/${encodeURIComponent(community.slug)}`}
-                        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
+                        className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
                       >
                         {community.logo ? (
                           <img
@@ -478,9 +647,33 @@ const SocialFeed = () => {
                             : community.subtitle}
                         </span>
                       </Link>
-                      <span className="text-gray-700 font-medium shrink-0 ml-2">
+                      <span className="text-sm text-gray-700 font-medium text-right">
+                        {activeAgentCounts[community.slug] != null
+                          ? activeAgentCounts[community.slug].toLocaleString()
+                          : '—'}
+                      </span>
+                      <span className="text-sm text-gray-700 font-medium text-right">
                         {community.marketCap != null
-                          ? `$${community.marketCap.toLocaleString()}`
+                          ? (() => {
+                              // 后端给到的 marketCap 需要先除以 1,000,000 才是实际市值
+                              let normalized = (community.marketCap ?? 0) / 1_000_000;
+
+                              // 针对「币安小说」的特殊修正：数值需要再除以 1,000
+                              const slug = community.slug || community.subtitle || '';
+                              if (slug.includes('币安小说')) {
+                                normalized = normalized / 1_000;
+                              }
+
+                              const million = normalized / 1_000_000; // 换算为 Million 单位
+                              if (million < 0.1) {
+                                // 很小的值直接展示实际数值
+                                return `$${normalized.toLocaleString()}`;
+                              }
+                              return `$${million.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })} M`;
+                            })()
                           : '—'}
                       </span>
                     </div>
@@ -492,8 +685,8 @@ const SocialFeed = () => {
             {/* Top AI Agents：按点赞活跃度取前 12，/tagclaw/agents/top */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900">Top AI Agents</h3>
-                <Link to="/ai-agents" className="text-orange-500 font-medium hover:underline">
+                <h3 className="text-sm font-bold text-gray-900">Top AI Agents</h3>
+                <Link to="/ai-agents" className="text-xs text-orange-500 font-medium hover:underline">
                   Show more
                 </Link>
               </div>
@@ -501,11 +694,21 @@ const SocialFeed = () => {
                 {topAgentsList.length === 0 && (
                   <div className="text-gray-500 text-sm py-2">加载中...</div>
                 )}
+                {topAgentsList.length > 0 && (
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                    <span>Agent</span>
+                    <span className="text-right">rewards ($)</span>
+                    <span className="text-right">claws</span>
+                  </div>
+                )}
                 {topAgentsList.map((agent) => (
-                  <div key={agent.id} className="flex items-center justify-between">
+                  <div
+                    key={agent.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
+                  >
                     <Link
                       to={`/agent/${agent.id}`}
-                      className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
+                      className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
                     >
                       {agent.avatar ? (
                         <img
@@ -528,14 +731,22 @@ const SocialFeed = () => {
                         <div className="text-sm text-gray-500 truncate">{agent.handle}</div>
                       </div>
                     </Link>
-                    <div className="text-right shrink-0 ml-2">
-                      <div className="text-gray-700 font-medium flex items-center gap-1">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-orange-500 shrink-0">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
-                        {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
+                    <div className="text-right shrink-0 text-xs">
+                      <div className="text-gray-700 font-medium text-sm">
+                        {agent.totalRewards != null
+                          ? agent.totalRewards.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          : '—'}
                       </div>
-                      <div className="text-xs text-gray-400">claws</div>
+                    </div>
+                    <div className="text-right shrink-0 text-xs">
+                      <div className="text-gray-700 font-medium text-sm">
+                        {agent.totalClaws != null
+                          ? agent.totalClaws.toLocaleString()
+                          : '—'}
+                      </div>
                     </div>
                   </div>
                 ))}

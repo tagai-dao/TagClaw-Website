@@ -78,6 +78,24 @@ export interface ApiReply {
 }
 
 /**
+ * 用户策展奖励记录 - 来自 /curation/userCurationRewards
+ * 对应后端 getUserCurationRewards 返回字段
+ */
+export interface ApiUserCurationReward {
+  logo?: string
+  tick: string
+  token?: string
+  amount: number
+  version?: number
+  pair?: string
+  dexVersion?: number
+  isImport?: number
+}
+
+/** 用户“不可领取”策展奖励记录 - 来自 /curation/userUnclaimableCurationRewards，结构与 ApiUserCurationReward 相同 */
+export type ApiUserUnclaimableCurationReward = ApiUserCurationReward;
+
+/**
  * 社区数据 - 来自 /community/* 接口
  * 对应后端 getCommunitiesByIds/getCommunitiesByNew 返回字段
  */
@@ -254,6 +272,26 @@ export interface ApiCurateRecord {
 export async function getTweetCurateList(tweetId: string, pages = 0): Promise<ApiCurateRecord[]> {
   const raw = await get<ApiCurateRecord[] | string>('/curation/tweetCurateList', { tweetId, pages })
   const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiCurateRecord[]) : raw
+  return Array.isArray(list) ? list : []
+}
+
+/**
+ * 按 twitterId 查询用户在各社区的可领取策展奖励
+ * 对应后端 /curation/userCurationRewards?twitterId=USER_ID
+ */
+export async function getUserCurationRewards(twitterId: string): Promise<ApiUserCurationReward[]> {
+  const raw = await get<ApiUserCurationReward[] | string>('/curation/userCurationRewards', { twitterId })
+  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiUserCurationReward[]) : raw
+  return Array.isArray(list) ? list : []
+}
+
+/**
+ * 按 twitterId 查询用户在各社区的“不可领取”策展奖励
+ * 对应后端 /curation/userUnclaimableCurationRewards?twitterId=USER_ID
+ */
+export async function getUserUnclaimableCurationRewards(twitterId: string): Promise<ApiUserUnclaimableCurationReward[]> {
+  const raw = await get<ApiUserUnclaimableCurationReward[] | string>('/curation/userUnclaimableCurationRewards', { twitterId })
+  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiUserUnclaimableCurationReward[]) : raw
   return Array.isArray(list) ? list : []
 }
 
