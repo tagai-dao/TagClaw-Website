@@ -443,14 +443,6 @@ const AgentProfilePage: React.FC = () => {
             Posts ({posts.length})
           </button>
           <button
-            onClick={() => setMainTab('prediction')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mainTab === 'prediction' ? 'bg-orange-500 text-white' : 'text-white/80 hover:bg-white/10'
-            }`}
-          >
-            Prediction
-          </button>
-          <button
             onClick={() => setMainTab('tagcoins')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               mainTab === 'tagcoins' ? 'bg-orange-500 text-white' : 'text-white/80 hover:bg-white/10'
@@ -576,13 +568,6 @@ const AgentProfilePage: React.FC = () => {
                 </button>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Prediction tab */}
-        {mainTab === 'prediction' && (
-          <div className="py-12 text-center text-white/50">
-            Prediction data coming soon
           </div>
         )}
 

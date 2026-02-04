@@ -8,8 +8,11 @@ import {
   getTopAgentsByEngagement,
   getUserCurationRewards,
   getUserUnclaimableCurationRewards,
+  getEthPrice,
   mapApiAgentToCard,
 } from '../api/client';
+import { getTokenPricesByAddress } from '../api/chainPrice';
+import type { TokenPriceItem } from '../api/chainPrice';
 
 const PAGE_SIZE = 12;
 
@@ -90,6 +93,10 @@ const AIAgentsPage: React.FC = () => {
           }
         });
 
+        // 按 token 汇总每个 Agent 的奖励明细，并收集 token 元信息用于价格查询
+        const tokenMeta = new Map<string, { version?: number; isImport?: number; pair?: string }>();
+        const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
+
         const enriched = await Promise.all(
           list.map(async (agent) => {
             try {
@@ -98,25 +105,70 @@ const AIAgentsPage: React.FC = () => {
                 getUserUnclaimableCurationRewards(agent.id),
               ]);
               const sumList = [...claimable, ...unclaimable];
-              const totalRewards = sumList.reduce((sum, r) => {
-                const n = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
-                return Number.isFinite(n) ? sum + n : sum;
-              }, 0);
+              const breakdown: { token: string; amount: number }[] = [];
 
+              for (const r of sumList) {
+                if (!r?.token) continue;
+                const token = r.token.toLowerCase();
+                const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+                if (!Number.isFinite(amount) || amount <= 0) continue;
+                breakdown.push({ token, amount });
+                if (!tokenMeta.has(token)) {
+                  tokenMeta.set(token, {
+                    version: r.version,
+                    isImport: r.isImport,
+                    pair: r.pair,
+                  });
+                }
+              }
+
+              breakdownByAgent[agent.id] = breakdown;
               const totalClaws = clawsMap.get(agent.id);
 
               return {
                 ...agent,
-                totalRewards,
-                totalClaws: totalClaws != null ? totalClaws : agent.totalClaws,
+                totalRewards: 0, // 稍后按美元重算
+                totalClaws: totalClaws != null ? totalClaws : (agent.totalClaws ?? 0),
               } as AgentCardItem;
             } catch {
-              return agent;
+              return { ...agent, totalClaws: clawsMap.get(agent.id) ?? agent.totalClaws ?? 0 };
             }
           })
         );
 
-        list = enriched;
+        // 统一拉取 BNB 与各 token 价格，将每个 Agent 的 totalRewards 转为美元
+        let bnbPrice = 0;
+        let tokenPrices: Record<string, number> = {};
+        try {
+          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(([token, meta]) => ({
+            token,
+            version: meta.version ?? 2,
+            isImport: meta.isImport === 1,
+            pair: meta.pair,
+          }));
+          if (tokenItems.length > 0) {
+            const [bnb, prices] = await Promise.all([
+              getEthPrice(),
+              getTokenPricesByAddress(tokenItems),
+            ]);
+            bnbPrice = bnb;
+            tokenPrices = prices || {};
+          }
+        } catch {
+          // 价格拉取失败时保留 totalRewards 为 0，展示为 — 或 0
+        }
+
+        list = enriched.map((agent) => {
+          const breakdown = breakdownByAgent[agent.id] || [];
+          let usdTotal = 0;
+          if (bnbPrice && breakdown.length > 0) {
+            for (const item of breakdown) {
+              const priceInBnb = tokenPrices[item.token];
+              if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
+            }
+          }
+          return { ...agent, totalRewards: usdTotal };
+        });
       } catch {
         // 静默忽略奖励聚合错误，保留基础列表
       }
@@ -282,16 +334,14 @@ const AIAgentsPage: React.FC = () => {
                             <span className="text-gray-500 text-xs">rewards</span>
                             <span className="text-gray-900 font-semibold">
                               {agent.totalRewards != null
-                                ? agent.totalRewards.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                ? `$${agent.totalRewards.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                 : '—'}
                             </span>
                           </div>
                           <div className="flex flex-col text-right">
                             <span className="text-gray-500 text-xs">claws</span>
                             <span className="text-gray-900 font-semibold">
-                              {agent.totalClaws != null
-                                ? agent.totalClaws.toLocaleString()
-                                : '—'}
+                              {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
                             </span>
                           </div>
                         </div>
@@ -368,15 +418,13 @@ const AIAgentsPage: React.FC = () => {
                       <div className="text-right text-xs">
                         <div className="text-gray-900 font-semibold">
                           {agent.totalRewards != null
-                            ? agent.totalRewards.toLocaleString(undefined, { maximumFractionDigits: 0 })
+                            ? `$${agent.totalRewards.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                             : '—'}
                         </div>
                       </div>
                       <div className="text-right text-xs">
                         <div className="text-gray-900 font-semibold">
-                          {agent.totalClaws != null
-                            ? agent.totalClaws.toLocaleString()
-                            : '—'}
+                          {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
                         </div>
                       </div>
                     </Link>
