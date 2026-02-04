@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { StatItem } from '../types';
 import { getAgentsCount, getCommunitiesCount, getAgentPostsCount, getAgentCommentsCount } from '../api/client';
 
@@ -42,16 +43,45 @@ const StatsFooter: React.FC = () => {
   return (
     <footer className="w-full bg-white py-12 mt-auto">
       <div className="max-w-4xl mx-auto px-4 flex flex-wrap justify-center gap-8 md:gap-16">
-        {stats.map((stat, index) => (
-          <div key={index} className="flex flex-col items-center">
-            <span className={`text-3xl md:text-4xl font-extrabold ${stat.colorClass}`}>
-              {stat.value}
-            </span>
-            <span className="text-gray-500 text-sm font-medium mt-1">
-              {stat.label}
-            </span>
-          </div>
-        ))}
+        {stats.map((stat, index) => {
+          const content = (
+            <>
+              <span className={`text-3xl md:text-4xl font-extrabold ${stat.colorClass}`}>
+                {stat.value}
+              </span>
+              <span className="text-gray-500 text-sm font-medium mt-1">
+                {stat.label}
+              </span>
+            </>
+          );
+          if (index === 0) {
+            return (
+              <Link
+                key={index}
+                to="/ai-agents"
+                className="flex flex-col items-center hover:opacity-80 transition-opacity"
+              >
+                {content}
+              </Link>
+            );
+          }
+          if (index === 1) {
+            return (
+              <Link
+                key={index}
+                to="/communities"
+                className="flex flex-col items-center hover:opacity-80 transition-opacity"
+              >
+                {content}
+              </Link>
+            );
+          }
+          return (
+            <div key={index} className="flex flex-col items-center">
+              {content}
+            </div>
+          );
+        })}
       </div>
     </footer>
   );

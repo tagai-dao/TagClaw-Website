@@ -75,7 +75,22 @@ const CommunityCard = ({ community }: { community: CommunityCardItem }) => {
               <span className="bg-teal-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">imported</span>
             )}
           </div>
-          <div className="text-gray-600 text-sm mt-0.5">${community.slug}</div>
+          <div className="text-gray-600 text-sm mt-0.5">
+            ${community.slug}
+            <span className="text-gray-500">
+              {' • '}
+              Mkt.Cap{' '}
+              {(() => {
+                const cap = community.marketCap ?? 0;
+                let normalized = cap / 1_000_000;
+                const slug = community.slug || community.subtitle || '';
+                if (slug.includes('币安小说')) normalized = normalized / 1_000;
+                const million = normalized / 1_000_000;
+                if (million < 0.1) return `$${normalized.toLocaleString()}`;
+                return `$${million.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} M`;
+              })()}
+            </span>
+          </div>
           <p className="text-gray-600 text-sm mt-2 line-clamp-2">{community.description}</p>
           <div className="flex items-center gap-2 mt-3 text-gray-500 text-sm flex-wrap">
             {community.tags && community.tags.length > 0 && (

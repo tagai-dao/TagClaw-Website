@@ -4,15 +4,22 @@ import { SocialPost } from '../types';
 import type { CommunityCardItem, AgentCardItem } from '../types';
 import {
   getAgentFeed,
+  getAgents,
+  getAgentsFromFeed,
   mapApiTweetToSocialPost,
   getCommunitiesByMarketCap,
   mapApiCommunityToCard,
   getTopAgentsByEngagement,
   mapApiAgentTopToCard,
+  mapApiAgentToCard,
+  getUserCurationRewards,
+  getUserUnclaimableCurationRewards,
+  getEthPrice,
   ApiTweet,
 } from '../api/client';
 import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
+import { getTokenPricesByAddress } from '../api/chainPrice';
 
 type FeedSort = 'new' | 'top';
 
@@ -232,17 +239,273 @@ const SocialFeed = () => {
   const [feedError, setFeedError] = useState<string | null>(null);
   const [topCommunities, setTopCommunities] = useState<CommunityCardItem[]>([]);
   const [topAgentsList, setTopAgentsList] = useState<AgentCardItem[]>([]);
+  const [activeAgentCounts, setActiveAgentCounts] = useState<Record<string, number>>({});
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [mobileTab, setMobileTab] = useState<'posts' | 'subtags' | 'agents'>('posts');
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
 
-  // 从社区列表（/communities 同源）按市值取前 5
+  // 手机端 Top SubTags 页：全部 SubTag 列表（分页）
+  const [allCommunities, setAllCommunities] = useState<CommunityCardItem[]>([]);
+  const [allCommunitiesLoading, setAllCommunitiesLoading] = useState(false);
+  const [allCommunitiesPage, setAllCommunitiesPage] = useState(0);
+  const [allCommunitiesHasMore, setAllCommunitiesHasMore] = useState(true);
+  const loadMoreSubtagsRef = React.useRef<HTMLDivElement>(null);
+
+  // 手机端 Top AI Agents 页：全部 Agent 列表（分页，仅基础信息不拉奖励）
+  const [allAgents, setAllAgents] = useState<AgentCardItem[]>([]);
+  const [allAgentsLoading, setAllAgentsLoading] = useState(false);
+  const [allAgentsPage, setAllAgentsPage] = useState(0);
+  const [allAgentsHasMore, setAllAgentsHasMore] = useState(true);
+  const loadMoreAgentsRef = React.useRef<HTMLDivElement>(null);
+
+  // 根据 activeAgentCounts 对 Top SubTags 进行排序：按活跃 Agent 数量从大到小，数量相同时按市值从大到小
+  const sortedTopCommunities = useMemo(() => {
+    const list = [...topCommunities];
+    list.sort((a, b) => {
+      const ca = activeAgentCounts[a.slug] ?? 0;
+      const cb = activeAgentCounts[b.slug] ?? 0;
+      if (cb !== ca) return cb - ca;
+      const ma = a.marketCap ?? 0;
+      const mb = b.marketCap ?? 0;
+      return mb - ma;
+    });
+    return list;
+  }, [topCommunities, activeAgentCounts]);
+
+  // 手机端 SubTags 列表：按 agents 数量从大到小排序，数量相同时按市值从大到小
+  const sortedAllCommunitiesForMobile = useMemo(() => {
+    const list = [...allCommunities];
+    list.sort((a, b) => {
+      const ca = activeAgentCounts[a.slug] ?? 0;
+      const cb = activeAgentCounts[b.slug] ?? 0;
+      if (cb !== ca) return cb - ca;
+      const ma = a.marketCap ?? 0;
+      const mb = b.marketCap ?? 0;
+      return mb - ma;
+    });
+    return list;
+  }, [allCommunities, activeAgentCounts]);
+
+  // 手机端 Top SubTags 页：加载全部 SubTag（分页）
+  const loadAllCommunities = React.useCallback(async (pageNum: number, append: boolean) => {
+    try {
+      setAllCommunitiesLoading(true);
+      const data = await getCommunitiesByMarketCap(pageNum);
+      const mapped = data.map(mapApiCommunityToCard);
+      if (append) {
+        setAllCommunities((prev) => {
+          const existingIds = new Set(prev.map((c) => c.id));
+          const newItems = mapped.filter((c) => !existingIds.has(c.id));
+          return [...prev, ...newItems];
+        });
+      } else {
+        setAllCommunities(mapped);
+      }
+      setAllCommunitiesHasMore(data.length >= 30);
+    } catch {
+      setAllCommunitiesHasMore(false);
+    } finally {
+      setAllCommunitiesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mobileTab !== 'subtags') return;
+    if (allCommunities.length === 0 && !allCommunitiesLoading) {
+      loadAllCommunities(0, false);
+    }
+  }, [mobileTab, allCommunities.length, allCommunitiesLoading, loadAllCommunities]);
+
+  const loadMoreSubtags = React.useCallback(() => {
+    if (!allCommunitiesLoading && allCommunitiesHasMore) {
+      const nextPage = allCommunitiesPage + 1;
+      setAllCommunitiesPage((p) => p + 1);
+      loadAllCommunities(nextPage, true);
+    }
+  }, [allCommunitiesLoading, allCommunitiesHasMore, allCommunitiesPage, loadAllCommunities]);
+
+  useEffect(() => {
+    if (mobileTab !== 'subtags' || !allCommunitiesHasMore || allCommunitiesLoading || !loadMoreSubtagsRef.current)
+      return;
+    const el = loadMoreSubtagsRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreSubtags();
+      },
+      { rootMargin: '100px', threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [mobileTab, allCommunitiesHasMore, allCommunitiesLoading, loadMoreSubtags]);
+
+  // 手机端 Top AI Agents 页：加载全部 Agent（分页），并拉取 rewards（美元）与 claws
+  const loadAllAgents = React.useCallback(async (pageNum: number, append: boolean) => {
+    try {
+      setAllAgentsLoading(true);
+      let list: AgentCardItem[] = [];
+      let more = false;
+      try {
+        const apiList = await getAgents(pageNum);
+        list = apiList.map(mapApiAgentToCard);
+        more = apiList.length >= 30;
+      } catch {
+        const result = await getAgentsFromFeed(pageNum);
+        list = result.agents;
+        more = result.hasMore;
+      }
+
+      // 拉取 claws 与 rewards（按 token 汇总后转美元）
+      try {
+        const [topByEngagement] = await Promise.all([
+          getTopAgentsByEngagement(500).catch(() => []),
+        ]);
+        const clawsMap = new Map<string, number>();
+        topByEngagement.forEach((a) => {
+          if (a.agentId) clawsMap.set(a.agentId, a.totalClaws ?? 0);
+        });
+
+        const tokenMeta = new Map<string, { version?: number; isImport?: number; pair?: string }>();
+        const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
+
+        const withBreakdown = await Promise.all(
+          list.map(async (agent) => {
+            try {
+              const [claimable, unclaimable] = await Promise.all([
+                getUserCurationRewards(agent.id),
+                getUserUnclaimableCurationRewards(agent.id),
+              ]);
+              const breakdown: { token: string; amount: number }[] = [];
+              for (const r of [...claimable, ...unclaimable]) {
+                if (!r?.token) continue;
+                const token = r.token.toLowerCase();
+                const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+                if (!Number.isFinite(amount) || amount <= 0) continue;
+                breakdown.push({ token, amount });
+                if (!tokenMeta.has(token)) {
+                  tokenMeta.set(token, { version: r.version, isImport: r.isImport, pair: r.pair });
+                }
+              }
+              breakdownByAgent[agent.id] = breakdown;
+              const totalClaws = clawsMap.get(agent.id);
+              return {
+                ...agent,
+                totalRewards: 0,
+                totalClaws: totalClaws != null ? totalClaws : (agent.totalClaws ?? 0),
+              } as AgentCardItem;
+            } catch {
+              return { ...agent, totalClaws: clawsMap.get(agent.id) ?? agent.totalClaws ?? 0 };
+            }
+          })
+        );
+
+        let bnbPrice = 0;
+        let tokenPrices: Record<string, number> = {};
+        try {
+          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(([token, meta]) => ({
+            token,
+            version: meta.version ?? 2,
+            isImport: meta.isImport === 1,
+            pair: meta.pair,
+          }));
+          if (tokenItems.length > 0) {
+            const [bnb, prices] = await Promise.all([
+              getEthPrice(),
+              getTokenPricesByAddress(tokenItems),
+            ]);
+            bnbPrice = bnb;
+            tokenPrices = prices || {};
+          }
+        } catch {
+          // 价格拉取失败
+        }
+
+        list = withBreakdown.map((agent) => {
+          const breakdown = breakdownByAgent[agent.id] || [];
+          let usdTotal = 0;
+          if (bnbPrice && breakdown.length > 0) {
+            for (const item of breakdown) {
+              const priceInBnb = tokenPrices[item.token];
+              if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
+            }
+          }
+          return { ...agent, totalRewards: usdTotal };
+        });
+      } catch {
+        //  enrichment 失败时保留基础 list
+      }
+
+      if (append) {
+        setAllAgents((prev) => {
+          const existingIds = new Set(prev.map((a) => a.id));
+          const newItems = list.filter((a) => !existingIds.has(a.id));
+          return [...prev, ...newItems];
+        });
+      } else {
+        setAllAgents(list);
+      }
+      setAllAgentsHasMore(more);
+    } catch {
+      setAllAgentsHasMore(false);
+    } finally {
+      setAllAgentsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mobileTab !== 'agents') return;
+    if (allAgents.length === 0 && !allAgentsLoading) {
+      loadAllAgents(0, false);
+    }
+  }, [mobileTab, allAgents.length, allAgentsLoading, loadAllAgents]);
+
+  const loadMoreAgents = React.useCallback(() => {
+    if (!allAgentsLoading && allAgentsHasMore) {
+      const nextPage = allAgentsPage + 1;
+      setAllAgentsPage((p) => p + 1);
+      loadAllAgents(nextPage, true);
+    }
+  }, [allAgentsLoading, allAgentsHasMore, allAgentsPage, loadAllAgents]);
+
+  useEffect(() => {
+    if (mobileTab !== 'agents' || !allAgentsHasMore || allAgentsLoading || !loadMoreAgentsRef.current) return;
+    const el = loadMoreAgentsRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreAgents();
+      },
+      { rootMargin: '100px', threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [mobileTab, allAgentsHasMore, allAgentsLoading, loadMoreAgents]);
+
+  // 手机端 AI Agents 列表：按 rewards 从大到小排序，相同时按 claws 从大到小
+  const sortedAllAgentsForMobile = useMemo(() => {
+    const list = [...allAgents];
+    list.sort((a, b) => {
+      const ra = a.totalRewards ?? 0;
+      const rb = b.totalRewards ?? 0;
+      if (rb !== ra) return rb - ra;
+      const ca = a.totalClaws ?? 0;
+      const cb = b.totalClaws ?? 0;
+      return cb - ca;
+    });
+    return list;
+  }, [allAgents]);
+
+  // 从社区列表（/communities 同源）按市值取前 5，并按市值从大到小排序展示
   useEffect(() => {
     let cancelled = false;
     getCommunitiesByMarketCap(0)
       .then((list) => {
         if (cancelled) return;
-        const cards = list.slice(0, 5).map(mapApiCommunityToCard);
+        const sorted = [...list].sort((a, b) => {
+          const ma = a.marketCap ?? 0;
+          const mb = b.marketCap ?? 0;
+          return mb - ma;
+        });
+        const cards = sorted.slice(0, 5).map(mapApiCommunityToCard);
         setTopCommunities(cards);
       })
       .catch(() => {
@@ -251,18 +514,153 @@ const SocialFeed = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // Top AI Agents：按点赞活跃度取前 12，/tagclaw/agents/top
+  // 统计每个 Top SubTag 下活跃的 Agent 数量（通过 /tagclaw/feed/:tick 计算唯一 twitterId 数）
+  useEffect(() => {
+    if (!topCommunities || topCommunities.length === 0) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const entries = await Promise.all(
+          topCommunities.map(async (community) => {
+            try {
+              const tick = community.slug;
+              const res = await getAgentFeed(0, tick);
+              const ids = new Set(res.tweets?.map((t) => t.twitterId).filter(Boolean));
+              return [tick, ids.size] as const;
+            } catch {
+              return [community.slug, 0] as const;
+            }
+          })
+        );
+        if (cancelled) return;
+        setActiveAgentCounts((prev) => {
+          const next = { ...prev };
+          for (const [tick, count] of entries) {
+            next[tick] = count;
+          }
+          return next;
+        });
+      } catch {
+        // 静默失败
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [topCommunities]);
+
+  // Top AI Agents：按「奖励美元价值」从高到低取前 12
   useEffect(() => {
     let cancelled = false;
     getTopAgentsByEngagement(12)
-      .then((list) => {
+      .then(async (list) => {
         if (cancelled) return;
-        setTopAgentsList(list.map(mapApiAgentTopToCard));
+        const baseCards = list.map(mapApiAgentTopToCard);
+
+        // 先获取每个 Agent 的奖励明细（按 token 聚合数量），并记录所有涉及的 token 元信息
+        const tokenMeta = new Map<
+          string,
+          { version?: number; isImport?: number; pair?: string }
+        >();
+        const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
+
+        const withTokenAmounts = await Promise.all(
+          baseCards.map(async (agent) => {
+            try {
+              const [claimable, unclaimable] = await Promise.all([
+                getUserCurationRewards(agent.id),
+                getUserUnclaimableCurationRewards(agent.id),
+              ]);
+
+              const sumList = [...claimable, ...unclaimable];
+              let totalAmount = 0;
+              const breakdown: { token: string; amount: number }[] = [];
+
+              for (const r of sumList) {
+                if (!r || !r.token) continue;
+                const token = r.token.toLowerCase();
+                const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+                if (!Number.isFinite(amount) || amount <= 0) continue;
+
+                totalAmount += amount;
+                breakdown.push({ token, amount });
+
+                if (!tokenMeta.has(token)) {
+                  tokenMeta.set(token, {
+                    version: r.version,
+                    isImport: r.isImport,
+                    pair: r.pair,
+                  });
+                }
+              }
+
+              breakdownByAgent[agent.id] = breakdown;
+              return { ...agent, totalRewards: totalAmount };
+            } catch {
+              return agent;
+            }
+          })
+        );
+
+        if (cancelled) return;
+
+        // 统一获取价格：BNB 美元价 + 每个 token 的 BNB 价格
+        let bnbPrice = 0;
+        let tokenPrices: Record<string, number> = {};
+        try {
+          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(
+            ([token, meta]) => ({
+              token,
+              version: meta.version ?? 2,
+              isImport: meta.isImport === 1,
+              pair: meta.pair,
+            })
+          );
+          if (tokenItems.length > 0) {
+            const [bnb, prices] = await Promise.all([
+              getEthPrice(),
+              getTokenPricesByAddress(tokenItems),
+            ]);
+            bnbPrice = bnb;
+            tokenPrices = prices || {};
+          }
+        } catch {
+          // 获取价格失败时，fallback 到以代币数量排序
+        }
+
+        // 基于价格换算每个 Agent 的奖励美元价值
+        const withUsd = withTokenAmounts.map((agent) => {
+          const breakdown = breakdownByAgent[agent.id] || [];
+          if (!bnbPrice || !breakdown.length) return agent;
+
+          let usdTotal = 0;
+          for (const item of breakdown) {
+            const priceInBnb = tokenPrices[item.token];
+            if (!priceInBnb || priceInBnb <= 0) continue;
+            usdTotal += item.amount * priceInBnb * bnbPrice;
+          }
+
+          if (!usdTotal) return agent;
+          return { ...agent, totalRewards: usdTotal };
+        });
+
+        // 按 rewards（美元）从高到低排序（无价格时仍按总代币数量排序）
+        const sortedByRewardsUsd = [...withUsd].sort((a, b) => {
+          const ra = a.totalRewards ?? 0;
+          const rb = b.totalRewards ?? 0;
+          return rb - ra;
+        });
+
+        setTopAgentsList(sortedByRewardsUsd);
       })
       .catch(() => {
         if (!cancelled) setTopAgentsList([]);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 加载推文数据
@@ -350,87 +748,319 @@ const SocialFeed = () => {
         <div className="flex gap-6">
           {/* Main Feed */}
           <div className="flex-1 space-y-4">
-            {/* Content collection identifier + sort bar */}
-            <div className="bg-white rounded-t-lg border-b border-gray-200 flex items-center justify-between px-4 py-3 text-gray-900">
-              <div className="flex items-center gap-2">
+            {/* 菜单栏：Posts + 三标签（Posts / Top SubTags / Top AI Agents）+ 选中 Posts 时显示 New/Top */}
+            <div className="bg-white rounded-t-lg border-b border-gray-200 flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-gray-900">
+              <div className="flex items-center gap-1 flex-wrap">
                 <PostsIcon />
-                <span className="font-bold">Posts</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setSortBy('new')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    sortBy === 'new'
-                      ? 'bg-orange-500 text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  New
-                </button>
-                <button
-                  onClick={() => setSortBy('top')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    sortBy === 'top'
-                      ? 'bg-orange-500 text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>🔥</span>
-                  Top
-                </button>
-              </div>
-            </div>
-
-            {feedLoading && apiPosts.length === 0 && (
-              <div className="bg-white rounded-b-lg border border-t-0 border-gray-200">
-                <LoadingSpinner />
-              </div>
-            )}
-            {!feedLoading && feedError && apiPosts.length === 0 && (
-              <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 py-8 px-4">
-                <div className="text-center text-amber-600 text-sm mb-4">{feedError}</div>
-                <div className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => loadPosts(0)}
-                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg"
-                  >
-                    重试
-                  </button>
-                </div>
-              </div>
-            )}
-            {!feedLoading && !feedError && apiPosts.length === 0 && (
-              <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 py-16 text-center text-gray-500 text-sm">
-                暂无帖子
-              </div>
-            )}
-            {apiPosts.length > 0 && (
-              <div className="space-y-4">
-                {sortedPosts.map((post) => (
-                  <React.Fragment key={post.id}>
-                    <PostCard post={post} toUsd={toUsd} />
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
-
-            {/* Load more */}
-            {hasMore && apiPosts.length > 0 && (
-              <div ref={loadMoreRef} className="flex justify-center py-6">
                 <button
                   type="button"
-                  onClick={loadMore}
-                  disabled={loadingMore || feedLoading}
-                  className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  onClick={() => setMobileTab('posts')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    mobileTab === 'posts'
+                      ? 'bg-orange-500 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
                 >
-                  {loadingMore ? '加载中...' : '加载更多'}
+                  Posts
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileTab('subtags')}
+                  className={`lg:hidden px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    mobileTab === 'subtags'
+                      ? 'bg-orange-500 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  Top SubTags
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileTab('agents')}
+                  className={`lg:hidden px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    mobileTab === 'agents'
+                      ? 'bg-orange-500 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  Top AI Agents
                 </button>
               </div>
+              {mobileTab === 'posts' && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSortBy('new')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      sortBy === 'new'
+                        ? 'bg-orange-500 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    New
+                  </button>
+                  <button
+                    onClick={() => setSortBy('top')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      sortBy === 'top'
+                        ? 'bg-orange-500 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span>🔥</span>
+                    Top
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Posts：桌面端始终显示；移动端仅在「Posts」标签下显示 */}
+            <div className={`space-y-4 ${mobileTab === 'posts' ? 'block' : 'hidden'} lg:block`}>
+              {feedLoading && apiPosts.length === 0 && (
+                <div className="bg-white rounded-b-lg border border-t-0 border-gray-200">
+                  <LoadingSpinner />
+                </div>
+              )}
+              {!feedLoading && feedError && apiPosts.length === 0 && (
+                <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 py-8 px-4">
+                  <div className="text-center text-amber-600 text-sm mb-4">{feedError}</div>
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => loadPosts(0)}
+                      className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg"
+                    >
+                      重试
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!feedLoading && !feedError && apiPosts.length === 0 && (
+                <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 py-16 text-center text-gray-500 text-sm">
+                  暂无帖子
+                </div>
+              )}
+              {apiPosts.length > 0 && (
+                <div className="space-y-4">
+                  {sortedPosts.map((post) => (
+                    <React.Fragment key={post.id}>
+                      <PostCard post={post} toUsd={toUsd} />
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+
+              {hasMore && apiPosts.length > 0 && (
+                <div ref={loadMoreRef} className="flex justify-center py-6">
+                  <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={loadingMore || feedLoading}
+                    className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loadingMore ? '加载中...' : '加载更多'}
+                  </button>
+                </div>
+              )}
+              {!hasMore && apiPosts.length > 0 && (
+                <div className="py-6 text-center text-gray-400 text-sm">
+                  — 已加载全部 {apiPosts.length} 条内容 —
+                </div>
+              )}
+            </div>
+
+            {mobileTab === 'subtags' && (
+              <div className="lg:hidden bg-white rounded-b-lg border border-t-0 border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-gray-900">SubTags</h3>
+                  <Link to="/communities" className="text-xs text-orange-500 font-medium hover:underline">
+                    全部
+                  </Link>
+                </div>
+                {allCommunitiesLoading && allCommunities.length === 0 && (
+                  <div className="text-gray-500 text-sm py-4">加载中...</div>
+                )}
+                {!allCommunitiesLoading && allCommunities.length === 0 && (
+                  <div className="text-gray-500 text-sm py-4">暂无 SubTag</div>
+                )}
+                {allCommunities.length > 0 && (
+                  <>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                      <span>SubTag</span>
+                      <span className="text-right">agents</span>
+                      <span className="text-right">Mkt.Cap</span>
+                    </div>
+                    <div className="space-y-1">
+                      {sortedAllCommunitiesForMobile.map((community) => {
+                        const initial = community.slug?.charAt(0)?.toUpperCase() ?? '?';
+                        return (
+                          <div
+                            key={community.id}
+                            className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-1.5"
+                          >
+                            <Link
+                              to={`/communities/${encodeURIComponent(community.slug)}`}
+                              className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
+                            >
+                              {community.logo ? (
+                                <img
+                                  src={community.logo}
+                                  alt={community.subtitle}
+                                  className="w-8 h-8 rounded-full object-cover shrink-0"
+                                />
+                              ) : (
+                                <span
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 ${
+                                    community.iconColor === 'orange' ? 'bg-orange-500' : 'bg-teal-500'
+                                  }`}
+                                >
+                                  {initial}
+                                </span>
+                              )}
+                              <span className="font-medium text-orange-500 truncate">
+                                {community.slug
+                                  ? (community.slug.startsWith('t/') ? community.slug : `t/${community.slug}`)
+                                  : community.subtitle}
+                              </span>
+                            </Link>
+                            <span className="text-sm text-gray-700 font-medium text-right">
+                              {(activeAgentCounts[community.slug] ?? 0).toLocaleString()}
+                            </span>
+                            <span className="text-sm text-gray-700 font-medium text-right">
+                              {community.marketCap != null
+                                ? (() => {
+                                    let normalized = (community.marketCap ?? 0) / 1_000_000;
+                                    const slug = community.slug || community.subtitle || '';
+                                    if (slug.includes('币安小说')) {
+                                      normalized = normalized / 1_000;
+                                    }
+                                    const million = normalized / 1_000_000;
+                                    if (million < 0.1) {
+                                      return `$${normalized.toLocaleString()}`;
+                                    }
+                                    return `$${million.toLocaleString(undefined, {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })} M`;
+                                  })()
+                                : '—'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {allCommunitiesHasMore && (
+                      <div ref={loadMoreSubtagsRef} className="flex justify-center py-4">
+                        <button
+                          type="button"
+                          onClick={loadMoreSubtags}
+                          disabled={allCommunitiesLoading}
+                          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg disabled:opacity-50"
+                        >
+                          {allCommunitiesLoading ? '加载中...' : '加载更多'}
+                        </button>
+                      </div>
+                    )}
+                    {!allCommunitiesHasMore && allCommunities.length > 0 && (
+                      <div className="py-3 text-center text-gray-400 text-xs">
+                        已加载全部 {allCommunities.length} 个 SubTag
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             )}
-            {!hasMore && apiPosts.length > 0 && (
-              <div className="py-6 text-center text-gray-400 text-sm">
-                — 已加载全部 {apiPosts.length} 条内容 —
+
+            {mobileTab === 'agents' && (
+              <div className="lg:hidden bg-white rounded-b-lg border border-t-0 border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-gray-900">AI Agents</h3>
+                  <Link to="/ai-agents" className="text-xs text-orange-500 font-medium hover:underline">
+                    全部
+                  </Link>
+                </div>
+                {allAgentsLoading && allAgents.length === 0 && (
+                  <div className="text-gray-500 text-sm py-4">加载中...</div>
+                )}
+                {!allAgentsLoading && allAgents.length === 0 && (
+                  <div className="text-gray-500 text-sm py-4">暂无 Agent</div>
+                )}
+                {allAgents.length > 0 && (
+                  <>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                      <span>Agent</span>
+                      <span className="text-right">rewards</span>
+                      <span className="text-right">claws</span>
+                    </div>
+                    <div className="space-y-1">
+                      {sortedAllAgentsForMobile.map((agent) => (
+                        <div
+                          key={agent.id}
+                          className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-1.5"
+                        >
+                          <Link
+                            to={`/agent/${agent.id}`}
+                            className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
+                          >
+                            {agent.avatar ? (
+                              <img
+                                src={agent.avatar}
+                                alt={agent.name}
+                                className="w-10 h-10 rounded-full bg-gray-200 shrink-0 object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0 ${agent.avatar ? 'hidden' : ''}`}
+                            >
+                              {agent.initial}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-medium text-orange-500 truncate">{agent.name}</div>
+                              <div className="text-sm text-gray-500 truncate">{agent.handle}</div>
+                            </div>
+                          </Link>
+                          <div className="text-right shrink-0 text-xs">
+                            <div className="text-gray-700 font-medium text-sm">
+                              {agent.totalRewards != null
+                                ? `$${agent.totalRewards.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}`
+                                : '—'}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0 text-xs">
+                            <div className="text-gray-700 font-medium text-sm">
+                              {agent.totalClaws != null
+                                ? agent.totalClaws.toLocaleString()
+                                : '—'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {allAgentsHasMore && (
+                      <div ref={loadMoreAgentsRef} className="flex justify-center py-4">
+                        <button
+                          type="button"
+                          onClick={loadMoreAgents}
+                          disabled={allAgentsLoading}
+                          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm rounded-lg disabled:opacity-50"
+                        >
+                          {allAgentsLoading ? '加载中...' : '加载更多'}
+                        </button>
+                      </div>
+                    )}
+                    {!allAgentsHasMore && allAgents.length > 0 && (
+                      <div className="py-3 text-center text-gray-400 text-xs">
+                        已加载全部 {allAgents.length} 个 Agent
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -440,8 +1070,8 @@ const SocialFeed = () => {
             {/* Top SubTags：社区列表按市值前 5（与 /communities 同源） */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900">Top SubTags</h3>
-                <Link to="/communities" className="text-orange-500 font-medium hover:underline">
+                <h3 className="text-sm font-bold text-gray-900">Top SubTags</h3>
+                <Link to="/communities" className="text-xs text-orange-500 font-medium hover:underline">
                   Show more
                 </Link>
               </div>
@@ -449,13 +1079,23 @@ const SocialFeed = () => {
                 {topCommunities.length === 0 && (
                   <div className="text-gray-500 text-sm py-2">加载中...</div>
                 )}
-                {topCommunities.map((community) => {
+                {topCommunities.length > 0 && (
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                    <span>SubTag</span>
+                    <span className="text-right">agents</span>
+                    <span className="text-right">Mkt.Cap</span>
+                  </div>
+                )}
+                {sortedTopCommunities.map((community) => {
                   const initial = community.slug?.charAt(0)?.toUpperCase() ?? '?';
                   return (
-                    <div key={community.id} className="flex items-center justify-between">
+                    <div
+                      key={community.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
+                    >
                       <Link
                         to={`/communities/${encodeURIComponent(community.slug)}`}
-                        className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
+                        className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
                       >
                         {community.logo ? (
                           <img
@@ -478,9 +1118,31 @@ const SocialFeed = () => {
                             : community.subtitle}
                         </span>
                       </Link>
-                      <span className="text-gray-700 font-medium shrink-0 ml-2">
+                      <span className="text-sm text-gray-700 font-medium text-right">
+                        {(activeAgentCounts[community.slug] ?? 0).toLocaleString()}
+                      </span>
+                      <span className="text-sm text-gray-700 font-medium text-right">
                         {community.marketCap != null
-                          ? `$${community.marketCap.toLocaleString()}`
+                          ? (() => {
+                              // 后端给到的 marketCap 需要先除以 1,000,000 才是实际市值
+                              let normalized = (community.marketCap ?? 0) / 1_000_000;
+
+                              // 针对「币安小说」的特殊修正：数值需要再除以 1,000
+                              const slug = community.slug || community.subtitle || '';
+                              if (slug.includes('币安小说')) {
+                                normalized = normalized / 1_000;
+                              }
+
+                              const million = normalized / 1_000_000; // 换算为 Million 单位
+                              if (million < 0.1) {
+                                // 很小的值直接展示实际数值
+                                return `$${normalized.toLocaleString()}`;
+                              }
+                              return `$${million.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })} M`;
+                            })()
                           : '—'}
                       </span>
                     </div>
@@ -492,8 +1154,8 @@ const SocialFeed = () => {
             {/* Top AI Agents：按点赞活跃度取前 12，/tagclaw/agents/top */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900">Top AI Agents</h3>
-                <Link to="/ai-agents" className="text-orange-500 font-medium hover:underline">
+                <h3 className="text-sm font-bold text-gray-900">Top AI Agents</h3>
+                <Link to="/ai-agents" className="text-xs text-orange-500 font-medium hover:underline">
                   Show more
                 </Link>
               </div>
@@ -501,11 +1163,21 @@ const SocialFeed = () => {
                 {topAgentsList.length === 0 && (
                   <div className="text-gray-500 text-sm py-2">加载中...</div>
                 )}
+                {topAgentsList.length > 0 && (
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                    <span>Agent</span>
+                    <span className="text-right">rewards ($)</span>
+                    <span className="text-right">claws</span>
+                  </div>
+                )}
                 {topAgentsList.map((agent) => (
-                  <div key={agent.id} className="flex items-center justify-between">
+                  <div
+                    key={agent.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
+                  >
                     <Link
                       to={`/agent/${agent.id}`}
-                      className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-90 transition-opacity"
+                      className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
                     >
                       {agent.avatar ? (
                         <img
@@ -528,14 +1200,22 @@ const SocialFeed = () => {
                         <div className="text-sm text-gray-500 truncate">{agent.handle}</div>
                       </div>
                     </Link>
-                    <div className="text-right shrink-0 ml-2">
-                      <div className="text-gray-700 font-medium flex items-center gap-1">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-orange-500 shrink-0">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
-                        {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
+                    <div className="text-right shrink-0 text-xs">
+                      <div className="text-gray-700 font-medium text-sm">
+                        {agent.totalRewards != null
+                          ? agent.totalRewards.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          : '—'}
                       </div>
-                      <div className="text-xs text-gray-400">claws</div>
+                    </div>
+                    <div className="text-right shrink-0 text-xs">
+                      <div className="text-gray-700 font-medium text-sm">
+                        {agent.totalClaws != null
+                          ? agent.totalClaws.toLocaleString()
+                          : '—'}
+                      </div>
                     </div>
                   </div>
                 ))}
