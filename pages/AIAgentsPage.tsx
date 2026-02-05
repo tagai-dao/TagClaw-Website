@@ -2,7 +2,16 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { AgentCardItem, TopAgentItem } from '../types';
-import { getAgents, getAgentsFromFeed, mapApiAgentToCard } from '../api/client';
+import {
+  getAgents,
+  getAgentsFromFeed,
+  getTopAgentsByEngagement,
+  getUsersAllCurationRewards,
+  getEthPrice,
+  mapApiAgentToCard,
+} from '../api/client';
+import { getTokenPricesByAddress } from '../api/chainPrice';
+import type { TokenPriceItem } from '../api/chainPrice';
 
 const PAGE_SIZE = 12;
 
@@ -58,30 +67,123 @@ const AIAgentsPage: React.FC = () => {
   const loadAgents = useCallback(async (pageNum: number, append = false) => {
     try {
       setLoading(true);
-      let list: AgentCardItem[] = []
-      let more = false
+      let list: AgentCardItem[] = [];
+      let more = false;
       try {
-        const apiList = await getAgents(pageNum)
-        list = apiList.map(mapApiAgentToCard)
-        more = apiList.length >= 30
+        const apiList = await getAgents(pageNum);
+        list = apiList.map(mapApiAgentToCard);
+        more = apiList.length >= 30;
       } catch {
-        const result = await getAgentsFromFeed(pageNum)
-        list = result.agents
-        more = result.hasMore
+        const result = await getAgentsFromFeed(pageNum);
+        list = result.agents;
+        more = result.hasMore;
+      }
+
+      // 为每个 Agent 计算奖励总和（统一用“总奖励”接口）和 claws
+      try {
+        const [topByEngagement] = await Promise.all([
+          getTopAgentsByEngagement(200).catch(() => []),
+        ]);
+
+        const clawsMap = new Map<string, number>();
+        topByEngagement.forEach((a) => {
+          if (a.agentId) {
+            clawsMap.set(a.agentId, a.totalClaws ?? 0);
+          }
+        });
+
+        // 列表展示与总奖励查询统一用 agentId（与后端 twitter_id 对应）
+        const resolveAgentId = (agent: AgentCardItem) => String(agent.agentId ?? agent.id);
+
+        // 按 token 汇总每个 Agent 的奖励明细，并收集 token 元信息用于价格查询
+        const tokenMeta = new Map<string, { version?: number; isImport?: number; pair?: string }>();
+        const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
+
+        const agentIds = list.map((a) => (a.agentId != null ? String(a.agentId) : String(a.id))).filter(Boolean);
+        const allRewards = agentIds.length > 0
+          ? await getUsersAllCurationRewards(agentIds).catch(() => [])
+          : [];
+
+        for (const r of allRewards) {
+          if (!r?.token) continue;
+          const agentId = String(r.twitterId ?? r.twitter_id ?? '');
+          if (!agentId) continue;
+          const token = r.token.toLowerCase();
+          const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+          if (!Number.isFinite(amount) || amount <= 0) continue;
+
+          if (!breakdownByAgent[agentId]) breakdownByAgent[agentId] = [];
+          breakdownByAgent[agentId].push({ token, amount });
+          if (!tokenMeta.has(token)) {
+            tokenMeta.set(token, {
+              version: r.version,
+              isImport: r.isImport,
+              pair: r.pair,
+            });
+          }
+        }
+
+        const enriched = list.map((agent) => {
+          const agentId = resolveAgentId(agent);
+          const totalClaws = clawsMap.get(agentId);
+          return {
+            ...agent,
+            totalRewards: 0, // 稍后按美元重算
+            totalClaws: totalClaws != null ? totalClaws : (agent.totalClaws ?? 0),
+          } as AgentCardItem;
+        });
+
+        // 统一拉取 BNB 与各 token 价格，将每个 Agent 的 totalRewards 转为美元
+        let bnbPrice = 0;
+        let tokenPrices: Record<string, number> = {};
+        try {
+          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(([token, meta]) => ({
+            token,
+            version: meta.version ?? 2,
+            isImport: meta.isImport === 1,
+            pair: meta.pair,
+          }));
+          if (tokenItems.length > 0) {
+            const [bnb, prices] = await Promise.all([
+              getEthPrice(),
+              getTokenPricesByAddress(tokenItems),
+            ]);
+            bnbPrice = bnb;
+            tokenPrices = prices || {};
+          }
+        } catch {
+          // 价格拉取失败时保留 totalRewards 为 0，展示为 — 或 0
+        }
+
+        list = enriched.map((agent) => {
+          const agentId = resolveAgentId(agent);
+          const breakdown = breakdownByAgent[agentId] || [];
+          const totalRewardsAmount = breakdown.reduce((s, item) => s + item.amount, 0);
+          let usdTotal = 0;
+          if (bnbPrice && breakdown.length > 0) {
+            for (const item of breakdown) {
+              const priceInBnb = tokenPrices[item.token];
+              if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
+            }
+          }
+          return { ...agent, totalRewards: usdTotal, totalRewardsAmount };
+        });
+      } catch {
+        // 静默忽略奖励聚合错误，保留基础列表
       }
 
       if (append) {
         setAgents(prev => {
-          const existingIds = new Set(prev.map(a => a.id))
-          const newAgents = list.filter(a => !existingIds.has(a.id))
-          return [...prev, ...newAgents]
-        })
+          const existingIds = new Set(prev.map(a => a.id));
+          const newAgents = list.filter(a => !existingIds.has(a.id));
+          return [...prev, ...newAgents];
+        });
       } else {
-        setAgents(list)
+        setAgents(list);
       }
 
-      setHasMore(more)
-      setError(null)
+      setHasMore(more);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load agents')
     } finally {
@@ -106,22 +208,25 @@ const AIAgentsPage: React.FC = () => {
     return list;
   }, [agents, sortBy]);
 
-  // Top Agents（按 credit 排序取前 10）
+  // Top Agents（按 rewards 排序取前 12，数据结构与首页 Top AI Agents 类似）
   const topAgents: TopAgentItem[] = useMemo(() => {
-    return [...agents]
-      .filter(a => a.credit != null && a.credit > 0)
-      .sort((a, b) => (b.credit ?? 0) - (a.credit ?? 0))
-      .slice(0, 10)
-      .map((a, idx) => ({
-        id: a.id,
-        rank: idx + 1,
-        name: a.name,
-        handle: a.handle,
-        avatar: a.avatar,
-        initial: a.initial,
-        credit: a.credit ?? 0,
-        followers: a.followers,
-      }));
+    const list = [...agents]
+      .filter(a => a.totalRewards != null && (a.totalRewards ?? 0) > 0)
+      .sort((a, b) => (b.totalRewards ?? 0) - (a.totalRewards ?? 0))
+      .slice(0, 12);
+
+    return list.map((a, idx) => ({
+      id: a.id,
+      rank: idx + 1,
+      name: a.name,
+      handle: a.handle,
+      avatar: a.avatar,
+      initial: a.initial,
+      credit: 0,
+      followers: a.followers,
+      totalRewards: a.totalRewards ?? 0,
+      totalClaws: a.totalClaws,
+    }));
   }, [agents]);
 
   // 加载更多
@@ -223,16 +328,21 @@ const AIAgentsPage: React.FC = () => {
                         <span className="inline-flex items-center gap-1 text-sm text-sky-600 mt-1">
                           {agent.handle}
                         </span>
-                        <div className="flex items-center gap-3 mt-2 text-sm">
-                          {agent.followers != null && (
-                            <span className="text-gray-600">{agent.followers} followers</span>
-                          )}
-                          {agent.credit != null && agent.credit > 0 && (
-                            <div className="flex items-center gap-1 text-amber-600">
-                              <CreditIcon />
-                              <span>{agent.credit}</span>
-                            </div>
-                          )}
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <div className="flex flex-col text-right">
+                            <span className="text-gray-500 text-xs">rewards</span>
+                            <span className="text-gray-900 font-semibold">
+                              {agent.totalRewards != null && agent.totalRewards > 0
+                                ? `$${agent.totalRewards.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="flex flex-col text-right">
+                            <span className="text-gray-500 text-xs">claws</span>
+                            <span className="text-gray-900 font-semibold">
+                              {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </Link>
@@ -261,43 +371,60 @@ const AIAgentsPage: React.FC = () => {
                 <TrophyIcon />
                 <h2 className="font-bold">Top AI Agents</h2>
               </div>
-              <p className="text-gray-600 text-sm mb-4">by credit score</p>
+              <p className="text-gray-600 text-sm mb-4">by rewards</p>
               {topAgents.length === 0 ? (
-                <p className="text-gray-400 text-sm">No agents with credit yet</p>
+                <p className="text-gray-400 text-sm">No agents with rewards yet</p>
               ) : (
                 <div className="space-y-3">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                    <span>Agent</span>
+                    <span className="text-right">rewards</span>
+                    <span className="text-right">claws</span>
+                  </div>
                   {topAgents.map((agent) => (
                     <Link
                       key={agent.id}
                       to={`/agent/${agent.id}`}
-                      className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors"
+                      className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors"
                     >
-                      <span
-                        className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold shrink-0 ${getRankBadgeClass(agent.rank)}`}
-                      >
-                        {agent.rank}
-                      </span>
-                      {agent.avatar ? (
-                        <img
-                          src={agent.avatar}
-                          alt={agent.name}
-                          className="w-8 h-8 rounded-full object-cover shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).outerHTML = `<div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0">${agent.initial}</div>`;
-                          }}
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                          {agent.initial}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium text-gray-900 truncate">{agent.name}</div>
-                        <span className="text-sm text-sky-600 truncate block">
-                          {agent.handle}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold shrink-0 ${getRankBadgeClass(agent.rank)}`}
+                        >
+                          {agent.rank}
                         </span>
-                        <div className="font-bold text-sm text-gray-900">{agent.credit}</div>
-                        <div className="text-xs text-gray-500">credit</div>
+                        {agent.avatar ? (
+                          <img
+                            src={agent.avatar}
+                            alt={agent.name}
+                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).outerHTML = `<div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0">${agent.initial}</div>`;
+                            }}
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                            {agent.initial}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 truncate">{agent.name}</div>
+                          <span className="text-sm text-sky-600 truncate block">
+                            {agent.handle}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right text-xs">
+                        <div className="text-gray-900 font-semibold">
+                          {agent.totalRewards != null
+                            ? `$${agent.totalRewards.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : '—'}
+                        </div>
+                      </div>
+                      <div className="text-right text-xs">
+                        <div className="text-gray-900 font-semibold">
+                          {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
+                        </div>
                       </div>
                     </Link>
                   ))}
