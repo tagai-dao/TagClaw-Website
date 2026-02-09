@@ -7,8 +7,11 @@ import {
   getCommunitiesByTrending,
   getCommunitiesByMarketCap,
   mapApiCommunityToCard,
+  getEthPrice,
   ApiCommunity,
 } from '../api/client';
+import type { TokenPriceItem } from '../api/chainPrice';
+import { getTokenPricesAndSuppliesByAddress } from '../api/chainPrice';
 
 type SortType = 'new' | 'trending' | 'marketcap';
 
@@ -86,7 +89,7 @@ const CommunityCard = ({ community }: { community: CommunityCardItem }) => {
                 const slug = community.slug || community.subtitle || '';
                 if (slug.includes('币安小说')) normalized = normalized / 1_000;
                 const million = normalized / 1_000_000;
-                if (million < 0.1) return `$${normalized.toLocaleString()}`;
+                if (million < 1) return `$${normalized.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
                 return `$${million.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} M`;
               })()}
             </span>
@@ -210,6 +213,56 @@ const CommunitiesPage: React.FC = () => {
     setPage(0);
     loadCommunities(0, sortBy);
   }, [sortBy, loadCommunities]);
+
+  // 用链上代币价格和 totalSupply 补齐列表市值（与详情侧边计算方式一致）
+  useEffect(() => {
+    const needEnrich = communities.filter(
+      (c) =>
+        c.token &&
+        (c.marketCap == null || c.marketCap === 0)
+    );
+    if (needEnrich.length === 0) return;
+
+    const tokenItems: TokenPriceItem[] = needEnrich.map((c) => ({
+      token: c.token!,
+      version: c.dexVersion ?? 2,
+      isImport: c.isImport === true,
+      pair: c.pair,
+    }));
+
+    let cancelled = false;
+    Promise.all([
+      getEthPrice(),
+      getTokenPricesAndSuppliesByAddress(tokenItems),
+    ])
+      .then(([bnbPrice, { prices: tokenPrices, supplies: tokenSupplies }]) => {
+        if (cancelled || bnbPrice <= 0) return;
+        setCommunities((prev) =>
+          prev.map((c) => {
+            if (!c.token || (c.marketCap != null && c.marketCap > 0)) return c;
+            const priceInBnb = tokenPrices[c.token];
+            const supply = tokenSupplies[(c.token || '').toLowerCase()];
+            if (
+              priceInBnb == null ||
+              priceInBnb <= 0 ||
+              supply == null ||
+              supply <= 0
+            )
+              return c;
+            const marketCapUsd = priceInBnb * bnbPrice * supply;
+            // 与现有展示逻辑一致：cap/1e6 = marketCapUsd，展示时 million = marketCapUsd/1e6
+            const marketCap = Math.round(marketCapUsd * 1_000_000);
+            return { ...c, marketCap };
+          })
+        );
+      })
+      .catch(() => {
+        // 链上读取失败时保留原数据，不阻塞列表展示
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [communities]);
 
   // 加载更多
   const loadMore = useCallback(() => {

@@ -19,7 +19,7 @@ import {
 } from '../api/client';
 import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
-import { getTokenPricesByAddress } from '../api/chainPrice';
+import { getTokenPricesByAddress, getTokenPricesAndSuppliesByAddress } from '../api/chainPrice';
 
 type FeedSort = 'new' | 'top';
 
@@ -514,6 +514,60 @@ const SocialFeed = () => {
     return () => { cancelled = true; };
   }, []);
 
+  // 用链上价格与 totalSupply（一次 RPC 同时取）计算市值，补齐 topCommunities / allCommunities
+  useEffect(() => {
+    const combined = [...topCommunities, ...allCommunities];
+    const withToken = combined.filter((c) => c.token);
+    if (withToken.length === 0) return;
+
+    const seen = new Set<string>();
+    const tokenItems: TokenPriceItem[] = [];
+    for (const c of withToken) {
+      const key = (c.token || '').toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      tokenItems.push({
+        token: c.token!,
+        version: c.dexVersion ?? 2,
+        isImport: c.isImport === true,
+        pair: c.pair,
+      });
+    }
+    if (tokenItems.length === 0) return;
+
+    let cancelled = false;
+    Promise.all([getEthPrice(), getTokenPricesAndSuppliesByAddress(tokenItems)])
+      .then(([bnbPrice, { prices, supplies }]) => {
+        if (cancelled || bnbPrice <= 0) return;
+        const marketCapBySlug: Record<string, number> = {};
+        for (const c of withToken) {
+          const priceInBnb = prices[c.token!];
+          const supply = supplies[(c.token || '').toLowerCase()];
+          if (priceInBnb != null && priceInBnb > 0 && supply != null && supply > 0) {
+            const marketCapUsd = priceInBnb * bnbPrice * supply;
+            marketCapBySlug[c.slug] = Math.round(marketCapUsd * 1_000_000);
+          }
+        }
+        const apply = (list: CommunityCardItem[]) =>
+          list.map((c) => {
+            const cap = marketCapBySlug[c.slug];
+            if (cap == null) return c;
+            return { ...c, marketCap: cap };
+          });
+        setTopCommunities((prev) => apply(prev));
+        setAllCommunities((prev) => apply(prev));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    topCommunities.length,
+    allCommunities.length,
+    topCommunities.map((c) => c.slug).join(','),
+    allCommunities.map((c) => c.slug).join(','),
+  ]);
+
   // 统计每个 Top SubTag 下活跃的 Agent 数量（通过 /tagclaw/feed/:tick 计算唯一 twitterId 数）
   useEffect(() => {
     if (!topCommunities || topCommunities.length === 0) return;
@@ -934,8 +988,8 @@ const SocialFeed = () => {
                                       normalized = normalized / 1_000;
                                     }
                                     const million = normalized / 1_000_000;
-                                    if (million < 0.1) {
-                                      return `$${normalized.toLocaleString()}`;
+                                    if (million < 1) {
+                                      return `$${normalized.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
                                     }
                                     return `$${million.toLocaleString(undefined, {
                                       minimumFractionDigits: 2,
@@ -1124,19 +1178,14 @@ const SocialFeed = () => {
                       <span className="text-sm text-gray-700 font-medium text-right">
                         {community.marketCap != null
                           ? (() => {
-                              // 后端给到的 marketCap 需要先除以 1,000,000 才是实际市值
                               let normalized = (community.marketCap ?? 0) / 1_000_000;
-
-                              // 针对「币安小说」的特殊修正：数值需要再除以 1,000
                               const slug = community.slug || community.subtitle || '';
                               if (slug.includes('币安小说')) {
                                 normalized = normalized / 1_000;
                               }
-
-                              const million = normalized / 1_000_000; // 换算为 Million 单位
-                              if (million < 0.1) {
-                                // 很小的值直接展示实际数值
-                                return `$${normalized.toLocaleString()}`;
+                              const million = normalized / 1_000_000;
+                              if (million < 1) {
+                                return `$${normalized.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
                               }
                               return `$${million.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,

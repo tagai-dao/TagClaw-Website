@@ -25,6 +25,9 @@ const tokenAbi = parseAbi([
   'function bondingCurveSupply() view returns (uint256)',
   'function listed() view returns (bool)',
 ])
+const erc20Abi = parseAbi([
+  'function totalSupply() view returns (uint256)',
+])
 const pumpAbi = parseAbi([
   'function getPrice(uint256 supply, uint256 amount) view returns (uint256)',
 ])
@@ -87,13 +90,151 @@ export async function getTokenPricesByAddress(
   return result
 }
 
-async function fetchBondingCurvePrices(
+/** 一次 RPC 同时获取价格与供应量，避免多一次请求 */
+export interface TokenPricesAndSupplies {
+  prices: Record<string, number>
+  supplies: Record<string, number>
+}
+
+/**
+ * 一次链上请求同时获取多个 token 的价格（BNB/枚）与供应量（token 数量）
+ * - Bonding curve：第一轮 multicall 已有 supply，第二轮算价格，复用不增 RPC
+ * - Import：单次 multicall 内同时请求 getReserves、token0、totalSupply
+ */
+export async function getTokenPricesAndSuppliesByAddress(
+  items: TokenPriceItem[]
+): Promise<TokenPricesAndSupplies> {
+  const prices: Record<string, number> = {}
+  const supplies: Record<string, number> = {}
+
+  if (!items || items.length === 0) return { prices, supplies }
+
+  const bondingCurveItems: TokenPriceItem[] = []
+  const importItems: { token: Address; pair: Address }[] = []
+
+  for (const item of items) {
+    if (!item.token) continue
+    try {
+      const token = item.token as Address
+      if (item.isImport && item.pair) {
+        importItems.push({ token, pair: item.pair as Address })
+      } else if (!item.isImport && item.version >= 1 && item.version <= 6) {
+        bondingCurveItems.push(item)
+      }
+    } catch {
+      continue
+    }
+  }
+
+  if (bondingCurveItems.length > 0) {
+    const bc = await fetchBondingCurvePricesAndSupplies(bondingCurveItems)
+    Object.assign(prices, bc.prices)
+    Object.assign(supplies, bc.supplies)
+  }
+  if (importItems.length > 0) {
+    const imp = await fetchImportPricesAndSupplies(importItems)
+    Object.assign(prices, imp.prices)
+    Object.assign(supplies, imp.supplies)
+  }
+
+  return { prices, supplies }
+}
+
+/**
+ * 从链上读取代币供应量（totalSupply）
+ * - Bonding curve 代币：bondingCurveSupply()
+ * - Import 代币：ERC20 totalSupply()
+ * 返回：token 地址 -> 供应量（按 1e18 为 1 个 token 换算后的数量）
+ */
+export async function getTokenSuppliesByAddress(
   items: TokenPriceItem[]
 ): Promise<Record<string, number>> {
+  if (!items || items.length === 0) return {}
+
   const result: Record<string, number> = {}
+  const bcTokens: TokenPriceItem[] = []
+  const importTokens: { token: Address }[] = []
+
+  for (const item of items) {
+    if (!item.token) continue
+    try {
+      const token = item.token as Address
+      if (item.isImport) {
+        importTokens.push({ token })
+      } else if (!item.isImport && item.version >= 1 && item.version <= 6) {
+        bcTokens.push(item)
+      }
+    } catch {
+      continue
+    }
+  }
+
+  if (bcTokens.length > 0) {
+    const supplies = await fetchBondingCurveSupplies(bcTokens.map((i) => i.token as Address))
+    Object.assign(result, supplies)
+  }
+  if (importTokens.length > 0) {
+    const supplies = await fetchErc20TotalSupplies(importTokens.map((i) => i.token))
+    Object.assign(result, supplies)
+  }
+
+  return result
+}
+
+/** Bonding curve 代币供应量也用 totalSupply（与市值计算一致） */
+async function fetchBondingCurveSupplies(
+  tokenAddresses: Address[]
+): Promise<Record<string, number>> {
+  const result: Record<string, number> = {}
+  const calls = tokenAddresses.map((token) => ({
+    address: token,
+    abi: erc20Abi,
+    functionName: 'totalSupply' as const,
+  }))
+  // @ts-expect-error viem multicall 类型兼容
+  const res = await publicClient.multicall({
+    contracts: calls,
+    allowFailure: true,
+  })
+  res.forEach((r, i) => {
+    if (r?.status === 'success' && typeof r.result === 'bigint') {
+      const token = (tokenAddresses[i] as string).toLowerCase()
+      result[token] = Number(r.result) / 1e18
+    }
+  })
+  return result
+}
+
+async function fetchErc20TotalSupplies(tokenAddresses: Address[]): Promise<Record<string, number>> {
+  const result: Record<string, number> = {}
+  const calls = tokenAddresses.map((token) => ({
+    address: token,
+    abi: erc20Abi,
+    functionName: 'totalSupply' as const,
+  }))
+  // @ts-expect-error viem multicall 类型兼容
+  const res = await publicClient.multicall({
+    contracts: calls,
+    allowFailure: true,
+  })
+  res.forEach((r, i) => {
+    if (r?.status === 'success' && typeof r.result === 'bigint') {
+      const token = (tokenAddresses[i] as string).toLowerCase()
+      result[token] = Number(r.result) / 1e18
+    }
+  })
+  return result
+}
+
+/** Bonding curve：两轮 multicall，同时产出 price 与 supply（第一轮已有 supply） */
+async function fetchBondingCurvePricesAndSupplies(
+  items: TokenPriceItem[]
+): Promise<{ prices: Record<string, number>; supplies: Record<string, number> }> {
+  const prices: Record<string, number> = {}
+  const supplies: Record<string, number> = {}
   const tokenAddresses = items.map((i) => i.token as Address)
 
-  // 第一轮：bondingCurveSupply, listed, pair
+  // 第一轮：bondingCurveSupply（用于 getPrice）、listed、pair、totalSupply（用于市值）
   const calls1 = tokenAddresses.flatMap((token) => [
     {
       address: token,
@@ -111,6 +252,11 @@ async function fetchBondingCurvePrices(
       functionName: 'getPair' as const,
       args: [token, WETH],
     },
+    {
+      address: token,
+      abi: erc20Abi,
+      functionName: 'totalSupply' as const,
+    },
   ])
 
   // @ts-expect-error viem multicall 类型与可选 authorizationList 的兼容
@@ -119,19 +265,27 @@ async function fetchBondingCurvePrices(
     allowFailure: true,
   })
 
-  const infos: Record<string, { supply: bigint; listed: boolean; pair: Address | null }> = {}
+  const infos: Record<string, { supply: bigint; totalSupply: bigint; listed: boolean; pair: Address | null }> = {}
   let idx = 0
   for (const token of tokenAddresses) {
     const supplyRes = res1[idx++]
     const listedRes = res1[idx++]
     const pairRes = res1[idx++]
+    const totalSupplyRes = res1[idx++]
     const supply = supplyRes?.status === 'success' && typeof supplyRes.result === 'bigint' ? supplyRes.result : 0n
+    const totalSupply =
+      totalSupplyRes?.status === 'success' && typeof totalSupplyRes.result === 'bigint' ? totalSupplyRes.result : 0n
     const listed = listedRes?.status === 'success' && typeof listedRes.result === 'boolean' ? listedRes.result : false
     const pair =
       pairRes?.status === 'success' && pairRes.result && pairRes.result !== '0x0000000000000000000000000000000000000000'
         ? (pairRes.result as Address)
         : null
-    infos[token.toLowerCase()] = { supply, listed, pair }
+    infos[token.toLowerCase()] = { supply, totalSupply, listed, pair }
+  }
+  // 市值用 totalSupply（与 import 代币一致），getPrice 仍用 bondingCurveSupply
+  for (const item of items) {
+    const t = (item.token as string).toLowerCase()
+    if (infos[t]) supplies[t] = Number(infos[t].totalSupply) / 1e18
   }
 
   // 第二轮：getPrice（bonding curve）或 getReserves+token0（listed）
@@ -169,7 +323,7 @@ async function fetchBondingCurvePrices(
     }
   }
 
-  if (calls2.length === 0) return result
+  if (calls2.length === 0) return { prices, supplies }
 
   // @ts-expect-error viem multicall 类型兼容
   const res2 = await publicClient.multicall({
@@ -191,25 +345,35 @@ async function fetchBondingCurvePrices(
       const r1Val = Number(reserve1) / 1e18
       if (r0 <= 0) continue
       const price = token0 === token ? r1Val / r0 : r0 / r1Val
-      result[item.token] = price
+      prices[item.token] = price
     } else {
       const r = res2[startIdx]
       if (!r || r.status !== 'success') continue
       const price = Number(r.result) / 1e18
-      if (price > 0) result[item.token] = price
+      if (price > 0) prices[item.token] = price
     }
   }
 
-  return result
+  return { prices, supplies }
 }
 
-async function fetchImportPrices(
-  items: { token: Address; pair: Address }[]
+async function fetchBondingCurvePrices(
+  items: TokenPriceItem[]
 ): Promise<Record<string, number>> {
-  const result: Record<string, number> = {}
-  const calls = items.flatMap(({ pair }) => [
+  const { prices } = await fetchBondingCurvePricesAndSupplies(items)
+  return prices
+}
+
+/** Import：单次 multicall 内 getReserves、token0、totalSupply 一起取，一次 RPC 拿价格+供应量 */
+async function fetchImportPricesAndSupplies(
+  items: { token: Address; pair: Address }[]
+): Promise<{ prices: Record<string, number>; supplies: Record<string, number> }> {
+  const prices: Record<string, number> = {}
+  const supplies: Record<string, number> = {}
+  const calls = items.flatMap(({ token, pair }) => [
     { address: pair, abi: pairAbi, functionName: 'getReserves' as const },
     { address: pair, abi: pairAbi, functionName: 'token0' as const },
+    { address: token, abi: erc20Abi, functionName: 'totalSupply' as const },
   ])
 
   // @ts-expect-error viem multicall 类型兼容
@@ -222,6 +386,7 @@ async function fetchImportPrices(
   for (const { token } of items) {
     const r1 = res[idx++]
     const r2 = res[idx++]
+    const r3 = res[idx++]
     if (r1.status !== 'success' || r2.status !== 'success') continue
     const reserves = r1.result as [bigint, bigint, number]
     const [reserve0, reserve1] = reserves
@@ -230,8 +395,19 @@ async function fetchImportPrices(
     const r1Val = Number(reserve1) / 1e18
     if (r0 <= 0) continue
     const price = token0 === token.toLowerCase() ? r1Val / r0 : r0 / r1Val
-    result[token as string] = price
+    const key = (token as string).toLowerCase()
+    prices[token as string] = price
+    if (r3?.status === 'success' && typeof r3.result === 'bigint') {
+      supplies[key] = Number(r3.result) / 1e18
+    }
   }
 
-  return result
+  return { prices, supplies }
+}
+
+async function fetchImportPrices(
+  items: { token: Address; pair: Address }[]
+): Promise<Record<string, number>> {
+  const { prices } = await fetchImportPricesAndSupplies(items)
+  return prices
 }
