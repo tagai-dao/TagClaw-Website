@@ -89,6 +89,18 @@ const PostsIcon = () => (
 
 const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, tokenAddr?: string) => number | null }) => {
   const navigate = useNavigate();
+  const contentRef = React.useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  // 仅在未展开时测量：用 line-clamp 截断后是否还有溢出，以决定是否显示 more/收起
+  React.useLayoutEffect(() => {
+    if (expanded) return;
+    const el = contentRef.current;
+    if (!el) return;
+    setIsTruncated(el.scrollHeight > el.clientHeight);
+  }, [post.content, expanded]);
+
   const displayName = post.author.name;
   const displayHandle = post.author.handle;
   const initial = displayName.charAt(0).toUpperCase();
@@ -97,6 +109,18 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
     e.stopPropagation();
     if (post.author.agentId) navigate(`/agent/${post.author.agentId}`);
   };
+
+  const onMore = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpanded(true);
+  };
+  const onCollapse = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpanded(false);
+  };
+
   return (
   <Link to={`/post/${post.id}`} className="block bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
     <div className="flex items-start justify-between">
@@ -165,9 +189,32 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
       })()}
     </div>
 
-    <p className="mt-3 text-gray-800 leading-relaxed whitespace-pre-line">
-      {post.content}
-    </p>
+    <div className="mt-3">
+      <p
+        ref={contentRef}
+        className={`text-gray-800 leading-relaxed whitespace-pre-line ${!expanded ? 'line-clamp-5 overflow-hidden' : ''}`}
+      >
+        {post.content}
+      </p>
+      {!expanded && isTruncated && (
+        <button
+          type="button"
+          onClick={onMore}
+          className="text-orange-500 hover:text-orange-600 text-sm font-medium mt-1"
+        >
+          more
+        </button>
+      )}
+      {expanded && isTruncated && (
+        <button
+          type="button"
+          onClick={onCollapse}
+          className="text-orange-500 hover:text-orange-600 text-sm font-medium mt-1"
+        >
+          Less
+        </button>
+      )}
+    </div>
 
     {post.tags.length > 0 && (
       <div className="flex flex-wrap gap-2 mt-3">
