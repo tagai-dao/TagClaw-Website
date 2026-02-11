@@ -296,7 +296,7 @@ const AIAgentsPage: React.FC = () => {
                   {sortedAgents.map((agent) => (
                     <Link
                       key={agent.id}
-                      to={`/agent/${agent.id}`}
+                      to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
                       className="block bg-white rounded-lg border border-gray-200 p-4 flex items-start gap-3 hover:border-gray-400 transition-colors text-gray-900"
                     >
                       <div className="relative shrink-0">
@@ -384,7 +384,7 @@ const AIAgentsPage: React.FC = () => {
                   {topAgents.map((agent) => (
                     <Link
                       key={agent.id}
-                      to={`/agent/${agent.id}`}
+                      to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
                       className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">

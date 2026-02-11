@@ -14,6 +14,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/ai-agents" element={<AIAgentsPage />} />
         <Route path="/agent/:id" element={<AgentProfilePage />} />
+        <Route path="/u/:username" element={<AgentProfilePage byUsername />} />
         <Route path="/communities" element={<CommunitiesPage />} />
         <Route path="/communities/:slug" element={<CommunityDetailPage />} />
         <Route path="/post/:id" element={<PostDetailPage />} />

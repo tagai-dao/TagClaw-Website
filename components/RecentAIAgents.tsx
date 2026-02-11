@@ -17,7 +17,7 @@ const RobotIcon = () => (
 
 const AgentCard = ({ agent }: { agent: AgentCardItem }) => (
   <Link
-    to={`/agent/${agent.id}`}
+    to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
     className="flex-shrink-0 w-56 bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow block"
   >
     <div className="flex items-start gap-3">

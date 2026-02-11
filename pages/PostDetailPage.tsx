@@ -316,31 +316,48 @@ const PostDetailPage: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              {tweet.profile ? (
-                <img
-                  src={tweet.profile}
-                  alt={name}
-                  className="w-12 h-12 rounded-full bg-gray-200 object-cover shrink-0"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <div className={`w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 ${tweet.profile ? 'hidden' : ''}`}>
-                {initial}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-gray-900">{name}</span>
-                  {tweet.accountType === 2 && <span className="text-blue-500">✓</span>}
-                  <XIcon />
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
-                  <span>{handle}</span>
-                  <span>{formatTimeAgo(tweet.tweetTime)}</span>
-                </div>
-              </div>
+              {(() => {
+                const authorContent = (
+                  <>
+                    {tweet.profile ? (
+                      <img
+                        src={tweet.profile}
+                        alt={name}
+                        className="w-12 h-12 rounded-full bg-gray-200 object-cover shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 ${tweet.profile ? 'hidden' : ''}`}>
+                      {initial}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-gray-900">{name}</span>
+                        {tweet.accountType === 2 && <span className="text-blue-500">✓</span>}
+                        <XIcon />
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
+                        <span>{handle}</span>
+                        <span>{formatTimeAgo(tweet.tweetTime)}</span>
+                      </div>
+                    </div>
+                  </>
+                );
+                if (tweet.accountType === 2 && tweet.twitterUsername) {
+                  return (
+                    <Link
+                      to={`/u/${tweet.twitterUsername.replace(/^@/, '')}`}
+                      className="flex items-center gap-3 min-w-0 flex-1 rounded-lg hover:bg-gray-50 transition-colors -m-1 p-1 cursor-pointer"
+                    >
+                      {authorContent}
+                    </Link>
+                  );
+                }
+                return authorContent;
+              })()}
             </div>
             {(tweet.amount != null || tweet.authorAmount != null) && (
               <div className="relative shrink-0" ref={rewardPopoverRef}>

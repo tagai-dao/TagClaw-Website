@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { SocialPost } from '../types';
 import {
   getAgentProfile,
+  getAgentProfileByUsername,
   getAgentProfileFeed,
   mapApiTweetToSocialPost,
   getUserCurationRewards,
@@ -40,8 +41,15 @@ const XIcon = () => (
   </svg>
 );
 
-const AgentProfilePage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) => {
+  const { id: idParam, username: usernameParam } = useParams<{ id?: string; username?: string }>();
+  const id = idParam;
+  const username = usernameParam;
+  const navigate = useNavigate();
+  /** /u/:username 时先解析 username -> agentId */
+  const [resolvedAgentId, setResolvedAgentId] = useState<string | null>(null);
+  const effectiveId = byUsername ? (resolvedAgentId ?? undefined) : id;
+
   const [mainTab, setMainTab] = useState<'tweet' | 'prediction' | 'tagcoins'>('tweet');
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
@@ -159,13 +167,39 @@ const AgentProfilePage: React.FC = () => {
     [unclaimableRewards, toUsd]
   );
 
+  // /u/:username 时先通过 username 解析出 agentId
+  useEffect(() => {
+    if (!byUsername || !username) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    getAgentProfileByUsername(username)
+      .then((agent) => {
+        if (cancelled) return;
+        if (agent?.agentId) {
+          setResolvedAgentId(agent.agentId);
+        } else {
+          setError('Agent not found');
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load agent');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [byUsername, username]);
+
   const loadAgentData = useCallback(async (pageNum: number, append = false) => {
-    if (!id) return;
+    if (!effectiveId) return;
 
     try {
       setLoading(true);
       if (!append) {
-        const agent = await getAgentProfile(id);
+        const agent = await getAgentProfile(effectiveId);
         if (agent) {
           setAgentInfo({
             id: agent.agentId,
@@ -184,7 +218,7 @@ const AgentProfilePage: React.FC = () => {
         }
       }
 
-      const feed = await getAgentProfileFeed(id, pageNum);
+      const feed = await getAgentProfileFeed(effectiveId, pageNum);
       const agentPosts = (feed.tweets || []).map(mapApiTweetToSocialPost);
 
       if (append) {
@@ -204,7 +238,7 @@ const AgentProfilePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [effectiveId]);
 
   // 初始加载
   useEffect(() => {
@@ -213,11 +247,11 @@ const AgentProfilePage: React.FC = () => {
 
   // 加载奖励明细（按 twitterId/agentId）
   useEffect(() => {
-    if (!id) return;
+    if (!effectiveId) return;
     let cancelled = false;
     setRewardsLoading(true);
     setRewardsError(null);
-    getUserCurationRewards(id)
+    getUserCurationRewards(effectiveId)
       .then((list) => {
         if (cancelled) return;
         setRewards(list);
@@ -232,15 +266,15 @@ const AgentProfilePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [effectiveId]);
 
   // 加载不可领取奖励明细（按 twitterId/agentId）
   useEffect(() => {
-    if (!id) return;
+    if (!effectiveId) return;
     let cancelled = false;
     setUnclaimableLoading(true);
     setUnclaimableError(null);
-    getUserUnclaimableCurationRewards(id)
+    getUserUnclaimableCurationRewards(effectiveId)
       .then((list) => {
         if (cancelled) return;
         setUnclaimableRewards(list);
@@ -255,7 +289,7 @@ const AgentProfilePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [effectiveId]);
 
   // 加载更多
   const loadMorePosts = useCallback(() => {
@@ -280,13 +314,46 @@ const AgentProfilePage: React.FC = () => {
     return () => observer.disconnect();
   }, [hasMore, loading, loadMorePosts]);
 
-  if (!id) {
+  if (!byUsername && !id) {
     return (
       <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
           <p className="text-white">Agent ID not provided.</p>
           <Link to="/" className="text-teal-400 hover:underline mt-4 inline-block">Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
+  if (byUsername && !username) {
+    return (
+      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+        <Navbar />
+        <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
+          <p className="text-white">Username not provided.</p>
+          <Link to="/" className="text-teal-400 hover:underline mt-4 inline-block">Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
+  if (byUsername && username && resolvedAgentId == null && !error) {
+    return (
+      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+        <Navbar />
+        <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
+          <p className="text-white/70">Loading agent profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // effectiveId 已有但 agentInfo 未加载完时也显示 loading，避免闪空内容（尤其是 /u/username 解析后等 loadAgentData 触发的间隙）
+  if (effectiveId && !agentInfo && !error) {
+    return (
+      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+        <Navbar />
+        <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
+          <p className="text-white/70">Loading agent profile...</p>
         </div>
       </div>
     );
@@ -318,7 +385,7 @@ const AgentProfilePage: React.FC = () => {
   }
 
   // 使用从推文中获取的信息，或显示默认值
-  const displayName = agentInfo?.name || `Agent ${id.slice(0, 8)}...`;
+  const displayName = agentInfo?.name || (effectiveId ? `Agent ${effectiveId.slice(0, 8)}...` : 'Agent');
   const handle = agentInfo?.handle || '';
   const initial = agentInfo?.initial || 'A';
   const avatar = agentInfo?.avatar;
@@ -467,7 +534,16 @@ const AgentProfilePage: React.FC = () => {
               posts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors shadow-sm"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate(`/post/${post.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/post/${post.id}`);
+                    }
+                  }}
+                  className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors shadow-sm cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex gap-3 min-w-0 flex-1">
@@ -503,6 +579,7 @@ const AgentProfilePage: React.FC = () => {
                           <Link
                             to={`/communities/${encodeURIComponent(post.tick)}`}
                             className="inline-block mt-2 text-sky-600 text-sm hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             ${post.tick}
                           </Link>

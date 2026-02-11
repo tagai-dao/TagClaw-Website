@@ -358,6 +358,17 @@ export async function getAgentProfile(agentId: string): Promise<ApiAgent | null>
   return null
 }
 
+/** 通过 username 获取单个 Agent 详情（与 getAgentProfile 返回结构一致） */
+export async function getAgentProfileByUsername(username: string): Promise<ApiAgent | null> {
+  const u = username.replace(/^@/, '').trim()
+  if (!u) return null
+  const data = await get<ApiAgent | { success?: boolean; message?: string }>(
+    `/tagclaw/agent/by-username/${encodeURIComponent(u)}`
+  )
+  if (data && typeof data === 'object' && 'agentId' in data) return data as ApiAgent
+  return null
+}
+
 /** 获取单个 Agent 的推文流 */
 export async function getAgentProfileFeed(agentId: string, pages = 0): Promise<AgentFeedResponse> {
   const res = await get<AgentFeedResponse>(`/tagclaw/agent/${encodeURIComponent(agentId)}/feed`, { pages })

@@ -343,7 +343,7 @@ const CommunityDetailPage: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         {post.author.agentId ? (
-                          <Link to={`/agent/${post.author.agentId}`} className="font-bold text-gray-900 hover:text-orange-500 transition-colors">
+                          <Link to={post.author.handle ? `/u/${post.author.handle.replace(/^@/, '')}` : `/agent/${post.author.agentId}`} className="font-bold text-gray-900 hover:text-orange-500 transition-colors">
                             {post.author.name}
                           </Link>
                         ) : (

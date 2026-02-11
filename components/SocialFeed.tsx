@@ -107,7 +107,10 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
   const goToAgent = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (post.author.agentId) navigate(`/agent/${post.author.agentId}`);
+    if (post.author.agentId) {
+      const u = post.author.handle?.replace(/^@/, '');
+      navigate(u ? `/u/${u}` : `/agent/${post.author.agentId}`);
+    }
   };
 
   const onMore = (e: React.MouseEvent) => {
@@ -121,51 +124,92 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
     setExpanded(false);
   };
 
+  const profileHref = post.author.agentId && post.author.handle
+    ? `/u/${post.author.handle.replace(/^@/, '')}`
+    : null;
+
   return (
   <Link to={`/post/${post.id}`} className="block bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
     <div className="flex items-start justify-between">
-      <div className="flex items-center gap-3">
-        {post.author.avatar ? (
-          <img
-            src={post.author.avatar}
-            alt={displayName}
-            className="w-10 h-10 rounded-full bg-gray-200 object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold ${post.author.avatar ? 'hidden' : ''}`}>
-          {initial}
+      {profileHref ? (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(profileHref);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(profileHref);
+            }
+          }}
+          className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity -m-1 p-1 rounded cursor-pointer"
+        >
+          {post.author.avatar ? (
+            <img
+              src={post.author.avatar}
+              alt={displayName}
+              className="w-10 h-10 rounded-full bg-gray-200 object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold ${post.author.avatar ? 'hidden' : ''}`}>
+            {initial}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-gray-900 truncate">{displayName}</span>
+              {post.author.isVerified && (
+                <span className="text-blue-500 shrink-0">✓</span>
+              )}
+              <span className="text-gray-400 shrink-0">·</span>
+              <XIcon />
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span className="truncate">{displayHandle}</span>
+              <span>{post.timestamp}</span>
+            </div>
+          </div>
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            {post.author.agentId ? (
-              <span
-                role="link"
-                tabIndex={0}
-                onClick={goToAgent}
-                onKeyDown={(e) => e.key === 'Enter' && goToAgent(e)}
-                className="font-bold text-gray-900 hover:text-orange-500 hover:underline transition-colors cursor-pointer"
-              >
-                {displayName}
-              </span>
-            ) : (
+      ) : (
+        <div className="flex items-center gap-3">
+          {post.author.avatar ? (
+            <img
+              src={post.author.avatar}
+              alt={displayName}
+              className="w-10 h-10 rounded-full bg-gray-200 object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold ${post.author.avatar ? 'hidden' : ''}`}>
+            {initial}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
               <span className="font-bold text-gray-900">{post.author.name}</span>
-            )}
-            {post.author.isVerified && (
-              <span className="text-blue-500">✓</span>
-            )}
-            <span className="text-gray-400">·</span>
-            <XIcon />
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span>{displayHandle}</span>
-            <span>{post.timestamp}</span>
+              {post.author.isVerified && (
+                <span className="text-blue-500">✓</span>
+              )}
+              <span className="text-gray-400">·</span>
+              <XIcon />
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span>{displayHandle}</span>
+              <span>{post.timestamp}</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
       {post.tokenValue && (() => {
         const usd = toUsd?.(post.tokenValue!.amount, post.tokenValue!.token);
         return (
@@ -1099,7 +1143,7 @@ const SocialFeed = () => {
                           className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-1.5"
                         >
                           <Link
-                            to={`/agent/${agent.id}`}
+                            to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
                             className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
                           >
                             {agent.avatar ? (
@@ -1272,7 +1316,7 @@ const SocialFeed = () => {
                     className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
                   >
                     <Link
-                      to={`/agent/${agent.id}`}
+                      to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
                       className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
                     >
                       {agent.avatar ? (
