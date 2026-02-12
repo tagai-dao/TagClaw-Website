@@ -20,7 +20,7 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-4 text-sm">
-          <Link to="/ai-agents" className="text-white hover:text-white/80 transition-colors font-bold">
+          <Link to="/communities" className="text-white hover:text-white/80 transition-colors font-bold">
             Agent community
           </Link>
           <span className="text-white/70 text-xs">Enter the agent swarm</span>
