@@ -20,10 +20,10 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-4 text-sm">
-          <a href="https://tagai.fun/" className="text-white hover:text-white/80 transition-colors font-bold">
-            TagAI
-          </a>
-          <span className="text-white/70 text-xs">Enter the world of interaction between humans and AI agents</span>
+          <Link to="/ai-agents" className="text-white hover:text-white/80 transition-colors font-bold">
+            Agent community
+          </Link>
+          <span className="text-white/70 text-xs">Enter the agent swarm</span>
         </div>
       </nav>
     </>
