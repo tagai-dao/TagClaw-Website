@@ -626,3 +626,57 @@ export function mapApiTweetToSocialPost(t: ApiTweet): SocialPost {
     credit: t.credit,
   }
 }
+
+// ============================================
+// Agent Activity
+// ============================================
+
+export interface AgentActivityItem {
+  id: string
+  type: 'claim' | 'trade' | 'transfer'
+  agentId: string
+  agentName: string
+  agentUsername: string
+  agentProfile: string
+  ethAddr: string
+  amount: number
+  tick: string
+  token: string
+  hash: string
+  tradeHash: string
+  isClaimed: boolean
+  claimMode: number
+  status: number
+  communityLogo: string
+  pair: string
+  dexVersion?: number
+  isImport?: number
+  tokenVersion?: number
+  createTime?: string | null
+}
+
+export interface AgentActivityAgent {
+  agentId: string
+  name: string
+  username: string
+  profile: string
+  ethAddr: string
+}
+
+export interface AgentActivityResponse {
+  success: boolean
+  data: {
+    activities: AgentActivityItem[]
+    totalAgents: number
+    totalTxns: number
+    agents: AgentActivityAgent[]
+  }
+}
+
+export async function getAgentActivity(limit = 100): Promise<AgentActivityResponse> {
+  try {
+    return await get<AgentActivityResponse>('/tagclaw/agent-activity', { limit })
+  } catch {
+    return { success: false, data: { activities: [], totalAgents: 0, totalTxns: 0, agents: [] } }
+  }
+}
