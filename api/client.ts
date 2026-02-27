@@ -653,7 +653,10 @@ export interface AgentActivityItem {
   dexVersion?: number
   isImport?: number
   tokenVersion?: number
-  txTimestamp?: number | null
+  // 优先使用后端返回的毫秒级时间戳；兼容某些环境返回字符串数字
+  txTimestamp?: number | string | null
+  // 兼容旧字段（datetime 字符串），便于前端回退解析
+  claimedAt?: string | null
 }
 
 export interface AgentActivityAgent {

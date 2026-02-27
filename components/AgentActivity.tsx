@@ -95,6 +95,22 @@ function fmtAmount(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+function normalizeActivityTimestamp(act: AgentActivityItem): number {
+  // 1) 优先使用后端返回的 txTimestamp（目标：毫秒级）
+  const rawTs = act.txTimestamp;
+  if (rawTs !== null && rawTs !== undefined && rawTs !== '') {
+    const n = Number(rawTs);
+    if (Number.isFinite(n) && n > 0) {
+      // 兼容秒级时间戳（10 位）场景，统一转成毫秒
+      return n < 1e12 ? Math.floor(n * 1000) : Math.floor(n);
+    }
+  }
+
+  // 2) 回退旧字段 claimedAt（datetime 字符串）
+  const parsed = Date.parse(act.claimedAt || '');
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
 function classifyTx(a: AgentActivityItem): TxType {
   // 后端已经根据业务语义给出了 type，这里只做直接映射，并为未来的 buy/sell 预留
   if (a.type === 'buy') return 'buy';
@@ -309,7 +325,6 @@ const AgentActivity: React.FC = () => {
 
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [stats, setStats] = useState({ totalVol: 0, txCount: 0, activeAgents: 0, claims: 0, trades: 0 });
-  const [initialTxWindow, setInitialTxWindow] = useState(0);
   const [isLive, setIsLive] = useState(true);
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const [loading, setLoading] = useState(true);
@@ -341,7 +356,7 @@ const AgentActivity: React.FC = () => {
     tick: act.tick || '',
     hash: act.hash || '',
     communityLogo: act.communityLogo || '',
-    timestamp: act.txTimestamp || 0,
+    timestamp: normalizeActivityTimestamp(act),
     isClaimed: act.isClaimed,
   }), []);
 
@@ -357,6 +372,8 @@ const AgentActivity: React.FC = () => {
       if (!act.tick) continue;
       if (!tickMap.has(act.tick)) tickMap.set(act.tick, { logo: act.communityLogo || '', agents: new Set(), txCount: 0 });
       const entry = tickMap.get(act.tick)!;
+      // 兼容首条活动缺 logo 的场景：后续出现非空 logo 时补齐
+      if (!entry.logo && act.communityLogo) entry.logo = act.communityLogo;
       entry.agents.add(act.agentId);
       entry.txCount++;
     }
@@ -532,13 +549,9 @@ const AgentActivity: React.FC = () => {
         const { activities, agents, totalAgents } = res.data;
         activitiesRef.current = activities;
         apiAgentsRef.current = agents;
-        setInitialTxWindow(activities.length);
 
-        const txTypes = activities.map(a => classifyTx(a));
-        const claims = txTypes.filter(t => t === 'claim').length;
-        const trades = txTypes.filter(t => t === 'buy' || t === 'sell').length;
         const totalVol = activities.reduce((s, a) => s + (a.amount || 0), 0);
-        setStats(prev => ({ ...prev, totalVol, activeAgents: totalAgents, claims, trades }));
+        setStats(prev => ({ ...prev, totalVol, activeAgents: totalAgents }));
 
         const initialFeed = activities.map((act, i) => actToFeedItem(act, i));
         setFeed(initialFeed);
@@ -563,7 +576,13 @@ const AgentActivity: React.FC = () => {
     (async () => {
       const s = await getAgentTxStats();
       if (cancelled || !s) return;
-      setStats(prev => ({ ...prev, txCount: s.totalTxns }));
+      // claims / trades / txns 统一口径：全部来自全局统计接口
+      setStats(prev => ({
+        ...prev,
+        txCount: s.totalTxns,
+        claims: s.totalClaims || 0,
+        trades: (s.totalBuys || 0) + (s.totalSells || 0),
+      }));
     })();
     return () => { cancelled = true; };
   }, []);
@@ -624,7 +643,11 @@ const AgentActivity: React.FC = () => {
 
     const item = actToFeedItem(act, 0);
     item.id = `${act.id}-live-${Date.now()}`;
-    setFeed(prev => [item, ...prev]);
+    // 用链上 hash 作为唯一键，避免相同交易重复插入到列表顶部
+    setFeed(prev => {
+      if (item.hash && prev.some(tx => tx.hash === item.hash)) return prev;
+      return [item, ...prev];
+    });
   }, [spawnParticles, actToFeedItem]);
 
   // ---- Animation loop ----
@@ -772,6 +795,11 @@ const AgentActivity: React.FC = () => {
     return `${Math.floor(s / 86400)}d`;
   };
 
+  const fmtFullTime = (ts: number) => {
+    if (!ts || ts <= 0) return 'Unknown time';
+    return new Date(ts).toLocaleString();
+  };
+
   const [, setTickState] = useState(0);
   useEffect(() => {
     const iv = setInterval(() => setTickState(t => t + 1), 3000);
@@ -845,7 +873,7 @@ const AgentActivity: React.FC = () => {
         <div className="w-72 border-l border-gray-800 bg-[#0d1220] flex-col shrink-0 hidden md:flex">
           <div className="px-3 py-2 border-b border-gray-800 flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-gray-300 tracking-wider">TRANSACTIONS</span>
-            <span className="text-[10px] font-mono text-gray-500">{initialTxWindow} txns</span>
+            <span className="text-[10px] font-mono text-gray-500">{stats.txCount} txns</span>
           </div>
           <div ref={feedListRef} className="flex-1 overflow-y-auto" style={{ maxHeight: 480 }}>
             {feed.length === 0 && (
@@ -914,7 +942,12 @@ const AgentActivity: React.FC = () => {
                   ) : null}
                 </div>
                 {/* Col 4: Time */}
-                <span className="text-[10px] font-mono text-gray-600 text-right">{fmtTime(tx.timestamp)}</span>
+                <span
+                  className="text-[10px] font-mono text-gray-600 text-right"
+                  title={fmtFullTime(tx.timestamp)}
+                >
+                  {fmtTime(tx.timestamp)}
+                </span>
               </div>
             ))}
           </div>
