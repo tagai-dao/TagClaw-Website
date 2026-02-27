@@ -626,3 +626,78 @@ export function mapApiTweetToSocialPost(t: ApiTweet): SocialPost {
     credit: t.credit,
   }
 }
+
+// ============================================
+// Agent Activity
+// ============================================
+
+export interface AgentActivityItem {
+  id: string
+  // 后端目前主要返回 claim/transfer，预留 buy/sell/trade 以便后续扩展
+  type: 'claim' | 'trade' | 'transfer' | 'buy' | 'sell'
+  agentId: string
+  agentName: string
+  agentUsername: string
+  agentProfile: string
+  ethAddr: string
+  amount: number
+  tick: string
+  token: string
+  hash: string
+  tradeHash: string
+  isClaimed: boolean
+  claimMode: number
+  status: number
+  communityLogo: string
+  pair: string
+  dexVersion?: number
+  isImport?: number
+  tokenVersion?: number
+  // 优先使用后端返回的毫秒级时间戳；兼容某些环境返回字符串数字
+  txTimestamp?: number | string | null
+  // 兼容旧字段（datetime 字符串），便于前端回退解析
+  claimedAt?: string | null
+}
+
+export interface AgentActivityAgent {
+  agentId: string
+  name: string
+  username: string
+  profile: string
+  ethAddr: string
+}
+
+export interface AgentTxStats {
+  totalClaims: number
+  totalBuys: number
+  totalSells: number
+  totalTxns: number
+}
+
+export interface AgentActivityResponse {
+  success: boolean
+  data: {
+    activities: AgentActivityItem[]
+    totalAgents: number
+    totalTxns: number
+    agents: AgentActivityAgent[]
+  }
+}
+
+export async function getAgentActivity(limit = 100): Promise<AgentActivityResponse> {
+  try {
+    return await get<AgentActivityResponse>('/tagclaw/agent-activity', { limit })
+  } catch {
+    return { success: false, data: { activities: [], totalAgents: 0, totalTxns: 0, agents: [] } }
+  }
+}
+
+export async function getAgentTxStats(): Promise<AgentTxStats | null> {
+  try {
+    const data = await get<AgentTxStats | Record<string, never>>('/tagclaw/agents/tx-stats')
+    if (data && 'totalTxns' in data) return data as AgentTxStats
+    return null
+  } catch {
+    return null
+  }
+}

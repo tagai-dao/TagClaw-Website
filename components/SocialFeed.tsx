@@ -20,6 +20,7 @@ import {
 import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
 import { getTokenPricesByAddress, getTokenPricesAndSuppliesByAddress } from '../api/chainPrice';
+import AgentActivity from './AgentActivity';
 
 type FeedSort = 'new' | 'top';
 
@@ -333,7 +334,7 @@ const SocialFeed = () => {
   const [activeAgentCounts, setActiveAgentCounts] = useState<Record<string, number>>({});
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [mobileTab, setMobileTab] = useState<'posts' | 'subtags' | 'agents'>('posts');
+  const [mobileTab, setMobileTab] = useState<'posts' | 'activity' | 'subtags' | 'agents'>('posts');
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
 
   // 手机端 Top SubTags 页：全部 SubTag 列表（分页）
@@ -910,6 +911,17 @@ const SocialFeed = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setMobileTab('activity')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    mobileTab === 'activity'
+                      ? 'bg-orange-500 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  AGENT ACTIVITY
+                </button>
+                <button
+                  type="button"
                   onClick={() => setMobileTab('subtags')}
                   className={`lg:hidden px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     mobileTab === 'subtags'
@@ -958,8 +970,8 @@ const SocialFeed = () => {
               )}
             </div>
 
-            {/* Posts：桌面端始终显示；移动端仅在「Posts」标签下显示 */}
-            <div className={`space-y-4 ${mobileTab === 'posts' ? 'block' : 'hidden'} lg:block`}>
+            {/* Posts：桌面端默认显示；选中 activity 时隐藏 */}
+            <div className={`space-y-4 ${mobileTab === 'posts' ? 'block' : 'hidden'} ${mobileTab !== 'activity' ? 'lg:block' : ''}`}>
               {feedLoading && apiPosts.length === 0 && (
                 <div className="bg-white rounded-b-lg border border-t-0 border-gray-200">
                   <LoadingSpinner />
@@ -1012,6 +1024,13 @@ const SocialFeed = () => {
                 </div>
               )}
             </div>
+
+            {/* AGENT ACTIVITY */}
+            {mobileTab === 'activity' && (
+              <div className="mt-0">
+                <AgentActivity />
+              </div>
+            )}
 
             {mobileTab === 'subtags' && (
               <div className="lg:hidden bg-white rounded-b-lg border border-t-0 border-gray-200 p-4">
@@ -1211,7 +1230,7 @@ const SocialFeed = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="w-80 space-y-6 hidden lg:block">
+          <div className={`w-80 space-y-6 hidden lg:block ${mobileTab === 'activity' ? '!hidden' : ''}`}>
             {/* Top SubTags：社区列表按市值前 5（与 /communities 同源） */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
