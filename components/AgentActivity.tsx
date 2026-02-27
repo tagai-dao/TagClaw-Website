@@ -95,24 +95,16 @@ function fmtAmount(n: number): string {
 }
 
 function classifyTx(a: AgentActivityItem): TxType {
-  if (a.type === 'trade' || (a.isClaimed && a.tradeHash)) return 'trade';
+  // 后端已经根据业务语义给出了 type，这里只做直接映射，并为未来的 buy/sell 预留
+  if (a.type === 'buy') return 'buy';
+  if (a.type === 'sell') return 'sell';
   if (a.type === 'transfer') return 'transfer';
+  if (a.type === 'trade') return 'trade';
   return 'claim';
 }
 
 function hexRgb(hex: string): string {
   return `${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)}`;
-}
-
-const ULID_ENCODING = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-function ulidToTimestamp(ulid: string): number {
-  if (!ulid || ulid.length < 10) return 0;
-  let ts = 0;
-  for (let i = 0; i < 10; i++) {
-    const idx = ULID_ENCODING.indexOf(ulid[i].toUpperCase());
-    ts = ts * 32 + (idx >= 0 ? idx : 0);
-  }
-  return ts;
 }
 
 function loadImg(src: string, node: { imgLoaded: boolean; imgEl?: HTMLImageElement }) {
@@ -336,8 +328,8 @@ const AgentActivity: React.FC = () => {
     }
   }, []);
 
-  const actToFeedItem = useCallback((act: AgentActivityItem): FeedItem => ({
-    id: act.id,
+  const actToFeedItem = useCallback((act: AgentActivityItem, idx: number): FeedItem => ({
+    id: `${act.id}-${idx}`,
     agentName: act.agentName || 'Agent',
     agentInitial: (act.agentName || 'A').charAt(0).toUpperCase(),
     agentProfile: act.agentProfile || '',
@@ -347,7 +339,7 @@ const AgentActivity: React.FC = () => {
     tick: act.tick || '',
     hash: act.hash || '',
     communityLogo: act.communityLogo || '',
-    timestamp: ulidToTimestamp(act.id) || Date.now(),
+    timestamp: act.txTimestamp || 0,
     isClaimed: act.isClaimed,
   }), []);
 
@@ -539,12 +531,13 @@ const AgentActivity: React.FC = () => {
         activitiesRef.current = activities;
         apiAgentsRef.current = agents;
 
-        const claims = activities.filter(a => classifyTx(a) === 'claim').length;
-        const trades = activities.filter(a => classifyTx(a) !== 'claim').length;
+        const txTypes = activities.map(a => classifyTx(a));
+        const claims = txTypes.filter(t => t === 'claim').length;
+        const trades = txTypes.filter(t => t === 'buy' || t === 'sell').length;
         const totalVol = activities.reduce((s, a) => s + (a.amount || 0), 0);
         setStats({ totalVol, txCount: totalTxns, activeAgents: totalAgents, claims, trades });
 
-        const initialFeed = activities.map(act => actToFeedItem(act));
+        const initialFeed = activities.map((act, i) => actToFeedItem(act, i));
         setFeed(initialFeed);
 
         replayIdxRef.current = 0;
@@ -615,7 +608,7 @@ const AgentActivity: React.FC = () => {
 
     spawnParticles(target.x, target.y, TX_COLORS[txType]);
 
-    const item = actToFeedItem(act);
+    const item = actToFeedItem(act, 0);
     item.id = `${act.id}-live-${Date.now()}`;
     setFeed(prev => [item, ...prev]);
   }, [spawnParticles, actToFeedItem]);
@@ -825,7 +818,7 @@ const AgentActivity: React.FC = () => {
         <div ref={containerRef} className="flex-1 relative min-h-[420px]">
           <canvas ref={canvasRef} className="absolute inset-0" />
           <div className="absolute bottom-3 left-3 flex items-center gap-3 text-[10px] font-mono bg-black/60 rounded px-3 py-1.5 backdrop-blur-sm">
-            {(['claim', 'buy', 'sell', 'trade', 'transfer'] as TxType[]).map(t => (
+            {(['claim', 'buy', 'sell', 'transfer'] as TxType[]).map(t => (
               <span key={t} className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TX_COLORS[t] }} />
                 <span style={{ color: TX_COLORS[t] }}>{TX_LABELS[t]}</span>
@@ -845,7 +838,11 @@ const AgentActivity: React.FC = () => {
               <div className="text-gray-600 text-xs font-mono text-center py-8">No transactions</div>
             )}
             {feed.map(tx => (
-              <div key={tx.id} className="grid items-center px-3 py-2 border-b border-gray-800/50 hover:bg-white/[0.02] transition-colors" style={{ gridTemplateColumns: '24px 28px 1fr 32px', gap: '10px' }}>
+              <div
+                key={tx.id}
+                className="grid items-center px-3 py-2 border-b border-gray-800/50 hover:bg-white/[0.02] transition-colors"
+                style={{ gridTemplateColumns: '26px 34px 1fr 40px', columnGap: '14px', rowGap: '4px' }}
+              >
                 {/* Col 1: Tx type icon */}
                 <div className="flex items-center justify-center">
                   {tx.type === 'buy' ? (

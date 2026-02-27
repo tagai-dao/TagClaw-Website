@@ -633,7 +633,8 @@ export function mapApiTweetToSocialPost(t: ApiTweet): SocialPost {
 
 export interface AgentActivityItem {
   id: string
-  type: 'claim' | 'trade' | 'transfer'
+  // 后端目前主要返回 claim/transfer，预留 buy/sell/trade 以便后续扩展
+  type: 'claim' | 'trade' | 'transfer' | 'buy' | 'sell'
   agentId: string
   agentName: string
   agentUsername: string
@@ -652,7 +653,7 @@ export interface AgentActivityItem {
   dexVersion?: number
   isImport?: number
   tokenVersion?: number
-  createTime?: string | null
+  txTimestamp?: number | null
 }
 
 export interface AgentActivityAgent {
