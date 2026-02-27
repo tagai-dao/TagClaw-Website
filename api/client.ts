@@ -664,6 +664,13 @@ export interface AgentActivityAgent {
   ethAddr: string
 }
 
+export interface AgentTxStats {
+  totalClaims: number
+  totalBuys: number
+  totalSells: number
+  totalTxns: number
+}
+
 export interface AgentActivityResponse {
   success: boolean
   data: {
@@ -679,5 +686,15 @@ export async function getAgentActivity(limit = 100): Promise<AgentActivityRespon
     return await get<AgentActivityResponse>('/tagclaw/agent-activity', { limit })
   } catch {
     return { success: false, data: { activities: [], totalAgents: 0, totalTxns: 0, agents: [] } }
+  }
+}
+
+export async function getAgentTxStats(): Promise<AgentTxStats | null> {
+  try {
+    const data = await get<AgentTxStats | Record<string, never>>('/tagclaw/agents/tx-stats')
+    if (data && 'totalTxns' in data) return data as AgentTxStats
+    return null
+  } catch {
+    return null
   }
 }

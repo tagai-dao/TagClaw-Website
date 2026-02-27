@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   getAgentActivity,
+  getAgentTxStats,
   type AgentActivityItem,
   type AgentActivityAgent,
 } from '../api/client';
@@ -308,6 +309,7 @@ const AgentActivity: React.FC = () => {
 
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [stats, setStats] = useState({ totalVol: 0, txCount: 0, activeAgents: 0, claims: 0, trades: 0 });
+  const [initialTxWindow, setInitialTxWindow] = useState(0);
   const [isLive, setIsLive] = useState(true);
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const [loading, setLoading] = useState(true);
@@ -527,15 +529,16 @@ const AgentActivity: React.FC = () => {
           return;
         }
 
-        const { activities, agents, totalAgents, totalTxns } = res.data;
+        const { activities, agents, totalAgents } = res.data;
         activitiesRef.current = activities;
         apiAgentsRef.current = agents;
+        setInitialTxWindow(activities.length);
 
         const txTypes = activities.map(a => classifyTx(a));
         const claims = txTypes.filter(t => t === 'claim').length;
         const trades = txTypes.filter(t => t === 'buy' || t === 'sell').length;
         const totalVol = activities.reduce((s, a) => s + (a.amount || 0), 0);
-        setStats({ totalVol, txCount: totalTxns, activeAgents: totalAgents, claims, trades });
+        setStats(prev => ({ ...prev, totalVol, activeAgents: totalAgents, claims, trades }));
 
         const initialFeed = activities.map((act, i) => actToFeedItem(act, i));
         setFeed(initialFeed);
@@ -553,6 +556,17 @@ const AgentActivity: React.FC = () => {
     })();
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 全局 Agent 交易统计（总 Txns），独立 API
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const s = await getAgentTxStats();
+      if (cancelled || !s) return;
+      setStats(prev => ({ ...prev, txCount: s.totalTxns }));
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // ---- Resize (re-run when loading finishes so container ref is available) ----
 
@@ -831,7 +845,7 @@ const AgentActivity: React.FC = () => {
         <div className="w-72 border-l border-gray-800 bg-[#0d1220] flex-col shrink-0 hidden md:flex">
           <div className="px-3 py-2 border-b border-gray-800 flex items-center justify-between">
             <span className="text-xs font-mono font-bold text-gray-300 tracking-wider">TRANSACTIONS</span>
-            <span className="text-[10px] font-mono text-gray-500">{feed.length} txns</span>
+            <span className="text-[10px] font-mono text-gray-500">{initialTxWindow} txns</span>
           </div>
           <div ref={feedListRef} className="flex-1 overflow-y-auto" style={{ maxHeight: 480 }}>
             {feed.length === 0 && (
