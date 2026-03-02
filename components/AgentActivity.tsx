@@ -120,6 +120,10 @@ function classifyTx(a: AgentActivityItem): TxType {
   return 'claim';
 }
 
+function activityEventKey(act: Pick<AgentActivityItem, 'id' | 'hash' | 'tradeHash'>): string {
+  return act.hash || act.tradeHash || act.id;
+}
+
 function hexRgb(hex: string): string {
   return `${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)}`;
 }
@@ -322,6 +326,7 @@ const AgentActivity: React.FC = () => {
   const apiAgentsRef = useRef<AgentActivityAgent[]>([]);
   const feedListRef = useRef<HTMLDivElement>(null);
   const sceneBuiltForRef = useRef('');
+  const latestTsRef = useRef(0);
 
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [stats, setStats] = useState({ totalVol: 0, txCount: 0, activeAgents: 0, claims: 0, trades: 0 });
@@ -549,6 +554,7 @@ const AgentActivity: React.FC = () => {
         const { activities, agents, totalAgents } = res.data;
         activitiesRef.current = activities;
         apiAgentsRef.current = agents;
+        latestTsRef.current = activities.reduce((maxTs, act) => Math.max(maxTs, normalizeActivityTimestamp(act)), 0);
 
         const totalVol = activities.reduce((s, a) => s + (a.amount || 0), 0);
         setStats(prev => ({ ...prev, totalVol, activeAgents: totalAgents }));
@@ -569,6 +575,62 @@ const AgentActivity: React.FC = () => {
     })();
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 增量拉取：前端只请求 latestTs 之后的新记录
+  useEffect(() => {
+    if (!dataReady) return;
+    let cancelled = false;
+    let pulling = false;
+
+    const pullLatest = async () => {
+      if (pulling || cancelled) return;
+      pulling = true;
+      try {
+        const sinceTs = latestTsRef.current;
+        if (!sinceTs || sinceTs <= 0) return;
+        const res = await getAgentActivity(100, sinceTs);
+        if (cancelled || !res.success || !res.data) return;
+
+        const incoming = res.data.activities || [];
+        if (incoming.length === 0) return;
+
+        const incomingMaxTs = incoming.reduce((maxTs, act) => Math.max(maxTs, normalizeActivityTimestamp(act)), sinceTs);
+        latestTsRef.current = incomingMaxTs;
+
+        const existingActivityKeys = new Set(activitiesRef.current.map(a => activityEventKey(a)));
+        const freshActivities = incoming.filter(a => !existingActivityKeys.has(activityEventKey(a)));
+        if (freshActivities.length === 0) return;
+
+        freshActivities.sort((a, b) => normalizeActivityTimestamp(b) - normalizeActivityTimestamp(a));
+        activitiesRef.current = [...freshActivities, ...activitiesRef.current].slice(0, 500);
+
+        setFeed(prev => {
+          const existingFeedKeys = new Set(prev.map(tx => tx.hash || tx.id));
+          const newFeedItems = freshActivities
+            .map((act, i) => {
+              const item = actToFeedItem(act, i);
+              const eventKey = activityEventKey(act);
+              item.id = `${eventKey}-inc`;
+              return item;
+            })
+            .filter(item => !existingFeedKeys.has(item.hash || item.id));
+
+          if (newFeedItems.length === 0) return prev;
+          return [...newFeedItems, ...prev].slice(0, 500);
+        });
+      } finally {
+        pulling = false;
+      }
+    };
+
+    // 首次完成初始化后，立即增量拉一次，再定时轮询
+    pullLatest();
+    const iv = setInterval(pullLatest, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+  }, [dataReady, actToFeedItem]);
 
   // 全局 Agent 交易统计（总 Txns），独立 API
   useEffect(() => {

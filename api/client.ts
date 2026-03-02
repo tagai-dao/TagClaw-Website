@@ -684,9 +684,13 @@ export interface AgentActivityResponse {
   }
 }
 
-export async function getAgentActivity(limit = 100): Promise<AgentActivityResponse> {
+export async function getAgentActivity(limit = 100, sinceTs?: number): Promise<AgentActivityResponse> {
   try {
-    return await get<AgentActivityResponse>('/tagclaw/agent-activity', { limit })
+    const params: Record<string, string | number> = { limit }
+    if (sinceTs && Number.isFinite(sinceTs) && sinceTs > 0) {
+      params.sinceTs = Math.floor(sinceTs)
+    }
+    return await get<AgentActivityResponse>('/tagclaw/agent-activity', params)
   } catch {
     return { success: false, data: { activities: [], totalAgents: 0, totalTxns: 0, agents: [] } }
   }
