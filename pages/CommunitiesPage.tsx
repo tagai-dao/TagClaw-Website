@@ -214,21 +214,25 @@ const CommunitiesPage: React.FC = () => {
     loadCommunities(0, sortBy);
   }, [sortBy, loadCommunities]);
 
-  // 用链上代币价格和 totalSupply 补齐列表市值（与详情侧边计算方式一致）
+  // 用链上代币价格和 totalSupply 计算市值，与 SocialFeed 保持一致（统一数据源，避免 Communities 页与首页侧边栏市值不一致）
   useEffect(() => {
-    const needEnrich = communities.filter(
-      (c) =>
-        c.token &&
-        (c.marketCap == null || c.marketCap === 0)
-    );
-    if (needEnrich.length === 0) return;
+    const withToken = communities.filter((c) => c.token);
+    if (withToken.length === 0) return;
 
-    const tokenItems: TokenPriceItem[] = needEnrich.map((c) => ({
-      token: c.token!,
-      version: c.dexVersion ?? 2,
-      isImport: c.isImport === true,
-      pair: c.pair,
-    }));
+    const seen = new Set<string>();
+    const tokenItems: TokenPriceItem[] = [];
+    for (const c of withToken) {
+      const key = (c.token || '').toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      tokenItems.push({
+        token: c.token!,
+        version: c.dexVersion ?? 2,
+        isImport: c.isImport === true,
+        pair: c.pair,
+      });
+    }
+    if (tokenItems.length === 0) return;
 
     let cancelled = false;
     Promise.all([
@@ -239,7 +243,7 @@ const CommunitiesPage: React.FC = () => {
         if (cancelled || bnbPrice <= 0) return;
         setCommunities((prev) =>
           prev.map((c) => {
-            if (!c.token || (c.marketCap != null && c.marketCap > 0)) return c;
+            if (!c.token) return c;
             const priceInBnb = tokenPrices[c.token];
             const supply = tokenSupplies[(c.token || '').toLowerCase()];
             if (
@@ -250,7 +254,6 @@ const CommunitiesPage: React.FC = () => {
             )
               return c;
             const marketCapUsd = priceInBnb * bnbPrice * supply;
-            // 与现有展示逻辑一致：cap/1e6 = marketCapUsd，展示时 million = marketCapUsd/1e6
             const marketCap = Math.round(marketCapUsd * 1_000_000);
             return { ...c, marketCap };
           })
