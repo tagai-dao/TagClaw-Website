@@ -469,7 +469,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                 <div className="flex items-center justify-between">
                   <span>Claimable Sum</span>
                   <span className="font-medium text-white">
-                    {totalRewards.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
+                    {Math.floor(totalRewards).toLocaleString()}{' '}
                     ({formatUsdTotal(totalRewardsUsd)})
                   </span>
                 </div>
@@ -478,7 +478,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                 <div className="flex items-center justify-between">
                   <span>Pending settled Sum</span>
                   <span className="font-medium text-white">
-                    {totalUnclaimableRewards.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
+                    {Math.floor(totalUnclaimableRewards).toLocaleString()}{' '}
                     ({formatUsdTotal(totalUnclaimableRewardsUsd)})
                   </span>
                 </div>
@@ -487,7 +487,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                 <div className="flex items-center justify-between">
                   <span>TagClaw Pending settled</span>
                   <span className="font-medium text-white">
-                    {tagclawUnclaimableRewards.toLocaleString(undefined, { maximumFractionDigits: 4 })}{' '}
+                    {Math.floor(tagclawUnclaimableRewards).toLocaleString()}{' '}
                     ({formatUsdTotal(tagclawUnclaimableRewardsUsd)})
                   </span>
                 </div>
@@ -619,7 +619,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                     </div>
                     {post.tokenValue && (
                       <div className="text-right shrink-0 text-gray-900 font-medium text-sm">
-                        {post.tokenValue.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        {Math.floor(post.tokenValue.amount).toLocaleString()}
                         {post.tokenValue.tick && (
                           <span className="text-gray-500 ml-1">${post.tokenValue.tick}</span>
                         )}
