@@ -12,8 +12,7 @@ import {
   getTopAgentsByEngagement,
   mapApiAgentTopToCard,
   mapApiAgentToCard,
-  getUserCurationRewards,
-  getUserUnclaimableCurationRewards,
+  getUsersAllCurationRewards,
   getEthPrice,
   ApiTweet,
 } from '../api/client';
@@ -447,7 +446,7 @@ const SocialFeed = () => {
         more = result.hasMore;
       }
 
-      // 拉取 claws 与 rewards（按 token 汇总后转美元）
+      // 拉取 claws 与 rewards（批量总奖励接口，与 AIAgentsPage 保持一致）
       try {
         const [topByEngagement] = await Promise.all([
           getTopAgentsByEngagement(500).catch(() => []),
@@ -457,39 +456,40 @@ const SocialFeed = () => {
           if (a.agentId) clawsMap.set(a.agentId, a.totalClaws ?? 0);
         });
 
+        const resolveAgentId = (agent: AgentCardItem) => String(agent.agentId ?? agent.id);
+
         const tokenMeta = new Map<string, { version?: number; isImport?: number; pair?: string }>();
         const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
 
-        const withBreakdown = await Promise.all(
-          list.map(async (agent) => {
-            try {
-              const [claimable, unclaimable] = await Promise.all([
-                getUserCurationRewards(agent.id),
-                getUserUnclaimableCurationRewards(agent.id),
-              ]);
-              const breakdown: { token: string; amount: number }[] = [];
-              for (const r of [...claimable, ...unclaimable]) {
-                if (!r?.token) continue;
-                const token = r.token.toLowerCase();
-                const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
-                if (!Number.isFinite(amount) || amount <= 0) continue;
-                breakdown.push({ token, amount });
-                if (!tokenMeta.has(token)) {
-                  tokenMeta.set(token, { version: r.version, isImport: r.isImport, pair: r.pair });
-                }
-              }
-              breakdownByAgent[agent.id] = breakdown;
-              const totalClaws = clawsMap.get(agent.id);
-              return {
-                ...agent,
-                totalRewards: 0,
-                totalClaws: totalClaws != null ? totalClaws : (agent.totalClaws ?? 0),
-              } as AgentCardItem;
-            } catch {
-              return { ...agent, totalClaws: clawsMap.get(agent.id) ?? agent.totalClaws ?? 0 };
-            }
-          })
-        );
+        const agentIds = list.map((a) => resolveAgentId(a)).filter(Boolean);
+        const allRewards = agentIds.length > 0
+          ? await getUsersAllCurationRewards(agentIds).catch(() => [])
+          : [];
+
+        for (const r of allRewards) {
+          if (!r?.token) continue;
+          const agentId = String(r.twitterId ?? r.twitter_id ?? '');
+          if (!agentId) continue;
+          const token = r.token.toLowerCase();
+          const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+          if (!Number.isFinite(amount) || amount <= 0) continue;
+
+          if (!breakdownByAgent[agentId]) breakdownByAgent[agentId] = [];
+          breakdownByAgent[agentId].push({ token, amount });
+          if (!tokenMeta.has(token)) {
+            tokenMeta.set(token, { version: r.version, isImport: r.isImport, pair: r.pair });
+          }
+        }
+
+        const enriched = list.map((agent) => {
+          const agentId = resolveAgentId(agent);
+          const totalClaws = clawsMap.get(agentId);
+          return {
+            ...agent,
+            totalRewards: 0,
+            totalClaws: totalClaws != null ? totalClaws : (agent.totalClaws ?? 0),
+          } as AgentCardItem;
+        });
 
         let bnbPrice = 0;
         let tokenPrices: Record<string, number> = {};
@@ -512,8 +512,9 @@ const SocialFeed = () => {
           // 价格拉取失败
         }
 
-        list = withBreakdown.map((agent) => {
-          const breakdown = breakdownByAgent[agent.id] || [];
+        list = enriched.map((agent) => {
+          const agentId = resolveAgentId(agent);
+          const breakdown = breakdownByAgent[agentId] || [];
           let usdTotal = 0;
           if (bnbPrice && breakdown.length > 0) {
             for (const item of breakdown) {
@@ -524,7 +525,7 @@ const SocialFeed = () => {
           return { ...agent, totalRewards: usdTotal };
         });
       } catch {
-        //  enrichment 失败时保留基础 list
+        // enrichment 失败时保留基础 list
       }
 
       if (append) {
@@ -697,58 +698,38 @@ const SocialFeed = () => {
     };
   }, [topCommunities]);
 
-  // Top AI Agents：按「奖励美元价值」从高到低取前 12
+  // Top AI Agents：使用与 AIAgentsPage 一致的批量总奖励接口，按美元价值从高到低取前 12
   useEffect(() => {
     let cancelled = false;
-    getTopAgentsByEngagement(12)
+    getTopAgentsByEngagement(200)
       .then(async (list) => {
         if (cancelled) return;
         const baseCards = list.map(mapApiAgentTopToCard);
+        const resolveAgentId = (agent: AgentCardItem) => String(agent.agentId ?? agent.id);
 
-        // 先获取每个 Agent 的奖励明细（按 token 聚合数量），并记录所有涉及的 token 元信息
-        const tokenMeta = new Map<
-          string,
-          { version?: number; isImport?: number; pair?: string }
-        >();
+        const tokenMeta = new Map<string, { version?: number; isImport?: number; pair?: string }>();
         const breakdownByAgent: Record<string, { token: string; amount: number }[]> = {};
 
-        const withTokenAmounts = await Promise.all(
-          baseCards.map(async (agent) => {
-            try {
-              const [claimable, unclaimable] = await Promise.all([
-                getUserCurationRewards(agent.id),
-                getUserUnclaimableCurationRewards(agent.id),
-              ]);
+        // 批量获取所有 Agent 的总奖励（与 AIAgentsPage 相同的接口）
+        const agentIds = baseCards.map((a) => resolveAgentId(a)).filter(Boolean);
+        const allRewards = agentIds.length > 0
+          ? await getUsersAllCurationRewards(agentIds).catch(() => [])
+          : [];
 
-              const sumList = [...claimable, ...unclaimable];
-              let totalAmount = 0;
-              const breakdown: { token: string; amount: number }[] = [];
+        for (const r of allRewards) {
+          if (!r?.token) continue;
+          const agentId = String(r.twitterId ?? r.twitter_id ?? '');
+          if (!agentId) continue;
+          const token = r.token.toLowerCase();
+          const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
+          if (!Number.isFinite(amount) || amount <= 0) continue;
 
-              for (const r of sumList) {
-                if (!r || !r.token) continue;
-                const token = r.token.toLowerCase();
-                const amount = typeof r.amount === 'number' ? r.amount : Number(r.amount ?? 0);
-                if (!Number.isFinite(amount) || amount <= 0) continue;
-
-                totalAmount += amount;
-                breakdown.push({ token, amount });
-
-                if (!tokenMeta.has(token)) {
-                  tokenMeta.set(token, {
-                    version: r.version,
-                    isImport: r.isImport,
-                    pair: r.pair,
-                  });
-                }
-              }
-
-              breakdownByAgent[agent.id] = breakdown;
-              return { ...agent, totalRewards: totalAmount };
-            } catch {
-              return agent;
-            }
-          })
-        );
+          if (!breakdownByAgent[agentId]) breakdownByAgent[agentId] = [];
+          breakdownByAgent[agentId].push({ token, amount });
+          if (!tokenMeta.has(token)) {
+            tokenMeta.set(token, { version: r.version, isImport: r.isImport, pair: r.pair });
+          }
+        }
 
         if (cancelled) return;
 
@@ -773,33 +754,25 @@ const SocialFeed = () => {
             tokenPrices = prices || {};
           }
         } catch {
-          // 获取价格失败时，fallback 到以代币数量排序
+          // 价格拉取失败时保留 totalRewards 为 0
         }
 
-        // 基于价格换算每个 Agent 的奖励美元价值
-        const withUsd = withTokenAmounts.map((agent) => {
-          const breakdown = breakdownByAgent[agent.id] || [];
-          if (!bnbPrice || !breakdown.length) return agent;
-
+        const withUsd = baseCards.map((agent) => {
+          const agentId = resolveAgentId(agent);
+          const breakdown = breakdownByAgent[agentId] || [];
           let usdTotal = 0;
-          for (const item of breakdown) {
-            const priceInBnb = tokenPrices[item.token];
-            if (!priceInBnb || priceInBnb <= 0) continue;
-            usdTotal += item.amount * priceInBnb * bnbPrice;
+          if (bnbPrice && breakdown.length > 0) {
+            for (const item of breakdown) {
+              const priceInBnb = tokenPrices[item.token];
+              if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
+            }
           }
-
-          if (!usdTotal) return agent;
           return { ...agent, totalRewards: usdTotal };
         });
 
-        // 按 rewards（美元）从高到低排序（无价格时仍按总代币数量排序）
-        const sortedByRewardsUsd = [...withUsd].sort((a, b) => {
-          const ra = a.totalRewards ?? 0;
-          const rb = b.totalRewards ?? 0;
-          return rb - ra;
-        });
-
-        setTopAgentsList(sortedByRewardsUsd);
+        // 按 rewards（美元）从高到低排序，取前 12
+        const sorted = [...withUsd].sort((a, b) => (b.totalRewards ?? 0) - (a.totalRewards ?? 0));
+        setTopAgentsList(sorted.slice(0, 12));
       })
       .catch(() => {
         if (!cancelled) setTopAgentsList([]);
