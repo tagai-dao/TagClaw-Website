@@ -4,7 +4,7 @@
  * 参考 pump.ts 的 getTokenOnchainInfo 逻辑
  */
 
-import { createPublicClient, http, parseAbi, type Address } from 'viem'
+import { createPublicClient, http, parseAbi, type Address, getAddress, isAddress } from 'viem'
 import { bsc } from 'viem/chains'
 
 // BSC 主网配置
@@ -20,6 +20,8 @@ const pumpContracts: Address[] = [
 ]
 const WETH = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as Address
 const UNISWAP_V2_FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73' as Address
+const IPSHARE_CONTRACT = '0x95450AaD4Cc195e03BB4791B7f6f04aC6D9BA922' as Address
+const IP_SHARE_CACHE_TTL_MS = 60_000
 
 const tokenAbi = parseAbi([
   'function bondingCurveSupply() view returns (uint256)',
@@ -38,6 +40,10 @@ const pairAbi = parseAbi([
 const factoryAbi = parseAbi([
   'function getPair(address, address) view returns (address)',
 ])
+const ipShareAbi = parseAbi([
+  'function ipshareSupply(address subject) view returns (uint256)',
+  'function totalStakedIPshare(address subject) view returns (uint256)',
+])
 
 const publicClient = createPublicClient({
   chain: bsc,
@@ -50,6 +56,21 @@ export interface TokenPriceItem {
   isImport?: boolean
   pair?: string
 }
+
+export interface IPShareStats {
+  supply: number
+  staked: number
+  updatedAt: number
+}
+
+export interface IPShareMetrics extends IPShareStats {
+  priceInBnb: number
+  marketCapInBnb: number
+  priceUsd: number
+  marketCapUsd: number
+}
+
+const ipShareStatsCache = new Map<string, IPShareStats>()
 
 /** 获取多个 token 的价格（BNB/枚） */
 export async function getTokenPricesByAddress(
@@ -410,4 +431,137 @@ async function fetchImportPrices(
 ): Promise<Record<string, number>> {
   const { prices } = await fetchImportPricesAndSupplies(items)
   return prices
+}
+
+function normalizeIpShareValue(value: number | string | undefined): number {
+  const parsed = typeof value === 'number' ? value : Number(value ?? 0)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+}
+
+/** 当前前端口径：IPShare 市值（BNB） = supply^2 / 100000 */
+export function calculateIPShareMarketCapInBnb(supply: number | string | undefined): number {
+  const normalizedSupply = normalizeIpShareValue(supply)
+  if (normalizedSupply <= 0) return 0
+  return (normalizedSupply * normalizedSupply) / 100000
+}
+
+/** 由当前市值口径反推单价：price = marketCap / supply */
+export function calculateIPSharePriceInBnb(supply: number | string | undefined): number {
+  const normalizedSupply = normalizeIpShareValue(supply)
+  if (normalizedSupply <= 0) return 0
+  return calculateIPShareMarketCapInBnb(normalizedSupply) / normalizedSupply
+}
+
+export function deriveIPShareMetrics(
+  stats: Partial<Pick<IPShareStats, 'supply' | 'staked' | 'updatedAt'>> | undefined,
+  bnbPrice = 0
+): IPShareMetrics {
+  const supply = normalizeIpShareValue(stats?.supply)
+  const staked = normalizeIpShareValue(stats?.staked)
+  const marketCapInBnb = calculateIPShareMarketCapInBnb(supply)
+  const priceInBnb = calculateIPSharePriceInBnb(supply)
+  const normalizedBnbPrice = Number.isFinite(bnbPrice) && bnbPrice > 0 ? bnbPrice : 0
+
+  return {
+    supply,
+    staked,
+    updatedAt: stats?.updatedAt ?? Date.now(),
+    priceInBnb,
+    marketCapInBnb,
+    priceUsd: priceInBnb * normalizedBnbPrice,
+    marketCapUsd: marketCapInBnb * normalizedBnbPrice,
+  }
+}
+
+/**
+ * 批量读取 IPShare 基础状态：
+ * - ipshareSupply(subject)
+ * - totalStakedIPshare(subject)
+ *
+ * 结果按 subject 小写地址缓存，便于多个页面复用。
+ */
+export async function getIPShareStatsBySubjects(subjects: string[]): Promise<Record<string, IPShareStats>> {
+  const result: Record<string, IPShareStats> = {}
+  if (!subjects || subjects.length === 0) return result
+
+  const now = Date.now()
+  const subjectsToFetch: Address[] = []
+  const seen = new Set<string>()
+
+  for (const subject of subjects) {
+    if (!subject || !isAddress(subject)) continue
+    const normalized = getAddress(subject)
+    const key = normalized.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    const cached = ipShareStatsCache.get(key)
+    if (cached && now - cached.updatedAt < IP_SHARE_CACHE_TTL_MS) {
+      result[key] = cached
+      continue
+    }
+    subjectsToFetch.push(normalized)
+  }
+
+  if (subjectsToFetch.length === 0) return result
+
+  const contracts = subjectsToFetch.flatMap((subject) => [
+    {
+      address: IPSHARE_CONTRACT,
+      abi: ipShareAbi,
+      functionName: 'ipshareSupply' as const,
+      args: [subject],
+    },
+    {
+      address: IPSHARE_CONTRACT,
+      abi: ipShareAbi,
+      functionName: 'totalStakedIPshare' as const,
+      args: [subject],
+    },
+  ])
+
+  // @ts-expect-error viem multicall 类型兼容
+  const responses = await publicClient.multicall({
+    contracts,
+    allowFailure: true,
+  })
+
+  let index = 0
+  for (const subject of subjectsToFetch) {
+    const supplyRes = responses[index++]
+    const stakedRes = responses[index++]
+    const supply =
+      supplyRes?.status === 'success' && typeof supplyRes.result === 'bigint'
+        ? Number(supplyRes.result) / 1e18
+        : 0
+    const staked =
+      stakedRes?.status === 'success' && typeof stakedRes.result === 'bigint'
+        ? Number(stakedRes.result) / 1e18
+        : 0
+
+    const stats: IPShareStats = {
+      supply,
+      staked,
+      updatedAt: now,
+    }
+    const key = subject.toLowerCase()
+    ipShareStatsCache.set(key, stats)
+    result[key] = stats
+  }
+
+  return result
+}
+
+export async function getIPShareMetricsBySubjects(
+  subjects: string[],
+  bnbPrice: number
+): Promise<Record<string, IPShareMetrics>> {
+  const statsMap = await getIPShareStatsBySubjects(subjects)
+  const result: Record<string, IPShareMetrics> = {}
+
+  Object.entries(statsMap).forEach(([subject, stats]) => {
+    result[subject] = deriveIPShareMetrics(stats, bnbPrice)
+  })
+
+  return result
 }

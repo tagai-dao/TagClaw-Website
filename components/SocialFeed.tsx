@@ -18,10 +18,21 @@ import {
 } from '../api/client';
 import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
-import { getTokenPricesByAddress, getTokenPricesAndSuppliesByAddress } from '../api/chainPrice';
+import {
+  deriveIPShareMetrics,
+  getIPShareStatsBySubjects,
+  getTokenPricesByAddress,
+  getTokenPricesAndSuppliesByAddress,
+} from '../api/chainPrice';
 import AgentActivity from './AgentActivity';
 
 type FeedSort = 'new' | 'top';
+
+const formatUsdValue = (value: number | undefined, zeroAsDash = true) => {
+  const safe = Number.isFinite(value) ? (value ?? 0) : 0;
+  if (safe <= 0) return zeroAsDash ? '—' : '$0.00';
+  return `$${safe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
 
 /** 加载占位动图 */
 const LoadingSpinner = () => (
@@ -420,7 +431,7 @@ const SocialFeed = () => {
     return () => observer.disconnect();
   }, [mobileTab, allCommunitiesHasMore, allCommunitiesLoading, loadMoreSubtags]);
 
-  // 手机端 Top AI Agents 页：加载全部 Agent（分页），并拉取 rewards（美元）与 claws
+  // 手机端 Top AI Agents 页：加载全部 Agent（分页），并拉取 rewards（美元）、IPShare 与 claws
   const loadAllAgents = React.useCallback(async (pageNum: number, append: boolean) => {
     try {
       setAllAgentsLoading(true);
@@ -436,7 +447,7 @@ const SocialFeed = () => {
         more = result.hasMore;
       }
 
-      // 拉取 claws 与 rewards（批量总奖励接口，与 AIAgentsPage 保持一致）
+      // 拉取 claws、rewards 与 IPShare（与 AIAgentsPage 保持一致）
       try {
         const [topByEngagement] = await Promise.all([
           getTopAgentsByEngagement(500).catch(() => []),
@@ -481,26 +492,21 @@ const SocialFeed = () => {
           } as AgentCardItem;
         });
 
-        let bnbPrice = 0;
-        let tokenPrices: Record<string, number> = {};
-        try {
-          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(([token, meta]) => ({
-            token,
-            version: meta.version ?? 2,
-            isImport: meta.isImport === 1,
-            pair: meta.pair,
-          }));
-          if (tokenItems.length > 0) {
-            const [bnb, prices] = await Promise.all([
-              getEthPrice(),
-              getTokenPricesByAddress(tokenItems),
-            ]);
-            bnbPrice = bnb;
-            tokenPrices = prices || {};
-          }
-        } catch {
-          // 价格拉取失败
-        }
+        const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(([token, meta]) => ({
+          token,
+          version: meta.version ?? 2,
+          isImport: meta.isImport === 1,
+          pair: meta.pair,
+        }));
+        const ipShareSubjects = enriched.map((agent) => agent.ethAddr || '').filter(Boolean);
+
+        const [bnbPrice, tokenPrices, ipShareStatsMap] = await Promise.all([
+          getEthPrice().catch(() => 0),
+          tokenItems.length > 0 ? getTokenPricesByAddress(tokenItems).catch(() => ({})) : Promise.resolve({}),
+          ipShareSubjects.length > 0
+            ? getIPShareStatsBySubjects(ipShareSubjects).catch(() => ({}))
+            : Promise.resolve({}),
+        ]);
 
         list = enriched.map((agent) => {
           const agentId = resolveAgentId(agent);
@@ -512,7 +518,17 @@ const SocialFeed = () => {
               if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
             }
           }
-          return { ...agent, totalRewards: usdTotal };
+          const ipShareMetrics = agent.ethAddr
+            ? deriveIPShareMetrics(ipShareStatsMap[agent.ethAddr.toLowerCase()], bnbPrice)
+            : deriveIPShareMetrics(undefined, bnbPrice);
+          return {
+            ...agent,
+            totalRewards: usdTotal,
+            ipsharePriceUsd: ipShareMetrics.priceUsd,
+            ipshareMarketCapUsd: ipShareMetrics.marketCapUsd,
+            ipshareSupply: ipShareMetrics.supply,
+            ipshareStaked: ipShareMetrics.staked,
+          };
         });
       } catch {
         // enrichment 失败时保留基础 list
@@ -563,13 +579,16 @@ const SocialFeed = () => {
     return () => observer.disconnect();
   }, [mobileTab, allAgentsHasMore, allAgentsLoading, loadMoreAgents]);
 
-  // 手机端 AI Agents 列表：按 rewards 从大到小排序，相同时按 claws 从大到小
+  // 手机端 AI Agents 列表：按 rewards、IPShare、claws 排序
   const sortedAllAgentsForMobile = useMemo(() => {
     const list = [...allAgents];
     list.sort((a, b) => {
       const ra = a.totalRewards ?? 0;
       const rb = b.totalRewards ?? 0;
       if (rb !== ra) return rb - ra;
+      const ia = a.ipshareMarketCapUsd ?? 0;
+      const ib = b.ipshareMarketCapUsd ?? 0;
+      if (ib !== ia) return ib - ia;
       const ca = a.totalClaws ?? 0;
       const cb = b.totalClaws ?? 0;
       return cb - ca;
@@ -688,7 +707,7 @@ const SocialFeed = () => {
     };
   }, [topCommunities]);
 
-  // Top AI Agents：使用与 AIAgentsPage 一致的批量总奖励接口，按美元价值从高到低取前 12
+  // Top AI Agents：使用与 AIAgentsPage 一致的批量奖励/IPShare 口径，按美元价值从高到低取前 12
   useEffect(() => {
     let cancelled = false;
     getTopAgentsByEngagement(200)
@@ -723,29 +742,23 @@ const SocialFeed = () => {
 
         if (cancelled) return;
 
-        // 统一获取价格：BNB 美元价 + 每个 token 的 BNB 价格
-        let bnbPrice = 0;
-        let tokenPrices: Record<string, number> = {};
-        try {
-          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(
-            ([token, meta]) => ({
-              token,
-              version: meta.version ?? 2,
-              isImport: meta.isImport === 1,
-              pair: meta.pair,
-            })
-          );
-          if (tokenItems.length > 0) {
-            const [bnb, prices] = await Promise.all([
-              getEthPrice(),
-              getTokenPricesByAddress(tokenItems),
-            ]);
-            bnbPrice = bnb;
-            tokenPrices = prices || {};
-          }
-        } catch {
-          // 价格拉取失败时保留 totalRewards 为 0
-        }
+        const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(
+          ([token, meta]) => ({
+            token,
+            version: meta.version ?? 2,
+            isImport: meta.isImport === 1,
+            pair: meta.pair,
+          })
+        );
+        const ipShareSubjects = baseCards.map((agent) => agent.ethAddr || '').filter(Boolean);
+
+        const [bnbPrice, tokenPrices, ipShareStatsMap] = await Promise.all([
+          getEthPrice().catch(() => 0),
+          tokenItems.length > 0 ? getTokenPricesByAddress(tokenItems).catch(() => ({})) : Promise.resolve({}),
+          ipShareSubjects.length > 0
+            ? getIPShareStatsBySubjects(ipShareSubjects).catch(() => ({}))
+            : Promise.resolve({}),
+        ]);
 
         const withUsd = baseCards.map((agent) => {
           const agentId = resolveAgentId(agent);
@@ -757,7 +770,17 @@ const SocialFeed = () => {
               if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
             }
           }
-          return { ...agent, totalRewards: usdTotal };
+          const ipShareMetrics = agent.ethAddr
+            ? deriveIPShareMetrics(ipShareStatsMap[agent.ethAddr.toLowerCase()], bnbPrice)
+            : deriveIPShareMetrics(undefined, bnbPrice);
+          return {
+            ...agent,
+            totalRewards: usdTotal,
+            ipsharePriceUsd: ipShareMetrics.priceUsd,
+            ipshareMarketCapUsd: ipShareMetrics.marketCapUsd,
+            ipshareSupply: ipShareMetrics.supply,
+            ipshareStaked: ipShareMetrics.staked,
+          };
         });
 
         // 按 rewards（美元）从高到低排序，取前 12
@@ -1112,16 +1135,17 @@ const SocialFeed = () => {
                 )}
                 {allAgents.length > 0 && (
                   <>
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
                       <span>Agent</span>
                       <span className="text-right">rewards</span>
+                      <span className="text-right">IPShare</span>
                       <span className="text-right">claws</span>
                     </div>
                     <div className="space-y-1">
                       {sortedAllAgentsForMobile.map((agent) => (
                         <div
                           key={agent.id}
-                          className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-1.5"
+                          className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 py-1.5"
                         >
                           <Link
                             to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
@@ -1150,12 +1174,12 @@ const SocialFeed = () => {
                           </Link>
                           <div className="text-right shrink-0 text-xs">
                             <div className="text-gray-700 font-medium text-sm">
-                              {agent.totalRewards != null
-                                ? `$${agent.totalRewards.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })}`
-                                : '—'}
+                              {formatUsdValue(agent.totalRewards)}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0 text-xs">
+                            <div className="text-gray-700 font-medium text-sm">
+                              {formatUsdValue(agent.ipshareMarketCapUsd, false)}
                             </div>
                           </div>
                           <div className="text-right shrink-0 text-xs">
@@ -1285,16 +1309,17 @@ const SocialFeed = () => {
                   <div className="text-gray-500 text-sm py-2">加载中...</div>
                 )}
                 {topAgentsList.length > 0 && (
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
                     <span>Agent</span>
                     <span className="text-right">rewards ($)</span>
+                    <span className="text-right">IPShare</span>
                     <span className="text-right">claws</span>
                   </div>
                 )}
                 {topAgentsList.map((agent) => (
                   <div
                     key={agent.id}
-                    className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3"
+                    className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3"
                   >
                     <Link
                       to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
@@ -1323,12 +1348,12 @@ const SocialFeed = () => {
                     </Link>
                     <div className="text-right shrink-0 text-xs">
                       <div className="text-gray-700 font-medium text-sm">
-                        {agent.totalRewards != null
-                          ? agent.totalRewards.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          : '—'}
+                        {formatUsdValue(agent.totalRewards)}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 text-xs">
+                      <div className="text-gray-700 font-medium text-sm">
+                        {formatUsdValue(agent.ipshareMarketCapUsd, false)}
                       </div>
                     </div>
                     <div className="text-right shrink-0 text-xs">

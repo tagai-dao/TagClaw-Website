@@ -10,7 +10,7 @@ import {
   getEthPrice,
   mapApiAgentToCard,
 } from '../api/client';
-import { getTokenPricesByAddress } from '../api/chainPrice';
+import { deriveIPShareMetrics, getIPShareStatsBySubjects, getTokenPricesByAddress } from '../api/chainPrice';
 import type { TokenPriceItem } from '../api/chainPrice';
 
 const PAGE_SIZE = 12;
@@ -54,6 +54,12 @@ const getRankBadgeClass = (rank: number) => {
   return 'bg-gray-600 text-white';
 };
 
+const formatUsdValue = (value: number | undefined, zeroAsDash = true) => {
+  const safe = Number.isFinite(value) ? (value ?? 0) : 0;
+  if (safe <= 0) return zeroAsDash ? '—' : '$0.00';
+  return `$${safe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
 const AIAgentsPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<AgentSort>('recent');
   const [agents, setAgents] = useState<AgentCardItem[]>([]);
@@ -79,7 +85,7 @@ const AIAgentsPage: React.FC = () => {
         more = result.hasMore;
       }
 
-      // 为每个 Agent 计算奖励总和（统一用“总奖励”接口）和 claws
+      // 为每个 Agent 计算奖励总和（统一用“总奖励”接口）、IPShare 与 claws
       try {
         const [topByEngagement] = await Promise.all([
           getTopAgentsByEngagement(200).catch(() => []),
@@ -133,27 +139,22 @@ const AIAgentsPage: React.FC = () => {
           } as AgentCardItem;
         });
 
-        // 统一拉取 BNB 与各 token 价格，将每个 Agent 的 totalRewards 转为美元
-        let bnbPrice = 0;
-        let tokenPrices: Record<string, number> = {};
-        try {
-          const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(([token, meta]) => ({
-            token,
-            version: meta.version ?? 2,
-            isImport: meta.isImport === 1,
-            pair: meta.pair,
-          }));
-          if (tokenItems.length > 0) {
-            const [bnb, prices] = await Promise.all([
-              getEthPrice(),
-              getTokenPricesByAddress(tokenItems),
-            ]);
-            bnbPrice = bnb;
-            tokenPrices = prices || {};
-          }
-        } catch {
-          // 价格拉取失败时保留 totalRewards 为 0，展示为 — 或 0
-        }
+        // 统一拉取 BNB 价格、奖励代币价格和 IPShare 基础状态
+        const tokenItems: TokenPriceItem[] = Array.from(tokenMeta.entries()).map(([token, meta]) => ({
+          token,
+          version: meta.version ?? 2,
+          isImport: meta.isImport === 1,
+          pair: meta.pair,
+        }));
+        const ipShareSubjects = enriched.map((agent) => agent.ethAddr || '').filter(Boolean);
+
+        const [bnbPrice, tokenPrices, ipShareStatsMap] = await Promise.all([
+          getEthPrice().catch(() => 0),
+          tokenItems.length > 0 ? getTokenPricesByAddress(tokenItems).catch(() => ({})) : Promise.resolve({}),
+          ipShareSubjects.length > 0
+            ? getIPShareStatsBySubjects(ipShareSubjects).catch(() => ({}))
+            : Promise.resolve({}),
+        ]);
 
         list = enriched.map((agent) => {
           const agentId = resolveAgentId(agent);
@@ -166,10 +167,21 @@ const AIAgentsPage: React.FC = () => {
               if (priceInBnb && priceInBnb > 0) usdTotal += item.amount * priceInBnb * bnbPrice;
             }
           }
-          return { ...agent, totalRewards: usdTotal, totalRewardsAmount };
+          const ipShareMetrics = agent.ethAddr
+            ? deriveIPShareMetrics(ipShareStatsMap[agent.ethAddr.toLowerCase()], bnbPrice)
+            : deriveIPShareMetrics(undefined, bnbPrice);
+          return {
+            ...agent,
+            totalRewards: usdTotal,
+            totalRewardsAmount,
+            ipsharePriceUsd: ipShareMetrics.priceUsd,
+            ipshareMarketCapUsd: ipShareMetrics.marketCapUsd,
+            ipshareSupply: ipShareMetrics.supply,
+            ipshareStaked: ipShareMetrics.staked,
+          };
         });
       } catch {
-        // 静默忽略奖励聚合错误，保留基础列表
+        // 静默忽略聚合错误，保留基础列表
       }
 
       if (append) {
@@ -225,6 +237,7 @@ const AIAgentsPage: React.FC = () => {
       credit: 0,
       followers: a.followers,
       totalRewards: a.totalRewards ?? 0,
+      ipshareMarketCapUsd: a.ipshareMarketCapUsd ?? 0,
       totalClaws: a.totalClaws,
     }));
   }, [agents]);
@@ -332,9 +345,13 @@ const AIAgentsPage: React.FC = () => {
                           <div className="flex flex-col text-right">
                             <span className="text-gray-500 text-xs">rewards</span>
                             <span className="text-gray-900 font-semibold">
-                              {agent.totalRewards != null && agent.totalRewards > 0
-                                ? `$${agent.totalRewards.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                : '—'}
+                              {formatUsdValue(agent.totalRewards)}
+                            </span>
+                          </div>
+                          <div className="flex flex-col text-right">
+                            <span className="text-gray-500 text-xs">IPShare</span>
+                            <span className="text-gray-900 font-semibold">
+                              {formatUsdValue(agent.ipshareMarketCapUsd, false)}
                             </span>
                           </div>
                           <div className="flex flex-col text-right">
@@ -376,16 +393,17 @@ const AIAgentsPage: React.FC = () => {
                 <p className="text-gray-400 text-sm">No agents with rewards yet</p>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 text-xs text-gray-500 pb-1 border-b border-gray-200 mb-2">
                     <span>Agent</span>
                     <span className="text-right">rewards</span>
+                    <span className="text-right">IPShare</span>
                     <span className="text-right">claws</span>
                   </div>
                   {topAgents.map((agent) => (
                     <Link
                       key={agent.id}
                       to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
-                      className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors"
+                      className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3 hover:bg-gray-50 rounded-lg p-1 -m-1 transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <span
@@ -416,9 +434,12 @@ const AIAgentsPage: React.FC = () => {
                       </div>
                       <div className="text-right text-xs">
                         <div className="text-gray-900 font-semibold">
-                          {agent.totalRewards != null
-                            ? `$${agent.totalRewards.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                            : '—'}
+                          {formatUsdValue(agent.totalRewards)}
+                        </div>
+                      </div>
+                      <div className="text-right text-xs">
+                        <div className="text-gray-900 font-semibold">
+                          {formatUsdValue(agent.ipshareMarketCapUsd, false)}
                         </div>
                       </div>
                       <div className="text-right text-xs">
