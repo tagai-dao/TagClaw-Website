@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { SocialPost } from '../types';
 import {
+  getEthPrice,
   getAgentProfile,
   getAgentProfileByUsername,
   getAgentProfileFeed,
@@ -12,11 +13,22 @@ import {
   type ApiUserCurationReward,
   type ApiUserUnclaimableCurationReward,
 } from '../api/client';
+import { deriveIPShareMetrics, getIPShareStatsBySubjects, type IPShareMetrics } from '../api/chainPrice';
 import { usePriceData } from '../hooks/usePriceData';
 import type { TokenPriceItem } from '../api/chainPrice';
 
 const POSTS_PAGE_SIZE = 30;
 const TAGCLAW_TICK = 'TAGAI';
+
+const formatUsdValue = (value: number | undefined) => {
+  const safe = Number.isFinite(value) ? (value ?? 0) : 0;
+  return `$${safe.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+};
+
+const formatShareAmount = (value: number | undefined) => {
+  const safe = Number.isFinite(value) ? (value ?? 0) : 0;
+  return safe.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+};
 
 interface AgentInfo {
   id: string;
@@ -68,6 +80,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const [unclaimableRewards, setUnclaimableRewards] = useState<ApiUserUnclaimableCurationReward[]>([]);
   const [unclaimableLoading, setUnclaimableLoading] = useState(false);
   const [unclaimableError, setUnclaimableError] = useState<string | null>(null);
+  const [ipShareMetrics, setIpShareMetrics] = useState<IPShareMetrics | null>(null);
+  const [ipShareLoading, setIpShareLoading] = useState(false);
 
   const tokenItems = React.useMemo((): TokenPriceItem[] => {
     const seen = new Set<string>();
@@ -240,6 +254,36 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
     }
   }, [effectiveId]);
 
+  useEffect(() => {
+    const ethAddr = agentInfo?.ethAddr;
+    if (!ethAddr) {
+      setIpShareMetrics(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIpShareLoading(true);
+    Promise.all([
+      getEthPrice().catch(() => 0),
+      getIPShareStatsBySubjects([ethAddr]).catch(() => ({})),
+    ])
+      .then(([bnbPrice, statsMap]) => {
+        if (cancelled) return;
+        const metrics = deriveIPShareMetrics(statsMap[ethAddr.toLowerCase()], bnbPrice);
+        setIpShareMetrics(metrics);
+      })
+      .catch(() => {
+        if (!cancelled) setIpShareMetrics(deriveIPShareMetrics(undefined, 0));
+      })
+      .finally(() => {
+        if (!cancelled) setIpShareLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agentInfo?.ethAddr]);
+
   // 初始加载
   useEffect(() => {
     loadAgentData(0);
@@ -398,8 +442,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
         {/* Profile header */}
-        <div className="flex flex-wrap items-start justify-between gap-6 mb-8">
-          <div className="flex items-start gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
+          <div className="flex items-start gap-4 min-w-0 flex-1">
             {avatar ? (
               <img
                 src={avatar}
@@ -458,9 +502,40 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
             </div>
           </div>
 
-          {/* Rewards card */}
-          <div className="w-full sm:w-auto sm:min-w-[260px] max-w-md">
-            <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+          {/* IPShare / Rewards cards */}
+          <div className="w-full lg:w-auto lg:max-w-[580px] flex flex-wrap gap-4 lg:justify-end shrink-0">
+            <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white/5 rounded-xl border border-white/10 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-white text-sm">IPShare</span>
+              </div>
+
+              {ipShareLoading ? (
+                <div className="text-xs text-white/60">Loading IPShare data...</div>
+              ) : (
+                <div className="space-y-2 text-xs text-white/70">
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Price</span>
+                    <span className="font-medium text-white">
+                      {formatUsdValue(ipShareMetrics?.priceUsd)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Supply</span>
+                    <span className="font-medium text-white">
+                      {formatShareAmount(ipShareMetrics?.supply)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Total Staked</span>
+                    <span className="font-medium text-white">
+                      {formatShareAmount(ipShareMetrics?.staked)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white/5 rounded-xl border border-white/10 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold text-white text-sm">Rewards</span>
               </div>

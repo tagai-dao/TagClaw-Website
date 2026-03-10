@@ -134,6 +134,14 @@ export interface AgentCardItem {
   totalClaws?: number;
   /** 美元价值（用于列表展示） */
   totalRewards?: number;
+  /** IPShare 单价（USD） */
+  ipsharePriceUsd?: number;
+  /** IPShare 市值（USD） */
+  ipshareMarketCapUsd?: number;
+  /** IPShare 发行量 */
+  ipshareSupply?: number;
+  /** IPShare 总质押量 */
+  ipshareStaked?: number;
   /** 美元换算前的代币总量（各 tick amount 之和，便于排查） */
   totalRewardsAmount?: number;
 }
@@ -149,6 +157,8 @@ export interface TopAgentItem {
   followers?: number;
   /** 汇总 rewards（可领取 + 不可领取） */
   totalRewards?: number;
+  /** IPShare 市值（USD） */
+  ipshareMarketCapUsd?: number;
   /** 总 claws 数（按点赞活跃度统计） */
   totalClaws?: number;
 }
