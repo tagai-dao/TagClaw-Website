@@ -17,11 +17,15 @@ const pumpContracts: Address[] = [
   '0x0476571a77Cc8Fc28796935Cf173c265F2021448',
   '0x2cAbfDE43f93422fFb070f0Fa03d2951dbBC7749',
   '0x201308B193bC0Aa81Ac540A7D3B3ADb530a39861',
+  '0x3E75E2db40E7cc9C7d7869Fc2d97eDAb01724212',
 ]
 const WETH = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as Address
 const UNISWAP_V2_FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73' as Address
+const PCS_CL_POOL_MANAGER = '0xa0FfB9c1CE1Fe56963B0321B32E7A0302114058b' as Address
 const IPSHARE_CONTRACT = '0x95450AaD4Cc195e03BB4791B7f6f04aC6D9BA922' as Address
 const IP_SHARE_CACHE_TTL_MS = 60_000
+const Q192 = 2n ** 192n
+const TOKEN_DECIMALS = 18n
 
 const tokenAbi = parseAbi([
   'function bondingCurveSupply() view returns (uint256)',
@@ -39,6 +43,9 @@ const pairAbi = parseAbi([
 ])
 const factoryAbi = parseAbi([
   'function getPair(address, address) view returns (address)',
+])
+const clPoolManagerAbi = parseAbi([
+  'function getSlot0(bytes32 id) view returns (uint160 sqrtPriceX96, int24 tick, uint24 protocolFee, uint24 lpFee)',
 ])
 const ipShareAbi = parseAbi([
   'function ipshareSupply(address subject) view returns (uint256)',
@@ -72,6 +79,10 @@ export interface IPShareMetrics extends IPShareStats {
 
 const ipShareStatsCache = new Map<string, IPShareStats>()
 
+function isBytes32Hex(value: string | undefined): value is `0x${string}` {
+  return typeof value === 'string' && /^0x[0-9a-fA-F]{64}$/.test(value)
+}
+
 /** 获取多个 token 的价格（BNB/枚） */
 export async function getTokenPricesByAddress(
   items: TokenPriceItem[]
@@ -88,7 +99,7 @@ export async function getTokenPricesByAddress(
       const token = item.token as Address
       if (item.isImport && item.pair) {
         importItems.push({ token, pair: item.pair as Address })
-      } else if (!item.isImport && item.version >= 1 && item.version <= 6) {
+      } else if (!item.isImport && item.version >= 1 && item.version <= 7) {
         bondingCurveItems.push(item)
       }
     } catch {
@@ -139,7 +150,7 @@ export async function getTokenPricesAndSuppliesByAddress(
       const token = item.token as Address
       if (item.isImport && item.pair) {
         importItems.push({ token, pair: item.pair as Address })
-      } else if (!item.isImport && item.version >= 1 && item.version <= 6) {
+      } else if (!item.isImport && item.version >= 1 && item.version <= 7) {
         bondingCurveItems.push(item)
       }
     } catch {
@@ -182,7 +193,7 @@ export async function getTokenSuppliesByAddress(
       const token = item.token as Address
       if (item.isImport) {
         importTokens.push({ token })
-      } else if (!item.isImport && item.version >= 1 && item.version <= 6) {
+      } else if (!item.isImport && item.version >= 1 && item.version <= 7) {
         bcTokens.push(item)
       }
     } catch {
@@ -253,32 +264,44 @@ async function fetchBondingCurvePricesAndSupplies(
 ): Promise<{ prices: Record<string, number>; supplies: Record<string, number> }> {
   const prices: Record<string, number> = {}
   const supplies: Record<string, number> = {}
-  const tokenAddresses = items.map((i) => i.token as Address)
-
   // 第一轮：bondingCurveSupply（用于 getPrice）、listed、pair、totalSupply（用于市值）
-  const calls1 = tokenAddresses.flatMap((token) => [
-    {
-      address: token,
-      abi: tokenAbi,
-      functionName: 'bondingCurveSupply' as const,
-    },
-    {
-      address: token,
-      abi: tokenAbi,
-      functionName: 'listed' as const,
-    },
-    {
-      address: UNISWAP_V2_FACTORY,
-      abi: factoryAbi,
-      functionName: 'getPair' as const,
-      args: [token, WETH],
-    },
-    {
-      address: token,
-      abi: erc20Abi,
-      functionName: 'totalSupply' as const,
-    },
-  ])
+  const calls1 = items.flatMap((item) => {
+    const token = item.token as Address
+    const version = Math.min(7, Math.max(1, Math.floor(Number(item.version)) || 2))
+    const contracts: {
+      address: Address
+      abi: typeof tokenAbi | typeof factoryAbi | typeof erc20Abi
+      functionName: string
+      args?: readonly unknown[]
+    }[] = [
+      {
+        address: token,
+        abi: tokenAbi,
+        functionName: 'bondingCurveSupply',
+      },
+      {
+        address: token,
+        abi: tokenAbi,
+        functionName: 'listed',
+      },
+      {
+        address: token,
+        abi: erc20Abi,
+        functionName: 'totalSupply',
+      },
+    ]
+
+    if (version < 7) {
+      contracts.splice(2, 0, {
+        address: UNISWAP_V2_FACTORY,
+        abi: factoryAbi,
+        functionName: 'getPair',
+        args: [token, WETH],
+      })
+    }
+
+    return contracts
+  })
 
   // @ts-expect-error viem multicall 类型与可选 authorizationList 的兼容
   const res1 = await publicClient.multicall({
@@ -286,19 +309,24 @@ async function fetchBondingCurvePricesAndSupplies(
     allowFailure: true,
   })
 
-  const infos: Record<string, { supply: bigint; totalSupply: bigint; listed: boolean; pair: Address | null }> = {}
+  const infos: Record<string, { supply: bigint; totalSupply: bigint; listed: boolean; pair: string | null }> = {}
   let idx = 0
-  for (const token of tokenAddresses) {
+  for (const item of items) {
+    const token = item.token as Address
+    const version = Math.min(7, Math.max(1, Math.floor(Number(item.version)) || 2))
     const supplyRes = res1[idx++]
     const listedRes = res1[idx++]
-    const pairRes = res1[idx++]
+    const pairRes = version < 7 ? res1[idx++] : null
     const totalSupplyRes = res1[idx++]
     const supply = supplyRes?.status === 'success' && typeof supplyRes.result === 'bigint' ? supplyRes.result : 0n
     const totalSupply =
       totalSupplyRes?.status === 'success' && typeof totalSupplyRes.result === 'bigint' ? totalSupplyRes.result : 0n
     const listed = listedRes?.status === 'success' && typeof listedRes.result === 'boolean' ? listedRes.result : false
-    const pair =
-      pairRes?.status === 'success' && pairRes.result && pairRes.result !== '0x0000000000000000000000000000000000000000'
+    const pair = version >= 7
+      ? (isBytes32Hex(item.pair) ? item.pair : null)
+      : pairRes?.status === 'success' &&
+          pairRes.result &&
+          pairRes.result !== '0x0000000000000000000000000000000000000000'
         ? (pairRes.result as Address)
         : null
     infos[token.toLowerCase()] = { supply, totalSupply, listed, pair }
@@ -312,25 +340,33 @@ async function fetchBondingCurvePricesAndSupplies(
   // 第二轮：getPrice（bonding curve）或 getReserves+token0（listed）
   const calls2: {
     address: Address
-    abi: typeof pumpAbi | typeof pairAbi
+    abi: typeof pumpAbi | typeof pairAbi | typeof clPoolManagerAbi
     functionName: string
     args?: readonly unknown[]
   }[] = []
-  const itemIndex: { item: TokenPriceItem; startIdx: number; type: 'bc' | 'pair' }[] = []
+  const itemIndex: { item: TokenPriceItem; startIdx: number; type: 'bc' | 'pair' | 'v7' }[] = []
 
   for (const item of items) {
     const token = (item.token as string).toLowerCase()
     const info = infos[token]
     if (!info) continue
 
-    const version = Math.min(6, Math.max(1, Math.floor(Number(item.version)) || 2))
+    const version = Math.min(7, Math.max(1, Math.floor(Number(item.version)) || 2))
     const pumpAddr = pumpContracts[version - 1]
     const startIdx = calls2.length
 
-    if (info.listed && info.pair) {
+    if (info.listed && version === 7 && info.pair) {
+      calls2.push({
+        address: PCS_CL_POOL_MANAGER,
+        abi: clPoolManagerAbi,
+        functionName: 'getSlot0',
+        args: [info.pair],
+      })
+      itemIndex.push({ item, startIdx, type: 'v7' })
+    } else if (info.listed && info.pair) {
       calls2.push(
-        { address: info.pair, abi: pairAbi, functionName: 'getReserves' },
-        { address: info.pair, abi: pairAbi, functionName: 'token0' }
+        { address: info.pair as Address, abi: pairAbi, functionName: 'getReserves' },
+        { address: info.pair as Address, abi: pairAbi, functionName: 'token0' }
       )
       itemIndex.push({ item, startIdx, type: 'pair' })
     } else {
@@ -367,6 +403,17 @@ async function fetchBondingCurvePricesAndSupplies(
       if (r0 <= 0) continue
       const price = token0 === token ? r1Val / r0 : r0 / r1Val
       prices[item.token] = price
+    } else if (type === 'v7') {
+      const r = res2[startIdx]
+      if (!r || r.status !== 'success') continue
+      const [sqrtPriceX96] = r.result as [bigint, number, number, number]
+      if (sqrtPriceX96 === 0n) continue
+
+      // 参考 pump.ts：V7 pool 初始化为 Native BNB(currency0) <-> Token(currency1)，
+      // 因此 sqrtPriceX96^2 / 2^192 即 1 个 token 的 BNB 价格。
+      const scaledPrice = (sqrtPriceX96 * sqrtPriceX96 * (10n ** TOKEN_DECIMALS)) / Q192
+      const price = Number(scaledPrice) / 1e18
+      if (price > 0) prices[item.token] = price
     } else {
       const r = res2[startIdx]
       if (!r || r.status !== 'success') continue
