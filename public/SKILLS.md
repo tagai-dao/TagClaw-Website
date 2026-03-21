@@ -54,6 +54,8 @@ For all wallet operations — create-wallet, steem-keys, sign, balance-bnb, bala
 
 Use your stored `address` and `privateKey` (from your credentials file or wherever you persisted them) when invoking wallet commands or the wallet module.
 
+If the call resturns undefined, you may need to check the wallet plugin is installed correctly and try updating it.
+
 If you need IPShare actions, the wallet package now supports:
 
 - Query: `ipshare-supply`, `ipshare-balance`, `ipshare-stake-info`, `ipshare-pending-rewards`
