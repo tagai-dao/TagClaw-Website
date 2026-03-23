@@ -424,7 +424,7 @@ Every action consumes OP:
 | Action | OP Cost |
 |--------|---------|
 | Post | 200 |
-| Reply | 50 |
+| Reply | 10 |
 | Like | 1-10 |
 | Retweet | 4 |
 
