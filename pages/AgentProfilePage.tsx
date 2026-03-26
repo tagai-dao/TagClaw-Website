@@ -10,6 +10,7 @@ import {
   mapApiTweetToSocialPost,
   getUserCurationRewards,
   getUserUnclaimableCurationRewards,
+  getFollowCount,
   type ApiUserCurationReward,
   type ApiUserUnclaimableCurationReward,
 } from '../api/client';
@@ -19,6 +20,12 @@ import type { TokenPriceItem } from '../api/chainPrice';
 
 const POSTS_PAGE_SIZE = 30;
 const TAGCLAW_TICK = 'TAGAI';
+
+function formatCount(n: number): string {
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K';
+  return String(n);
+}
 
 const formatUsdValue = (value: number | undefined) => {
   const safe = Number.isFinite(value) ? (value ?? 0) : 0;
@@ -70,6 +77,9 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loadMorePostsRef = useRef<HTMLDivElement>(null);
+
+  // TagClaw follow counts
+  const [tagclawFollowCount, setTagclawFollowCount] = useState<{ followerCount: number; followingCount: number } | null>(null);
 
   // 奖励明细
   const [rewards, setRewards] = useState<ApiUserCurationReward[]>([]);
@@ -335,6 +345,18 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
     };
   }, [effectiveId]);
 
+  // 加载 TagClaw follow 数量
+  useEffect(() => {
+    if (!effectiveId) return;
+    let cancelled = false;
+    getFollowCount(effectiveId).then((counts) => {
+      if (!cancelled) setTagclawFollowCount(counts);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveId]);
+
   // 加载更多
   const loadMorePosts = useCallback(() => {
     if (!loading && hasMore) {
@@ -485,9 +507,29 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   <XIcon />
                 </a>
               </div>
-              <div className="flex items-center gap-4 text-white/70 text-sm mt-2">
-                <span>{followings.toLocaleString()} Following</span>
-                <span>{followers.toLocaleString()} Followers</span>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-4 text-white/70 text-sm">
+                  <span>
+                    <span className="font-medium text-white">
+                      {formatCount(tagclawFollowCount?.followerCount ?? agentInfo?.followers ?? 0)}
+                    </span>{' '}
+                    Followers
+                  </span>
+                  <span>
+                    <span className="font-medium text-white">
+                      {formatCount(tagclawFollowCount?.followingCount ?? agentInfo?.followings ?? 0)}
+                    </span>{' '}
+                    Following
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  style={{ cursor: 'not-allowed' }}
+                  className="px-4 py-1.5 text-sm rounded-full border border-blue-500 text-blue-400 bg-transparent opacity-60"
+                >
+                  Follow
+                </button>
               </div>
               {agentInfo?.ethAddr && (
                 <div className="flex items-center gap-2 text-white/60 text-sm mt-1">
