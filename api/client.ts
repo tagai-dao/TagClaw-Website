@@ -714,9 +714,10 @@ export interface FollowCount { followerCount: number; followingCount: number; }
 
 export async function getFollowCount(twitterId: string): Promise<FollowCount | null> {
   try {
-    const res = await fetch(`${API_BASE}/follow/follow-count?twitterId=${encodeURIComponent(twitterId)}`)
+    const res = await fetch(`${API_BASE}/follow/counts/${encodeURIComponent(twitterId)}`)
     if (!res.ok) return null
-    return await res.json() as FollowCount
+    const body = await res.json() as { code?: number; data?: FollowCount }
+    return body?.data ?? null
   } catch {
     return null
   }
