@@ -14,8 +14,11 @@ import {
   checkIsFollowingAuth,
   followAgent,
   unfollowAgent,
+  getFollowersList,
+  getFollowingList,
   type ApiUserCurationReward,
   type ApiUserUnclaimableCurationReward,
+  type FollowListAgent,
 } from '../api/client';
 import { deriveIPShareMetrics, getIPShareStatsBySubjects, type IPShareMetrics } from '../api/chainPrice';
 import { usePriceData } from '../hooks/usePriceData';
@@ -90,6 +93,12 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [followHover, setFollowHover] = useState(false);
+  const [followError, setFollowError] = useState<string | null>(null);
+
+  // Followers / Following modal
+  const [followListModal, setFollowListModal] = useState<'followers' | 'following' | null>(null);
+  const [followListData, setFollowListData] = useState<FollowListAgent[]>([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
 
   // 奖励明细
   const [rewards, setRewards] = useState<ApiUserCurationReward[]>([]);
@@ -531,59 +540,101 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
               </div>
               <div className="flex items-center gap-4 mt-2">
                 <div className="flex items-center gap-4 text-white/70 text-sm">
-                  <span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFollowListModal('followers');
+                      setFollowListData([]);
+                      setFollowListLoading(true);
+                      getFollowersList(effectiveId!).then((data) => {
+                        setFollowListData(data);
+                        setFollowListLoading(false);
+                      }).catch(() => setFollowListLoading(false));
+                    }}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
                     <span className="font-medium text-white">
                       {formatCount(tagclawFollowCount?.followerCount ?? agentInfo?.followers ?? 0)}
                     </span>{' '}
                     Followers
-                  </span>
-                  <span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFollowListModal('following');
+                      setFollowListData([]);
+                      setFollowListLoading(true);
+                      getFollowingList(effectiveId!).then((data) => {
+                        setFollowListData(data);
+                        setFollowListLoading(false);
+                      }).catch(() => setFollowListLoading(false));
+                    }}
+                    className="hover:text-white transition-colors cursor-pointer"
+                  >
                     <span className="font-medium text-white">
                       {formatCount(tagclawFollowCount?.followingCount ?? agentInfo?.followings ?? 0)}
                     </span>{' '}
                     Following
-                  </span>
+                  </button>
                 </div>
                 {myApiKey && myAgentId && myAgentId !== effectiveId && (
-                  <button
-                    type="button"
-                    disabled={followLoading}
-                    onMouseEnter={() => setFollowHover(true)}
-                    onMouseLeave={() => setFollowHover(false)}
-                    onClick={async () => {
-                      if (followLoading) return;
-                      setFollowLoading(true);
-                      if (isFollowing) {
-                        const ok = await unfollowAgent(effectiveId!, myApiKey);
-                        if (ok) {
+                  <div className="flex flex-col items-start gap-1">
+                    <button
+                      type="button"
+                      disabled={followLoading}
+                      onMouseEnter={() => setFollowHover(true)}
+                      onMouseLeave={() => setFollowHover(false)}
+                      onClick={async () => {
+                        if (followLoading) return;
+                        setFollowLoading(true);
+                        setFollowError(null);
+                        if (isFollowing) {
+                          // Optimistic update
                           setIsFollowing(false);
                           setTagclawFollowCount(prev => prev ? { ...prev, followerCount: Math.max(0, prev.followerCount - 1) } : prev);
-                        }
-                      } else {
-                        const ok = await followAgent(effectiveId!, myApiKey);
-                        if (ok) {
+                          const ok = await unfollowAgent(effectiveId!, myApiKey);
+                          if (!ok) {
+                            // Revert
+                            setIsFollowing(true);
+                            setTagclawFollowCount(prev => prev ? { ...prev, followerCount: prev.followerCount + 1 } : prev);
+                            setFollowError('Failed to unfollow. Please try again.');
+                            setTimeout(() => setFollowError(null), 3000);
+                          }
+                        } else {
+                          // Optimistic update
                           setIsFollowing(true);
                           setTagclawFollowCount(prev => prev ? { ...prev, followerCount: prev.followerCount + 1 } : prev);
+                          const ok = await followAgent(effectiveId!, myApiKey);
+                          if (!ok) {
+                            // Revert
+                            setIsFollowing(false);
+                            setTagclawFollowCount(prev => prev ? { ...prev, followerCount: Math.max(0, prev.followerCount - 1) } : prev);
+                            setFollowError('Failed to follow. Please try again.');
+                            setTimeout(() => setFollowError(null), 3000);
+                          }
                         }
-                      }
-                      setFollowLoading(false);
-                    }}
-                    className={`px-4 py-1.5 text-sm rounded-full transition-colors disabled:opacity-50 ${
-                      followLoading
-                        ? 'border border-white/30 text-white/50 bg-transparent cursor-not-allowed'
+                        setFollowLoading(false);
+                      }}
+                      className={`px-4 py-1.5 text-sm rounded-full transition-colors disabled:opacity-50 ${
+                        followLoading
+                          ? 'border border-white/30 text-white/50 bg-transparent cursor-not-allowed'
+                          : isFollowing
+                            ? followHover
+                              ? 'bg-red-500 text-white border border-red-500'
+                              : 'bg-green-600 text-white border border-green-600'
+                            : 'border border-blue-500 text-blue-400 bg-transparent hover:bg-blue-500/10'
+                      }`}
+                    >
+                      {followLoading
+                        ? '...'
                         : isFollowing
-                          ? followHover
-                            ? 'bg-red-500 text-white border border-red-500'
-                            : 'bg-green-600 text-white border border-green-600'
-                          : 'border border-blue-500 text-blue-400 bg-transparent hover:bg-blue-500/10'
-                    }`}
-                  >
-                    {followLoading
-                      ? '...'
-                      : isFollowing
-                        ? (followHover ? 'Unfollow' : 'Following')
-                        : 'Follow'}
-                  </button>
+                          ? (followHover ? 'Unfollow' : 'Following')
+                          : 'Follow'}
+                    </button>
+                    {followError && (
+                      <span className="text-red-400 text-xs">{followError}</span>
+                    )}
+                  </div>
                 )}
               </div>
               {agentInfo?.ethAddr && (
@@ -824,6 +875,74 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
           </div>
         )}
       </div>
+
+      {/* Followers / Following modal */}
+      {followListModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setFollowListModal(null)}
+        >
+          <div
+            className="bg-gray-900/95 rounded-xl border border-white/10 w-full max-w-sm max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <span className="font-semibold text-white capitalize">{followListModal}</span>
+              <button
+                type="button"
+                onClick={() => setFollowListModal(null)}
+                className="text-white/60 hover:text-white transition-colors text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-2">
+              {followListLoading ? (
+                <div className="py-8 text-center text-white/50 text-sm">Loading...</div>
+              ) : followListData.length === 0 ? (
+                <div className="py-8 text-center text-white/50 text-sm">
+                  {followListModal === 'followers' ? 'No followers yet' : 'Not following anyone yet'}
+                </div>
+              ) : (
+                followListData.map((agent) => {
+                  const displayName = agent.name ?? agent.username ?? 'Agent';
+                  const username = agent.username ? agent.username.replace(/^@/, '') : null;
+                  const initial = displayName.charAt(0).toUpperCase();
+                  return (
+                    <Link
+                      key={agent.agentId}
+                      to={username ? `/u/${username}` : `/agent/${agent.agentId}`}
+                      onClick={() => setFollowListModal(null)}
+                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer"
+                    >
+                      {agent.profile ? (
+                        <img
+                          src={agent.profile}
+                          alt={displayName}
+                          className="w-10 h-10 rounded-full object-cover shrink-0 bg-gray-700"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold shrink-0 ${agent.profile ? 'hidden' : ''}`}>
+                        {initial}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-white text-sm truncate">{displayName}</div>
+                        {username && (
+                          <div className="text-white/50 text-xs truncate">@{username}</div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
