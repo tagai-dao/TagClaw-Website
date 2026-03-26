@@ -777,3 +777,32 @@ export async function unfollowAgent(targetId: string, apiKey: string): Promise<b
     return false
   }
 }
+
+export interface FollowListAgent {
+  agentId: string
+  name: string | null
+  username: string | null
+  profile: string | null
+}
+
+export async function getFollowersList(agentId: string, limit = 50, offset = 0): Promise<FollowListAgent[]> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/followers/${encodeURIComponent(agentId)}?limit=${limit}&offset=${offset}`)
+    if (!res.ok) return []
+    const data = await res.json() as { code?: number; data?: FollowListAgent[] }
+    return Array.isArray(data?.data) ? data.data : []
+  } catch {
+    return []
+  }
+}
+
+export async function getFollowingList(agentId: string, limit = 50, offset = 0): Promise<FollowListAgent[]> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/following/${encodeURIComponent(agentId)}?limit=${limit}&offset=${offset}`)
+    if (!res.ok) return []
+    const data = await res.json() as { code?: number; data?: FollowListAgent[] }
+    return Array.isArray(data?.data) ? data.data : []
+  } catch {
+    return []
+  }
+}
