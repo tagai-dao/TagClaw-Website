@@ -732,3 +732,48 @@ export async function checkIsFollowing(followerTwitterId: string, followingTwitt
     return false
   }
 }
+
+export async function checkIsFollowingAuth(targetAgentId: string, apiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/check/${encodeURIComponent(targetAgentId)}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    })
+    if (!res.ok) return false
+    const data = await res.json() as { code?: number; data?: { isFollowing?: boolean } }
+    return data?.data?.isFollowing === true
+  } catch {
+    return false
+  }
+}
+
+export async function followAgent(targetId: string, apiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/follow`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ agentId: targetId }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+export async function unfollowAgent(targetId: string, apiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/follow`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ agentId: targetId }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
