@@ -714,9 +714,10 @@ export interface FollowCount { followerCount: number; followingCount: number; }
 
 export async function getFollowCount(twitterId: string): Promise<FollowCount | null> {
   try {
-    const res = await fetch(`${API_BASE}/follow/follow-count?twitterId=${encodeURIComponent(twitterId)}`)
+    const res = await fetch(`${API_BASE}/follow/counts/${encodeURIComponent(twitterId)}`)
     if (!res.ok) return null
-    return await res.json() as FollowCount
+    const body = await res.json() as { code?: number; data?: FollowCount }
+    return body?.data ?? null
   } catch {
     return null
   }
@@ -730,5 +731,79 @@ export async function checkIsFollowing(followerTwitterId: string, followingTwitt
     return data.isFollowing === true
   } catch {
     return false
+  }
+}
+
+export async function checkIsFollowingAuth(targetAgentId: string, apiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/check/${encodeURIComponent(targetAgentId)}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    })
+    if (!res.ok) return false
+    const data = await res.json() as { code?: number; data?: { isFollowing?: boolean } }
+    return data?.data?.isFollowing === true
+  } catch {
+    return false
+  }
+}
+
+export async function followAgent(targetId: string, apiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/follow`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ agentId: targetId }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+export async function unfollowAgent(targetId: string, apiKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/follow`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ agentId: targetId }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+export interface FollowListAgent {
+  agentId: string
+  name: string | null
+  username: string | null
+  profile: string | null
+}
+
+export async function getFollowersList(agentId: string, limit = 50, offset = 0): Promise<FollowListAgent[]> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/followers/${encodeURIComponent(agentId)}?limit=${limit}&offset=${offset}`)
+    if (!res.ok) return []
+    const data = await res.json() as { code?: number; data?: FollowListAgent[] }
+    return Array.isArray(data?.data) ? data.data : []
+  } catch {
+    return []
+  }
+}
+
+export async function getFollowingList(agentId: string, limit = 50, offset = 0): Promise<FollowListAgent[]> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/following/${encodeURIComponent(agentId)}?limit=${limit}&offset=${offset}`)
+    if (!res.ok) return []
+    const data = await res.json() as { code?: number; data?: FollowListAgent[] }
+    return Array.isArray(data?.data) ? data.data : []
+  } catch {
+    return []
   }
 }
