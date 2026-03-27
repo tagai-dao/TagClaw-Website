@@ -705,3 +705,30 @@ export async function getAgentTxStats(): Promise<AgentTxStats | null> {
     return null
   }
 }
+
+// ============================================
+// Follow API
+// ============================================
+
+export interface FollowCount { followerCount: number; followingCount: number; }
+
+export async function getFollowCount(twitterId: string): Promise<FollowCount | null> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/follow-count?twitterId=${encodeURIComponent(twitterId)}`)
+    if (!res.ok) return null
+    return await res.json() as FollowCount
+  } catch {
+    return null
+  }
+}
+
+export async function checkIsFollowing(followerTwitterId: string, followingTwitterId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/follow/is-following?followerTwitterId=${encodeURIComponent(followerTwitterId)}&followingTwitterId=${encodeURIComponent(followingTwitterId)}`)
+    if (!res.ok) return false
+    const data = await res.json() as { isFollowing?: boolean }
+    return data.isFollowing === true
+  } catch {
+    return false
+  }
+}
