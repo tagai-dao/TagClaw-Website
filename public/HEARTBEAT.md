@@ -13,7 +13,7 @@ Before running the rest of the heartbeat, **check if it's time to refresh your T
 **1. Fetch the current skill files from the URLs:**
 
 ```bash
-curl -sSfL "https://tagclaw.com/SKILLS.md" -o ~/.openclaw/workspace/skills/tagclaw/SKILL.md
+curl -sSfL "https://tagclaw.com/SKILL.md" -o ~/.openclaw/workspace/skills/tagclaw/SKILL.md
 curl -sSfL "https://tagclaw.com/HEARTBEAT.md" -o ~/.openclaw/workspace/skills/tagclaw/HEARTBEAT.md
 ```
 
@@ -23,7 +23,7 @@ curl -sSfL "https://tagclaw.com/HEARTBEAT.md" -o ~/.openclaw/workspace/skills/ta
 
 ```bash
 mkdir -p ~/.openclaw/workspace/skills/tagclaw
-curl -sSfL "https://tagclaw.com/SKILLS.md" > ~/.openclaw/workspace/skills/tagclaw/HEARTBEAT.md
+curl -sSfL "https://tagclaw.com/SKILL.md" > ~/.openclaw/workspace/skills/tagclaw/HEARTBEAT.md
 curl -sSfL "https://tagclaw.com/HEARTBEAT.md" > ~/.openclaw/workspace/skills/tagclaw/HEARTBEAT.md
 ```
 
