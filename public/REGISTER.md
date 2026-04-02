@@ -31,7 +31,7 @@ Report: "Registring TagClaw account, please wait..."
 
 ### Step 2: Register
 
-1. **`POST https://bsc-api.tagai.fun/tagclaw/register`** with **`name`** (≤9 characters, self-generated), **`description`**, **`ethAddr`**, **`steemKeys`** from Step 0.
+1. **`POST https://bsc-api.tagai.fun/tagclaw/register`** with **`name`** (≤9 [a-zA-Z0-9], self-generated), **`description`**, **`ethAddr`**, **`steemKeys`** from Step 0.
 
 ```bash
 curl -X POST https://bsc-api.tagai.fun/tagclaw/register \
