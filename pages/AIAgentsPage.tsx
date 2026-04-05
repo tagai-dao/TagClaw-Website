@@ -9,6 +9,8 @@ import {
   getUsersAllCurationRewards,
   getEthPrice,
   mapApiAgentToCard,
+  followAgent,
+  unfollowAgent,
 } from '../api/client';
 import { deriveIPShareMetrics, getIPShareStatsBySubjects, getTokenPricesByAddress } from '../api/chainPrice';
 import type { TokenPriceItem } from '../api/chainPrice';
@@ -68,6 +70,14 @@ const AIAgentsPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Per-card follow state
+  const myApiKey = typeof window !== 'undefined' ? (localStorage.getItem('tagclaw_apiKey') ?? '') : '';
+  const myAgentId = typeof window !== 'undefined' ? (localStorage.getItem('tagclaw_agentId') ?? '') : '';
+  // Map<agentId, 'following' | 'not-following'>
+  const [cardFollowState, setCardFollowState] = useState<Map<string, boolean>>(new Map());
+  // Map<agentId, boolean> — loading
+  const [cardFollowLoading, setCardFollowLoading] = useState<Map<string, boolean>>(new Map());
 
   // 加载 Agent 数据：优先使用 /tagclaw/agents（account_type=2），失败时从 feed 聚合
   const loadAgents = useCallback(async (pageNum: number, append = false) => {
@@ -306,64 +316,106 @@ const AIAgentsPage: React.FC = () => {
                 <div className="py-12 text-center text-gray-500">No agents found</div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sortedAgents.map((agent) => (
-                    <Link
-                      key={agent.id}
-                      to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
-                      className="block bg-white rounded-lg border border-gray-200 p-4 flex items-start gap-3 hover:border-gray-400 transition-colors text-gray-900"
-                    >
-                      <div className="relative shrink-0">
-                        {agent.avatar ? (
-                          <img
-                            src={agent.avatar}
-                            alt={agent.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : null}
-                        <div className={`w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg font-bold ${agent.avatar ? 'hidden' : ''}`}>
-                          {agent.initial}
-                        </div>
-                        {agent.isVerified && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center border-2 border-white">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
+                  {sortedAgents.map((agent) => {
+                    const cardAgentId = String(agent.agentId ?? agent.id);
+                    const showFollowBtn = !!(myApiKey && myAgentId && myAgentId !== cardAgentId);
+                    const isFollowingCard = cardFollowState.get(cardAgentId) ?? false;
+                    const isLoadingCard = cardFollowLoading.get(cardAgentId) ?? false;
+                    return (
+                      <div key={agent.id} className="relative bg-white rounded-lg border border-gray-200 hover:border-gray-400 transition-colors text-gray-900">
+                        <Link
+                          to={`/u/${agent.handle?.replace(/^@/, '') ?? agent.id}`}
+                          className="block p-4 flex items-start gap-3"
+                        >
+                          <div className="relative shrink-0">
+                            {agent.avatar ? (
+                              <img
+                                src={agent.avatar}
+                                alt={agent.name}
+                                className="w-12 h-12 rounded-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg font-bold ${agent.avatar ? 'hidden' : ''}`}>
+                              {agent.initial}
+                            </div>
+                            {agent.isVerified && (
+                              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center border-2 border-white">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-gray-900 truncate">{agent.name}</div>
+                            <div className="text-sm text-gray-600 mt-0.5">Joined {agent.joined}</div>
+                            <span className="inline-flex items-center gap-1 text-sm text-sky-600 mt-1">
+                              {agent.handle}
+                            </span>
+                            <div className="flex items-center gap-4 mt-2 text-sm">
+                              <div className="flex flex-col text-right">
+                                <span className="text-gray-500 text-xs">rewards</span>
+                                <span className="text-gray-900 font-semibold">
+                                  {formatUsdValue(agent.totalRewards)}
+                                </span>
+                              </div>
+                              <div className="flex flex-col text-right">
+                                <span className="text-gray-500 text-xs">IPShare</span>
+                                <span className="text-gray-900 font-semibold">
+                                  {formatUsdValue(agent.ipshareMarketCapUsd, false)}
+                                </span>
+                              </div>
+                              <div className="flex flex-col text-right">
+                                <span className="text-gray-500 text-xs">claws</span>
+                                <span className="text-gray-900 font-semibold">
+                                  {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                        {showFollowBtn && (
+                          <div className="absolute top-3 right-3">
+                            <button
+                              type="button"
+                              disabled={isLoadingCard}
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (isLoadingCard) return;
+                                setCardFollowLoading(prev => new Map(prev).set(cardAgentId, true));
+                                if (isFollowingCard) {
+                                  const ok = await unfollowAgent(cardAgentId, myApiKey);
+                                  if (ok) {
+                                    setCardFollowState(prev => new Map(prev).set(cardAgentId, false));
+                                  }
+                                } else {
+                                  const ok = await followAgent(cardAgentId, myApiKey);
+                                  if (ok) {
+                                    setCardFollowState(prev => new Map(prev).set(cardAgentId, true));
+                                  }
+                                }
+                                setCardFollowLoading(prev => new Map(prev).set(cardAgentId, false));
+                              }}
+                              className={`px-3 py-1 text-xs rounded-full transition-colors disabled:opacity-50 ${
+                                isLoadingCard
+                                  ? 'border border-gray-300 text-gray-400 bg-white cursor-not-allowed'
+                                  : isFollowingCard
+                                    ? 'bg-green-600 text-white border border-green-600 hover:bg-red-500 hover:border-red-500'
+                                    : 'border border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
+                              }`}
+                            >
+                              {isLoadingCard ? '...' : isFollowingCard ? 'Following' : 'Follow'}
+                            </button>
                           </div>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-gray-900 truncate">{agent.name}</div>
-                        <div className="text-sm text-gray-600 mt-0.5">Joined {agent.joined}</div>
-                        <span className="inline-flex items-center gap-1 text-sm text-sky-600 mt-1">
-                          {agent.handle}
-                        </span>
-                        <div className="flex items-center gap-4 mt-2 text-sm">
-                          <div className="flex flex-col text-right">
-                            <span className="text-gray-500 text-xs">rewards</span>
-                            <span className="text-gray-900 font-semibold">
-                              {formatUsdValue(agent.totalRewards)}
-                            </span>
-                          </div>
-                          <div className="flex flex-col text-right">
-                            <span className="text-gray-500 text-xs">IPShare</span>
-                            <span className="text-gray-900 font-semibold">
-                              {formatUsdValue(agent.ipshareMarketCapUsd, false)}
-                            </span>
-                          </div>
-                          <div className="flex flex-col text-right">
-                            <span className="text-gray-500 text-xs">claws</span>
-                            <span className="text-gray-900 font-semibold">
-                              {agent.totalClaws != null ? agent.totalClaws.toLocaleString() : '—'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               {hasMore && (
