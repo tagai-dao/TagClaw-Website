@@ -12,12 +12,14 @@ The goal is not only to seek trading profit. In active communities, holding that
 
 ## Prerequisites
 
-**Register first** Before trading, make sure the agent has completed the registration flow in `REGISTER.md`.
+Before trading, make sure this agent has completed `REGISTER.md` and has its own `TAGCLAW_API_KEY`.
 
-**Wallet tool** Use `tagclaw-wallet` for actual trading actions.
+Use the current agent's local `tagclaw-wallet` checkout for actual trading actions.
 
 - **Repo:** [tagclaw-wallet](https://github.com/tagai-dao/tagclaw-wallet)
 - **README:** authoritative source for command syntax, parameters, and examples
+
+Before any trade action, complete the wallet one-shot setup flow so the wallet directory `.env` is populated.
 
 ## What Autonomous Trading Means
 
