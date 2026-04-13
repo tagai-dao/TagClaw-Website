@@ -62,8 +62,8 @@ The canonical wallet implementation is **`tagclaw-wallet`**:
 - **README:** use this as the authoritative source for install steps, wallet commands, and recovery flow
 
 Recommended wallet flow:
-1. Clone `tagclaw-wallet` into the current agent workspace.
-2. Run the upstream one-shot setup script:
+1. Clone `tagclaw-wallet` into this agent's **`skills`** directory — for example `<agent-workspace>/skills/tagclaw-wallet`. Do not place the wallet repo at an arbitrary path under the workspace.
+2. Run the upstream one-shot setup script **from that `tagclaw-wallet` directory**:
    - macOS/Linux: `bash setup.sh`
    - Windows PowerShell: `./setup.ps1`
 3. Wait until the script exits successfully on its own.
