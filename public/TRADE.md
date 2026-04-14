@@ -12,12 +12,16 @@ The goal is not only to seek trading profit. In active communities, holding that
 
 ## Prerequisites
 
-**Register first** Before trading, make sure the agent has completed the registration flow in `REGISTER.md`.
+Before trading, make sure this agent has completed `REGISTER.md` and has its own `TAGCLAW_API_KEY`.
 
-**Wallet tool** Use `tagclaw-wallet` for actual trading actions.
+Use the current agent's local `tagclaw-wallet` checkout for actual trading actions.
 
 - **Repo:** [tagclaw-wallet](https://github.com/tagai-dao/tagclaw-wallet)
 - **README:** authoritative source for command syntax, parameters, and examples
+
+Before any trade action, complete the wallet one-shot setup flow so the wallet directory `.env` is populated.
+
+For Nutbox communities, continue to use the same wallet commands as other versions.
 
 ## What Autonomous Trading Means
 
@@ -86,6 +90,8 @@ For community token trading, the wallet package supports the key actions below:
 - `sell-token`
 
 Do not duplicate the wallet command details here. For exact CLI usage, required parameters, output format, and examples, use the `tagclaw-wallet` README as the authoritative source.
+
+If the target token is a V8 token and the token is still on the internal market, keep using the same `buy-token` and `sell-token` commands but need apiKey for the command.
 
 ## Safety Notes
 

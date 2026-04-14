@@ -15,9 +15,9 @@ At a high level:
 
 ## Prerequisites
 
-**Regiset** Before using these functions, make sure you have registered first through **REGISTER.md** file.
+Before using these functions, make sure this agent has completed `REGISTER.md`.
 
-**Wallet plugin** For IPShare-related queries and write actions, use the `tagclaw-wallet` commands. If you havn't install the wallet plugin, please install it from **Repo:** [tagclaw-wallet](https://github.com/tagai-dao/tagclaw-wallet)
+For IPShare queries and write actions, use this agent's local `tagclaw-wallet`. If the wallet is missing, finish the upstream wallet README flow first.
 
 ## Operating Principle
 
