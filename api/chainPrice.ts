@@ -18,6 +18,8 @@ const pumpContracts: Address[] = [
   '0x2cAbfDE43f93422fFb070f0Fa03d2951dbBC7749',
   '0x201308B193bC0Aa81Ac540A7D3B3ADb530a39861',
   '0x3E75E2db40E7cc9C7d7869Fc2d97eDAb01724212',
+  /** Pump version 8，定价路径与 v7 一致（bonding curve + listed 时 CL getSlot0） */
+  '0x88d495228E831b01D8Ae6d62f9633cBcC6d27De2',
 ]
 const WETH = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' as Address
 const UNISWAP_V2_FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73' as Address
@@ -99,7 +101,7 @@ export async function getTokenPricesByAddress(
       const token = item.token as Address
       if (item.isImport && item.pair) {
         importItems.push({ token, pair: item.pair as Address })
-      } else if (!item.isImport && item.version >= 1 && item.version <= 7) {
+      } else if (!item.isImport && item.version >= 1 && item.version <= 8) {
         bondingCurveItems.push(item)
       }
     } catch {
@@ -150,7 +152,7 @@ export async function getTokenPricesAndSuppliesByAddress(
       const token = item.token as Address
       if (item.isImport && item.pair) {
         importItems.push({ token, pair: item.pair as Address })
-      } else if (!item.isImport && item.version >= 1 && item.version <= 7) {
+      } else if (!item.isImport && item.version >= 1 && item.version <= 8) {
         bondingCurveItems.push(item)
       }
     } catch {
@@ -193,7 +195,7 @@ export async function getTokenSuppliesByAddress(
       const token = item.token as Address
       if (item.isImport) {
         importTokens.push({ token })
-      } else if (!item.isImport && item.version >= 1 && item.version <= 7) {
+      } else if (!item.isImport && item.version >= 1 && item.version <= 8) {
         bcTokens.push(item)
       }
     } catch {
@@ -267,7 +269,7 @@ async function fetchBondingCurvePricesAndSupplies(
   // 第一轮：bondingCurveSupply（用于 getPrice）、listed、pair、totalSupply（用于市值）
   const calls1 = items.flatMap((item) => {
     const token = item.token as Address
-    const version = Math.min(7, Math.max(1, Math.floor(Number(item.version)) || 2))
+    const version = Math.min(8, Math.max(1, Math.floor(Number(item.version)) || 2))
     const contracts: {
       address: Address
       abi: typeof tokenAbi | typeof factoryAbi | typeof erc20Abi
@@ -313,7 +315,7 @@ async function fetchBondingCurvePricesAndSupplies(
   let idx = 0
   for (const item of items) {
     const token = item.token as Address
-    const version = Math.min(7, Math.max(1, Math.floor(Number(item.version)) || 2))
+    const version = Math.min(8, Math.max(1, Math.floor(Number(item.version)) || 2))
     const supplyRes = res1[idx++]
     const listedRes = res1[idx++]
     const pairRes = version < 7 ? res1[idx++] : null
@@ -351,11 +353,12 @@ async function fetchBondingCurvePricesAndSupplies(
     const info = infos[token]
     if (!info) continue
 
-    const version = Math.min(7, Math.max(1, Math.floor(Number(item.version)) || 2))
+    const version = Math.min(8, Math.max(1, Math.floor(Number(item.version)) || 2))
     const pumpAddr = pumpContracts[version - 1]
     const startIdx = calls2.length
 
-    if (info.listed && version === 7 && info.pair) {
+    // V7/V8：上线后用 PCS CL pool（bytes32 pair id），与 pump7 相同口径
+    if (info.listed && version >= 7 && info.pair) {
       calls2.push({
         address: PCS_CL_POOL_MANAGER,
         abi: clPoolManagerAbi,
@@ -409,7 +412,7 @@ async function fetchBondingCurvePricesAndSupplies(
       const [sqrtPriceX96] = r.result as [bigint, number, number, number]
       if (sqrtPriceX96 === 0n) continue
 
-      // 参考 pump.ts：V7 pool 初始化为 Native BNB(currency0) <-> Token(currency1)，
+      // 参考 pump.ts：V7/V8 pool 初始化为 Native BNB(currency0) <-> Token(currency1)，
       // 因此 sqrtPriceX96^2 / 2^192 即 1 个 token 的 BNB 价格。
       const scaledPrice = (sqrtPriceX96 * sqrtPriceX96 * (10n ** TOKEN_DECIMALS)) / Q192
       const price = Number(scaledPrice) / 1e18
