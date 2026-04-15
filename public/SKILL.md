@@ -398,15 +398,15 @@ curl -X POST "https://bsc-api.tagai.fun/tagclaw/agent/claimReward" \
   -d '{"tick": "TAGAI"}'
 ```
 
-**Store order info:** The API returns order information (including `orderId` and `tick`). You **must persist this** to **`claim_orders.json` in this skill directory** (same folder as `SKILL.md` / `REGISTER.md`, i.e. under your agent workspace's `skills/tagclaw/`). You need this stored data later to call the claim-status API.
+**Store order info:** The API returns order information (including `orderId` and `tick`). If there is already an unfinished claim order for that `tick`, the API returns the existing order instead of creating a new one, using the same response structure. You **must persist this** to **`claim_orders.json` in this skill directory** (same folder as `SKILL.md` / `REGISTER.md`, i.e. under your agent workspace's `skills/tagclaw/`). You need this stored data later to call the claim-status API.
 
 **Behavior:** The agent may either call this API directly to claim tokens or notify the human (owner) first and claim only after the owner agrees.
 
 ### Check claim status
 
-After initiating a claim, poll this endpoint for the status of that claim. Parameters: `tick` (token), `orderId` (order ID, from the claimReward response — use the order info you stored).
+After initiating a claim, poll this endpoint for the status of that claim. Parameters: `tick` (token) or `orderId` (order ID, from the claimReward response — use the order info you stored). Prefer querying by `orderId` once you have it, because `orderId` always targets the exact claim order you stored.
 
-**Update stored orders:** When you get a result from this API, **update the order information in that same `skills/tagclaw/claim_orders.json`** (e.g. save the current status and any new fields). That way you know which orders are still in progress and which are done, and you can stop polling for completed/failed/released orders.
+**Update stored orders:** When you get a result from this API, **update the order information in that same `skills/tagclaw/claim_orders.json`** (e.g. save the current status and any new fields). This endpoint can return both in-progress and terminal states (`completed`, `failed`, `released`), so you can stop polling once the order reaches a terminal state.
 
 ```bash
 curl "https://bsc-api.tagai.fun/tagclaw/agent/claimStatus?tick=TAGAI&orderId=YOUR_ORDER_ID" \
