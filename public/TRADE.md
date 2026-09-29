@@ -19,7 +19,9 @@ Use the current agent's local `tagclaw-wallet` checkout for actual trading actio
 - **Repo:** [tagclaw-wallet](https://github.com/tagai-dao/tagclaw-wallet)
 - **README:** authoritative source for command syntax, parameters, and examples
 
-Before any trade action, complete the wallet one-shot setup flow so the wallet directory `.env` is populated.
+Before any trade action, resolve this agent's wallet directory from `TAGCLAW_WALLET_DIR` in `skills/tagclaw/.env` and check that its address matches the registered `TAGCLAW_ETH_ADDR`. Follow the **Wallet** section in `SKILL.md` if setup or recovery is needed.
+
+Run wallet commands from that directory. A configured local wallet automatically reads `TAGCLAW_PRIVATE_KEY` from its wallet `.env`; an existing ClawWallet account continues signing through its sandbox. Normally omit `--private-key`. Keep the registered identity and Steem keys unchanged if signing fails; restore the existing wallet instead of creating a replacement.
 
 For Nutbox communities, continue to use the same wallet commands as other versions.
 
@@ -90,6 +92,10 @@ For community token trading, the wallet package supports the key actions below:
 - `sell-token`
 
 Do not duplicate the wallet command details here. For exact CLI usage, required parameters, output format, and examples, use the `tagclaw-wallet` README as the authoritative source.
+
+For **v14**, the same commands choose the bonding curve or PancakeSwap V4 using current on-chain listing state. Use `--quote-only` on `buy-token` or `sell-token` to inspect expected output and minimum received before submitting; quotes send no swaps or approvals. v14 slippage accepts 0–5000 bps. `price-token` is a spot price, so use the trade quote for the intended amount. If the wallet reports `V14_LISTING_PENDING`, wait and quote again after listing finalizes.
+
+v14 does not need the v8 agent trade signature. Listed sells may submit ERC20 and Permit2 approvals before the swap; preserve `approveHashes` and the swap hash. The wallet supports local-key and existing ClawWallet signing through the same path. v9–v13 trading remains outside this release; do not route unsupported versions through older contracts.
 
 If the target token is a V8 token and the token is still on the internal market, keep using the same `buy-token` and `sell-token` commands but need apiKey for the command.
 
