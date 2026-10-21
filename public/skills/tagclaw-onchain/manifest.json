@@ -1,22 +1,22 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "files": [
     {
       "path": "SKILL.md",
-      "sha256": "0b7d8af755890d630657e04b3b6072ed679d74a725283dc4dc1cc3fcd9c94408"
+      "sha256": "91c4fe4b89c32fc5f786d00c751f0f577c18ff6ca7dc4a697ebcb1815e5f1584"
     },
     {
       "path": "package.json",
-      "sha256": "b62e75958f8368302972bd16da52a992885cceabee5b2cd2b12d3f4313a5de1a"
+      "sha256": "46331eeabfe846933d6c32cef0e187ff42ff030f89896f867847ecf269846a2c"
     },
     {
       "path": "package-lock.json",
-      "sha256": "a2618768fd74f94a77a92714ca7aa20de8537a8226db2e95410fe57000001105"
+      "sha256": "0c640aad193a562a36f25055f834f13ef8669e248e80d3a777230cae6b1ebf3b"
     },
     {
       "path": "agents/openai.yaml",
-      "sha256": "23b7fb21222f55a1258d6c04eb25b81b5898f479523a1a4cd3fd08972102f2e4"
+      "sha256": "95e9490e9e0bf3f9e0d55878c7f4ea4a58d4dd61c75433c6cd5b607b184719bc"
     },
     {
       "path": "references/binance.md",
@@ -24,7 +24,11 @@
     },
     {
       "path": "references/creation.md",
-      "sha256": "c4196698ab19085a0c404776c900ecb4c0746da48c3345961d8f7ee0fce4806a"
+      "sha256": "b5b5340a91e1946f05cebe6455c7ad4963ac17498fca472b771eea7e4c7fac3c"
+    },
+    {
+      "path": "references/index.md",
+      "sha256": "1a39fcc2c1a9601536759187fbe4b2cdfcadb060de8ba83dbc5e5b1b76eab957"
     },
     {
       "path": "references/ipshare.md",
@@ -32,27 +36,39 @@
     },
     {
       "path": "references/nutbox.md",
-      "sha256": "82fd184464cc7dd784dddc5d684fa86fbe8a3251716c0a9ee2d995730d3023df"
+      "sha256": "c95c7ba70f4e58847486cf1f001435c81815e1a5ebe8e5e368f52e0c165b71d9"
     },
     {
       "path": "references/protocol.md",
-      "sha256": "7ccb50be1606c83f6a9f94d102b852e89f562c37db09088cfa248707f654a4dd"
+      "sha256": "e7d446431ca967e33c0b6e1850de1d79f098c1fe2df5c777daaa7fadbc77004a"
+    },
+    {
+      "path": "references/queries.md",
+      "sha256": "10de013b094473dd2fffd9dfcb65373c816d83e21a02a754077f4b26b63571c3"
     },
     {
       "path": "references/trading.md",
-      "sha256": "0c7286c507192b29a029e3a6f1935a4972cb6cac3ea6cc56169ff538cafb4458"
+      "sha256": "b83bc3f5839ca5f782771082416238828f3c90a37028753d3e1d55fba89e91a7"
     },
     {
       "path": "scripts/lib/creation.mjs",
-      "sha256": "fa4861e675049425d673d06acb0045482b33e4f26323f6d577fe6b1cceb7b2f8"
+      "sha256": "b939a6fdb3d490903cc399808ccccac1e68ad1d3c7edf660bc1633b44205ec26"
     },
     {
       "path": "scripts/lib/deployment.mjs",
-      "sha256": "2e1430b70c441f57b7e8c6b3b97a52cab59e0e49578ddf8e0a2ea9718a463070"
+      "sha256": "1aaaa36d9bcb8953792cce7e5234f247b62d5b13265651611e1f9d3c3001172e"
     },
     {
       "path": "scripts/lib/erc20-abi.mjs",
       "sha256": "057abd11934b51cd0a2f24581dbd1a7f130a10359eb2c73ca29eb0250f6fa9d2"
+    },
+    {
+      "path": "scripts/lib/index-abi.mjs",
+      "sha256": "0a330e16002fdd15a452528cab281339b0edc1acbd3040d71557ae4d89329872"
+    },
+    {
+      "path": "scripts/lib/index.mjs",
+      "sha256": "2a6bcc73573efc2471251353173a4036fb8ffd75da281c2db854ef46f5aef8f9"
     },
     {
       "path": "scripts/lib/ipshare-abi.mjs",
@@ -64,7 +80,7 @@
     },
     {
       "path": "scripts/lib/prepare.mjs",
-      "sha256": "d372a3b2e3cca672622e55c0f0c1b5f27cfa9010e2185a28c9412184a495e45d"
+      "sha256": "f90dceb778a994768eb735aabab0c0a1c1e8e00f2c9d17293a1b1078be72350c"
     },
     {
       "path": "scripts/lib/snapshot.mjs",
@@ -76,7 +92,7 @@
     },
     {
       "path": "scripts/tagclaw.mjs",
-      "sha256": "28f55c805036eaa4fedc571d359f5611f486f227b19a8914300700fb0c9cf32c"
+      "sha256": "f37091470b71075ba6dd65d8043404d98349ab542e315f5f813384d70573a697"
     }
   ]
 }
