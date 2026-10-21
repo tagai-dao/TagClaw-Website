@@ -1,0 +1,82 @@
+{
+  "skill": "tagclaw-onchain",
+  "version": "1.0.0",
+  "files": [
+    {
+      "path": "SKILL.md",
+      "sha256": "0b7d8af755890d630657e04b3b6072ed679d74a725283dc4dc1cc3fcd9c94408"
+    },
+    {
+      "path": "package.json",
+      "sha256": "b62e75958f8368302972bd16da52a992885cceabee5b2cd2b12d3f4313a5de1a"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "a2618768fd74f94a77a92714ca7aa20de8537a8226db2e95410fe57000001105"
+    },
+    {
+      "path": "agents/openai.yaml",
+      "sha256": "23b7fb21222f55a1258d6c04eb25b81b5898f479523a1a4cd3fd08972102f2e4"
+    },
+    {
+      "path": "references/binance.md",
+      "sha256": "1ecd5a121f913d6609500dd041ce5c821a9a9253767a420467bf0df8b8899ba9"
+    },
+    {
+      "path": "references/creation.md",
+      "sha256": "c4196698ab19085a0c404776c900ecb4c0746da48c3345961d8f7ee0fce4806a"
+    },
+    {
+      "path": "references/ipshare.md",
+      "sha256": "9b1935b28fe8e28ed97235a6d6884e7c67a479f47a3367bce44f3db4823ec635"
+    },
+    {
+      "path": "references/nutbox.md",
+      "sha256": "82fd184464cc7dd784dddc5d684fa86fbe8a3251716c0a9ee2d995730d3023df"
+    },
+    {
+      "path": "references/protocol.md",
+      "sha256": "7ccb50be1606c83f6a9f94d102b852e89f562c37db09088cfa248707f654a4dd"
+    },
+    {
+      "path": "references/trading.md",
+      "sha256": "0c7286c507192b29a029e3a6f1935a4972cb6cac3ea6cc56169ff538cafb4458"
+    },
+    {
+      "path": "scripts/lib/creation.mjs",
+      "sha256": "fa4861e675049425d673d06acb0045482b33e4f26323f6d577fe6b1cceb7b2f8"
+    },
+    {
+      "path": "scripts/lib/deployment.mjs",
+      "sha256": "2e1430b70c441f57b7e8c6b3b97a52cab59e0e49578ddf8e0a2ea9718a463070"
+    },
+    {
+      "path": "scripts/lib/erc20-abi.mjs",
+      "sha256": "057abd11934b51cd0a2f24581dbd1a7f130a10359eb2c73ca29eb0250f6fa9d2"
+    },
+    {
+      "path": "scripts/lib/ipshare-abi.mjs",
+      "sha256": "4f7dea4c2971fdac44216e3815be66111a50e2e1dfd30a196a6fdfec43cf622c"
+    },
+    {
+      "path": "scripts/lib/nutbox-abi.mjs",
+      "sha256": "19648370308194b1b5d993712cf96efde528b50eb243e2d223252f7a7b951f40"
+    },
+    {
+      "path": "scripts/lib/prepare.mjs",
+      "sha256": "d372a3b2e3cca672622e55c0f0c1b5f27cfa9010e2185a28c9412184a495e45d"
+    },
+    {
+      "path": "scripts/lib/snapshot.mjs",
+      "sha256": "94de91c2580c01020e0b02437cca57b41d16e183992ddda132a8b446c13d14ef"
+    },
+    {
+      "path": "scripts/lib/v14-abi.mjs",
+      "sha256": "66b76cae5b074db850c5a65d0a9cd7f731dcee9cb1df14b5bbbdb555c0edb663"
+    },
+    {
+      "path": "scripts/tagclaw.mjs",
+      "sha256": "28f55c805036eaa4fedc571d359f5611f486f227b19a8914300700fb0c9cf32c"
+    }
+  ]
+}
