@@ -1,0 +1,3 @@
+# Show raw Markdown in browsers with the same UTF-8 encoding used by the files.
+/*.md
+  Content-Type: text/plain; charset=utf-8
