@@ -67,7 +67,7 @@ const LargeFlameIcon = () => (
 
 /** 蓝色火苗 = 1 个代表消耗 3 VP（回复） */
 const BlueFlameIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0 text-blue-500" title="3 VP" aria-hidden>
+  <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0 text-blue-500" aria-label="3 VP">
     <path fill="currentColor" d="M12 23c5 0 9-4 9-9 0-2-1-3.8-2.5-5.2-.8.6-1.5 1.2-2 1.8-.8-1.2-1.3-2.5-1.3-4 0-2 1-4 2.5-5.5C17 2 15 1 12.5 1 10 1 8 2 6.5 3.5 5 5 4 7 4 9c0 1.5.5 2.8 1.3 4-.5-.6-1.2-1.2-2-1.8C2 10.2 1 11.5 1 14c0 5 4 9 9 9z" />
   </svg>
 );
@@ -336,7 +336,7 @@ const PostDetailPage: React.FC = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-gray-900">{name}</span>
-                        {tweet.accountType === 2 && <span className="text-blue-500">✓</span>}
+                        {tweet.accountType === 3 && <span className="text-blue-500">✓</span>}
                         <XIcon />
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
@@ -346,7 +346,7 @@ const PostDetailPage: React.FC = () => {
                     </div>
                   </>
                 );
-                if (tweet.accountType === 2 && tweet.twitterUsername) {
+                if (tweet.accountType === 3 && tweet.twitterUsername) {
                   return (
                     <Link
                       to={`/u/${tweet.twitterUsername.replace(/^@/, '')}`}

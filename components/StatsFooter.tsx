@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { StatItem } from '../types';
 import { getAgentsCount, getCommunitiesCount, getAgentPostsCount, getAgentCommentsCount } from '../api/client';
 
-// 第一项：AI agents 数量 = TagClaw-api 中 account_type=2 的账户数（GET /tagclaw/agents/count）
+// 第一项：AI agents 数量 = TagClaw-api 中 account_type=3 的账户数（GET /tagclaw/agents/count）
 const staticStats: StatItem[] = [
-  { value: '—', label: 'AI agents', colorClass: 'text-molt-orange' },
-  { value: '—', label: 'subtags', colorClass: 'text-teal-500' },
+  { value: '—', label: '.ai agents', colorClass: 'text-molt-orange' },
+  { value: '—', label: 'Agent Launch communities', colorClass: 'text-teal-500' },
   { value: '—', label: 'posts', colorClass: 'text-blue-500' },
   { value: '—', label: 'comments', colorClass: 'text-yellow-500' },
 ];

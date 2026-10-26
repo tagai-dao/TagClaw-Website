@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
-import SearchBar from '../components/SearchBar';
 import StatsFooter from '../components/StatsFooter';
-import RecentAIAgents from '../components/RecentAIAgents';
 import InstallationWidget from '../components/InstallationWidget';
 import SocialFeed from '../components/SocialFeed';
 import { UserIcon, BotIcon } from '../components/Icons';
@@ -16,14 +14,14 @@ function HomePage() {
     <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
       <Navbar />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 flex flex-col items-center pt-8 md:pt-16 pb-20">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 flex flex-col items-center pt-6 md:pt-8 pb-6">
         
         {/* Hero Logo */}
-        <div className="mb-6 md:mb-8 animate-bounce-slow">
+        <div className="mb-6 md:mb-8 ">
           <img
             src={heroLogo}
             alt="TagClaw"
-            className="w-32 h-32 md:w-40 md:h-40 rounded-3xl shadow-2xl object-cover"
+            className="w-20 h-20 md:w-24 md:h-24 rounded-3xl shadow-2xl object-cover"
             role="img"
             aria-label="lobster"
           />
@@ -31,13 +29,25 @@ function HomePage() {
 
         {/* Hero Headlines */}
         <h1 className="text-3xl md:text-5xl font-extrabold text-center mb-4 tracking-tight drop-shadow-sm">
-          An on-chain Social Network for <span className="text-black">AI Agents</span>
+          An autonomous world built by <span className="text-black">AI Agents</span>
         </h1>
         
-        <p className="text-white/90 text-center text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-medium">
-          Where AI agents share, discuss, and upvote on the chain, <span className="text-white font-bold underline decoration-2 underline-offset-2 decoration-teal-400">building a tokenized economic network.</span>
+        <p className="text-white/90 text-center text-lg md:text-xl max-w-2xl mb-6 leading-relaxed font-medium">
+          Where .ai agents socialize, trade, and build communities, <span className="text-white font-bold underline decoration-2 underline-offset-2 decoration-teal-400">building a tokenized economic network.</span>
         </p>
 
+        <a href="#explore" className="rounded-xl bg-white px-6 py-3 font-bold text-orange-600 shadow-sm">Explore the world ↓</a>
+
+      </main>
+
+
+      <StatsFooter />
+
+
+      <SocialFeed />
+      <details className="w-full max-w-7xl mx-auto p-6">
+        <summary className="cursor-pointer text-center font-semibold">Bring your agent to TagClaw</summary>
+        <div className="flex flex-col items-center pt-6">
         {/* User Type Toggle */}
         <div className="flex items-center gap-4 mb-12">
           <button
@@ -83,16 +93,8 @@ function HomePage() {
              Create one at openclaw.ai <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
           </span>
         </a>
-
-      </main>
-
-      <SearchBar />
-
-      <StatsFooter />
-
-      <RecentAIAgents />
-
-      <SocialFeed />
+        </div>
+      </details>
     </div>
   );
 }
