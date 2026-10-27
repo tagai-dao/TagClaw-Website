@@ -2,7 +2,7 @@ import { ethers } from 'ethers'
 import * as D from './deployment.mjs'
 import { call, MULTICALL_ABI } from './snapshot.mjs'
 import { PUMP14_ABI, TOKEN14_ABI, PCS_MANAGER_ABI, PCS_QUOTER_ABI, PCS_ROUTER_ABI, PERMIT2_ABI, POOL_KEY_TYPE } from './v14-abi.mjs'
-import { TOKEN_INDEX_ABI, PUMP_EXTRA_ABI, HANDLE_ABI, COMMUNITY_INDEX_ABI } from './index-abi.mjs'
+import { TOKEN_INDEX_ABI, PUMP_EXTRA_ABI, HANDLE_ABI, CURVE_LIMIT_ABI, COMMUNITY_INDEX_ABI } from './index-abi.mjs'
 import { IPSHARE_ABI } from './ipshare-abi.mjs'
 import { ERC20_BALANCE_ABI, TOKEN_ALLOWANCE_ABI } from './erc20-abi.mjs'
 import { NUTBOX_POOL_ABI, NUTBOX_COMMUNITY_ABI, NUTBOX_COMMITTEE_ABI, ERC20_STAKING_POOL_ABI, ERC20_LOCKING_POOL_ABI, ERC1155_STAKING_POOL_ABI, ERC1155_APPROVAL_ABI, SOCIAL_CURATION_POOL_ABI } from './nutbox-abi.mjs'
@@ -120,6 +120,12 @@ export async function trade(snapshot, input) {
       const net = amount - amount * a / 10000n - amount * b / 10000n
       ;[expected] = await snapshot.read([call(state.pump, PUMP14_ABI, 'getBuyAmountByValue', [state.supply, net])])
       if (expected > CAP - state.supply) expected = CAP - state.supply
+      if (state.version >= 17) {
+        const [bought,limit] = await snapshot.read([
+          call(token,CURVE_LIMIT_ABI,'innerMarketBought',[from]), call(token,CURVE_LIMIT_ABI,'INNER_MARKET_BUY_LIMIT')
+        ])
+        if (limit <= 0n || bought + expected > limit) throw new Error('INNER_MARKET_BUY_LIMIT_EXCEEDED: reduce the buy amount; sales do not reset the cumulative limit')
+      }
     } else {
       if (amount > state.supply) throw new Error('SELL_EXCEEDS_CURVE_SUPPLY')
       ;[expected] = await snapshot.read([call(state.pump, PUMP14_ABI, 'getSellPriceAfterFee', [state.supply, amount])])
@@ -130,7 +136,7 @@ export async function trade(snapshot, input) {
     if (expected <= 0n || minimum <= 0n) throw new Error('ZERO_OUTPUT')
     return plan(snapshot, from, `v${state.version}-curve-${input.side}`, token, TOKEN14_ABI, isBuy ? 'buyToken' : 'sellToken',
       isBuy ? [contractExpected, sellsman, actualBps] : [amount, contractExpected, sellsman, actualBps], isBuy ? amount : 0n,
-      { quote: { amountIn: String(amount), expectedOut: String(expected), minimumOut: String(minimum), slippageBps: bps }, rebuildAfterConfirmation: false })
+      { token, quote: { amountIn: String(amount), expectedOut: String(expected), minimumOut: String(minimum), slippageBps: bps }, rebuildAfterConfirmation: false })
   }
   return v4Trade(snapshot, input, state)
 }
@@ -160,7 +166,7 @@ export async function v4Trade(snapshot, input, state) {
     coder.encode(['address', 'uint128'], [isBuy ? key.currency0 : key.currency1, amount]),
     coder.encode(['address', 'uint128'], [isBuy ? key.currency1 : key.currency0, minimum])]])
   return plan(snapshot, from, `v${state.version}-v4-${input.side}`, D.ROUTER, PCS_ROUTER_ABI, 'execute', ['0x10', [payload], snapshot.block.timestamp + 300], isBuy ? amount : 0n,
-    { poolId: state.poolId, quote, rebuildAfterConfirmation: false })
+    { token: input.token, poolId: state.poolId, quote, rebuildAfterConfirmation: false })
 }
 
 export const IPSHARE_QUOTE_ABI = [

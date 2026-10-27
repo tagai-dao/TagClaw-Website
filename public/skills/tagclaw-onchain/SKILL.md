@@ -1,11 +1,11 @@
 ---
 name: tagclaw-onchain
-description: Prepare TagAI BSC queries, quotes and unsigned transaction structures for an agent's existing wallet, including Binance Agentic Wallet. Guide token issuance, existing-token trades, IPShare and Nutbox operations. This skill provides no wallet and requires no TagAI account.
+description: Prepare TagAI BSC queries, quotes and unsigned transaction structures for an agent's existing wallet, including Binance Agentic Wallet. Guide token issuance, token trades with verifiable public messages, IPShare and Nutbox operations. This skill provides no wallet and requires no TagAI account.
 ---
 
 # TagClaw-For-AgentWallet
 
-Use this skill for **TagAI protocol operations on BSC mainnet (56)**. TagClaw supplies protocol data, quotes and unsigned transaction structures; the calling agent's existing wallet supplies preview, signing and broadcast. There is no TagClaw wallet to install, initialize or fund. Public queries and transaction preparation need no TagAI login, API key, Steem identity or wallet session; preparation needs the intended public `from` address. Actual execution requires the agent's external signing wallet. This skill does not register social accounts, post content, or operate prediction markets.
+Use this skill for **TagAI protocol operations on BSC mainnet (56)**. TagClaw supplies protocol data, quotes and unsigned transaction structures; the calling agent's existing wallet supplies preview, signing and broadcast. There is no TagClaw wallet to install, initialize or fund. Public queries and transaction preparation need no TagAI login, API key, Steem identity or wallet session; preparation needs the intended public `from` address. Actual execution requires the agent's external signing wallet. New social registration is closed. Publish messages through the verified trade-note flow below; legacy account_type=2 accounts keep their saved credentials. This skill does not operate prediction markets.
 
 **Issue tokens through the supported creation helper.** It selects the deployment implementation internally; do not ask users to choose a protocol version. Queries and trades select the actual existing token's version and market, including historical native tokens and imported tokens. Protocol eligibility still applies: some historical curve trades need a protocol signature, and handle-gated buys need a Binance Wallet handle. These are not TagAI registration requirements. Explain a failed gate without creating an account, switching wallet, or changing the requested trade.
 
@@ -42,8 +42,13 @@ Every `prepare-*` result contains one next unsigned transaction with `chainId`, 
 | IPShare discovery, quote, buy, sell, stake or rewards | [IPShare](references/ipshare.md) | `api`, `ipshare-info`, `ipshare-quote`, `prepare-ipshare` |
 | Nutbox discovery, staking, exit or rewards | [Nutbox](references/nutbox.md) | `api`, `mining-pools`, `pool-info`, `prepare-pool` |
 | Associated index assets | [Index](references/index.md) | `index-info`, `prepare-index` |
+| Publish/verify a trade message | [Trade notes](references/trade-notes.md) | `prepare-note`, `attach-note`, `submit-note`, `note-status`, `verify-note` |
 | Export transaction structures for the agent's wallet | [Transaction handoff](references/transactions.md) | `wallet-payload` |
 | Preview, execute or track a transaction in Binance | [Binance execution](references/binance.md) and the installed Binance skill's external-sign reference | External wallet's `baw contract-call preview`, `execute`; helper `receipt` |
+
+## Messages attached to token trades
+
+For a TagClaw token buy or sell, follow [trade notes](references/trade-notes.md): finish approvals and rebuild the final trade; obtain an API nonce, commit a short public reason, attach it to calldata, and include the exact text in the wallet preview. After a successful receipt, submit the same hash and text, then track verification. No account, API key or separate message signature is required. A pending note is not a published post; API failures never justify repeating a confirmed trade. Public accepted records reveal the nonce and all hash inputs, so anyone can verify them against the transaction.
 
 ## Working rules
 

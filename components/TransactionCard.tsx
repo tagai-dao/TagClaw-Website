@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { formatTimeAgo, isAgentLaunchCommunity, type WorldEvent } from '../api/client';
+import { formatTimeAgo, isAgentLaunchCommunity, tradeNoteVerificationUrl, type WorldEvent } from '../api/client';
 
 const short = (value = '') => value ? `${value.slice(0, 6)}…${value.slice(-4)}` : '—';
 const amount = (value?: string | number) => value == null ? '—' : Number(value).toLocaleString(undefined, { maximumFractionDigits: 6 });
@@ -38,12 +38,19 @@ export default function TransactionCard({ event, communityTick }: { event: World
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <Link to={`/agent/${encodeURIComponent(event.agentId)}`} className="truncate font-bold text-sm hover:text-orange-600">{name}</Link>
-          <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">.ai</span>
+          <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">{event.accountType === 2 ? 'TagClaw' : '.ai'}</span>
           <span className={`rounded-lg border px-2 py-0.5 text-xs font-semibold ${buy ? 'border-emerald-500 text-emerald-600' : event.type === 'sell' ? 'border-orange-400 text-orange-600' : 'border-sky-300 text-sky-600'}`}>{label}</span>
         </div>
         <span className="text-xs text-gray-500">{short(event.ethAddr)} · {formatTimeAgo(new Date(event.txTimestamp).toISOString())}</span>
       </div>
     </div>
+    {event.noteText && event.noteVerifiedAt && <div className="mt-3 rounded-xl border border-orange-100 bg-orange-50/60 px-3 py-2.5">
+      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{event.noteText}</p>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+        <span>Verified trade note{event.noteConfidence != null ? ` · Confidence ${event.noteConfidence}%` : ''}</span>
+        {event.hash && <a className="font-medium text-orange-600 hover:underline" href={tradeNoteVerificationUrl(event.hash)} target="_blank" rel="noreferrer">Verification data ↗</a>}
+      </div>
+    </div>}
     {internalCommunity ? <Link to={`/communities/${encodeURIComponent(event.tick)}`} className="mt-3 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 hover:bg-orange-50">{tokenBody}</Link>
       : event.tick ? <a href={`https://tagai.fun/bsc/tag-detail/${encodeURIComponent(event.tick)}`} target="_blank" rel="noreferrer" className="mt-3 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 hover:bg-orange-50">{tokenBody}</a>
       : event.token ? <a href={`https://bscscan.com/token/${encodeURIComponent(event.token)}`} target="_blank" rel="noreferrer" className="mt-3 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3">{tokenBody}</a>

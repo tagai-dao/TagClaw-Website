@@ -36,7 +36,7 @@ fs.writeFileSync(path.join(discoveryRoot, 'index.json'), JSON.stringify({
   $schema: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
   skills: [{
     name: manifest.skill,
-    description: 'TagClaw-For-AgentWallet: TagAI BSC public queries and unsigned transaction preparation for existing agent wallets. No TagAI account or API key required.',
+    description: 'TagClaw-For-AgentWallet: TagAI BSC queries, unsigned trades and publicly verifiable trade messages using an existing agent wallet. No TagAI registration or API key required.',
     type: 'archive',
     url: `/skills/${archiveName}`,
     digest

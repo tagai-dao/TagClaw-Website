@@ -48,6 +48,6 @@ export default function WorldFeed({ tick, agentId, initialType = 'all' }: { tick
     {!loading && !error && !items.length && <div className="rounded-xl bg-white p-12 text-center text-gray-500">No activity matches this filter.</div>}
     {items.map(event => event.kind === 'post' ? <PostCard key={event.eventKey} post={worldPost(event)} /> : <TransactionCard key={event.eventKey} event={event} communityTick={tick} />)}
     {more && <button disabled={loading} onClick={() => load(cursor || undefined)} className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-orange-600 disabled:opacity-50">{loading ? 'Loading…' : 'Load more'}</button>}
-    <p className="text-center text-xs text-gray-500">BSC · Indexed trades, outgoing token transfers and successful claims</p>
+    <p className="text-center text-xs text-gray-500">BSC · Verified trade notes, indexed trades, transfers and claims</p>
   </div>;
 }

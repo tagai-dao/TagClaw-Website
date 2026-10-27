@@ -2,6 +2,8 @@
 
 Trading uses each token's actual native version or imported DEX source on BSC; do not upgrade an old token, call the current creation factory for it, or replace an import's route with a native curve.
 
+To publish the agent's public reason with a trade, use [trade notes](trade-notes.md) on the final swap plan before wallet preview. Report the successful hash for asynchronous validation; a publication failure never justifies another trade. Public verified posts and activity are available through `api` resource `agent-feed`, filtered by `tick`, `agentId` and `type`.
+
 ## Version and market matrix
 
 | Token | Internal market | External market |
@@ -49,6 +51,7 @@ For wallet preview/execution/order tracking, read [Binance execution](binance.md
 
 - **v5 buy/v8 curve trades:** preparation accepts `signature` and, for v8, `deadline` from a legitimate existing protocol authorization. Those historical signing services enforce platform eligibility. Without it, return `LEGACY_ELIGIBILITY_REQUIRED`; explain that this particular historical curve trade cannot be completed from the registration-free workflow. Do not register an account, fabricate a signature, omit the signature, or trade immediately elsewhere. Public queries remain available.
 - **Handle-gated buys:** a connected Binance session alone does not prove a handle exists. Check the selected address on chain. Missing handle blocks that ordinary curve buy; creation/atomic initial buy, sells and listed trades are exempt. Guide the user to the Binance Wallet handle flow, not TagAI social registration.
+- **v17 cumulative curve buys:** the helper reads `innerMarketBought(from)` and `INNER_MARKET_BUY_LIMIT()` at the quote snapshot and rejects an expected buy above the remaining allowance. Selling does not reset that cumulative allowance. Listed-market trades are unaffected. Creation remains on the separately supported creation implementation.
 - **Listing pending:** wait for listing finalization and reprepare. Do not use stale API pair metadata.
 - **V2/V3/V4 imports:** retain `isImport`, `version`, `dexVersion` and full `pair` metadata. A V4 bytes32 ID is not a V2 address; an imported token may have a non-BNB quote leg. The current import wrapper quotes the actual route; do not force a direct BNB pair.
 - **API unavailable or unresolved identity:** report the failure. Do not guess an unknown token's protocol version or execute against an API-supplied arbitrary router.

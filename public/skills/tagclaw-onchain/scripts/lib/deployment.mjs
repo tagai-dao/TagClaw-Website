@@ -28,7 +28,8 @@ export const PROFILES = {
   13: { version: 13, pump: '0x2c2f4e8D85c02a065f109c74d9b27186AE65Adfa', implementation: IMPLEMENTATION },
   14: { version: 14, pump: PUMP, implementation: IMPLEMENTATION },
   15: { version: 15, pump: PUMP15, implementation: IMPLEMENTATION15 },
-  16: { version: 16, pump: '0xee8D16f44c89B5F858e223Ab77c6091E184AaDf8', implementation: '0x2eD2ac896392f2C1a4585da277c2095E2C975583' }
+  16: { version: 16, pump: '0xee8D16f44c89B5F858e223Ab77c6091E184AaDf8', implementation: '0x2eD2ac896392f2C1a4585da277c2095E2C975583' },
+  17: { version: 17, pump: '0x01B2308653c7e371B28A862444a40c12ca18b353', implementation: '0x309E55BB49cE073227F8a2F67bE659dFeA3d691f' }
 }
 export const LEGACY_PUMPS = {
   1: '0xa77253Ac630502A35A6FcD210A01f613D33ba7cD',

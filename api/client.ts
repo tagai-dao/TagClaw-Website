@@ -1,6 +1,6 @@
 /**
  * TagClaw 前端 API 客户端
- * - 推文流：仅 Agent 账号发布（account_type=3），调用 tagclaw-api /tagclaw/feed
+ * - 推文流：仅 Agent 账号发布（account_type=2/3），调用 tagclaw-api /tagclaw/feed
  * - 社区（SubTag）：使用现有 tagclaw-api /community/* 接口
  * - Agent 列表：从推文流中聚合提取
  */
@@ -32,7 +32,7 @@ export interface ApiTweet {
   twitterUsername?: string
   profile?: string
   totalTrades?: number
-  accountType?: number  // 3 = .ai Agent ID
+  accountType?: number  // 2 = legacy TagClaw; 3 = Binance Agent ID
   ethAddr?: string
   steemId?: string
   followers?: number
@@ -150,7 +150,7 @@ export interface ApiCommunity {
 
 /**
  * Agent 数据 - 来自 /tagclaw/agents、/tagclaw/agent/:id
- * 对应后端 account_type=3 + tagclaw_agent 表
+ * 对应后端 account_type=2/3 + tagclaw_agent 表
  */
 export interface ApiAgent {
   agentId: string
@@ -159,7 +159,7 @@ export interface ApiAgent {
   username: string
   profile?: string
   totalTrades?: number
-  accountType?: number  // 3 = .ai Agent ID
+  accountType?: number  // 2 = legacy TagClaw; 3 = Binance Agent ID
   followers?: number
   followings?: number
   agentStatus?: number  // 0 待验证, 1 已激活
@@ -339,7 +339,7 @@ export async function getAgentFeed(pages = 0, tick?: string): Promise<AgentFeedR
   return getWorldPosts(pages, { tick })
 }
 
-/** 获取 Agent 列表（account_type=3），公开接口 */
+/** 获取 Agent 列表（account_type=2/3），公开接口 */
 export async function getAgents(pages = 0, q = '', sort = 'recent'): Promise<ApiAgent[]> {
   const raw = await get<ApiAgent[] | string>('/tagclaw/world/agents', { pages, q, sort })
   const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiAgent[]) : raw
@@ -379,7 +379,7 @@ export async function getAgentProfileFeed(agentId: string, pages = 0): Promise<A
   return getWorldPosts(pages, { agentId })
 }
 
-/** 获取 TagClaw 上 AI Agent 总数（与 /ai-agents 页数据同源：tagclaw_agent + account_type=3） */
+/** 获取 TagClaw 上 AI Agent 总数（与 /ai-agents 页数据同源：tagclaw_agent + account_type=2/3） */
 export async function getAgentsCount(): Promise<number> {
   return (await getWorldStats()).agents
 }
@@ -492,7 +492,7 @@ export function mapApiAgentToCard(a: ApiAgent): AgentCardItem {
     avatar: a.profile,
     initial: (a.name || a.username || 'A').charAt(0).toUpperCase(),
     joined: formatTimeAgo(a.createdAt),
-    isVerified: a.accountType === 3,
+    isVerified: [2, 3].includes(a.accountType ?? 0),
     followers: a.followers,
     followings: a.followings,
     ethAddr: a.ethAddr,
@@ -555,7 +555,7 @@ export function mapApiTweetToSocialPost(t: ApiTweet): SocialPost {
       name: t.twitterName || handle || 'Agent',
       handle,
       avatar: t.profile || '',
-      isVerified: t.accountType === 3,
+      isVerified: [2, 3].includes(t.accountType ?? 0),
       agentId: t.twitterId ? String(t.twitterId) : undefined,
     },
     content: t.content || '',
@@ -773,7 +773,7 @@ export async function getFollowingList(agentId: string, limit = 50, offset = 0):
 }
 
 
-// TagClaw world: all public identity reads are scoped server-side to account_type=3.
+// TagClaw world: all public identity reads are scoped server-side to account_type=2/3.
 export interface WorldStats extends AgentTxStats {
   agents: number; posts: number; comments: number; totalTransfers: number
 }
@@ -790,6 +790,8 @@ export function getWorldStats(): Promise<WorldStats> {
   return statsRequest
 }
 export interface WorldEvent {
+  noteText?: string; noteConfidence?: number | null; noteHandle?: string
+  noteCommitment?: string; noteVerifiedAt?: number
   version?: number; isImport?: number
   eventKey: string; kind: 'post' | 'trade' | 'claim' | 'transfer'
   type: 'post' | 'buy' | 'sell' | 'claim' | 'transfer'
@@ -802,6 +804,7 @@ export interface WorldEvent {
   amountUsd?: number | null; quoteAmountUsd?: number | null; eventNativeUsd?: number | null
   eventPriceChange24h?: number | null
 }
+export const tradeNoteVerificationUrl = (hash: string) => `${API_BASE}/tagclaw/trades/${encodeURIComponent(hash)}`
 export interface WorldFeedResponse {
   success: boolean; items: WorldEvent[]; hasMore: boolean; nextCursor: string | null; coverage: string
 }
@@ -844,7 +847,7 @@ async function getWorldPosts(pages: number, scope: {tick?: string; agentId?: str
     cursor = response.nextCursor || undefined
   }
   return { success:true, hasMore:response!.hasMore, page:pages,
-    tweets:response!.items.map(row => ({...row, tweetId:row.tweetId!, twitterId:row.agentId,
+    tweets:response!.items.filter(row => row.kind === 'post').map(row => ({...row, tweetId:row.tweetId!, twitterId:row.agentId,
       twitterName:row.name, twitterUsername:row.username, content:row.content || '',
       tweetTime:new Date(row.txTimestamp).toISOString() } as ApiTweet)) }
 }

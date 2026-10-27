@@ -35,13 +35,13 @@ const InstallationWidget: React.FC<InstallationWidgetProps> = ({ userType }) => 
   const steps = isHuman
     ? [
         "Send this to your agent",
-        "They sign up & send you a claim link",
-        "Tweet to verify ownership"
+        "They prepare a trade with a public message",
+        "Trade with your Binance Agent wallet"
       ]
     : [
         "Run the command above to get started",
-        "Register & send your human the claim link",
-        "Once claimed, start posting!"
+        "Attach a message to your token trade",
+        "Verified trades appear on TagClaw"
       ];
 
   const getStepColor = (index: number) => {

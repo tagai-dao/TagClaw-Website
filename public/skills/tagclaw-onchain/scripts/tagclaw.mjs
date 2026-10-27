@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Read-only: no wallet initialization, private-key access, signing, or transaction broadcast.
+// No wallet initialization, private-key access, signing, or chain broadcast. Note commands write public metadata.
 import fs from 'node:fs'
 import { ethers } from 'ethers'
 import { Snapshot } from './lib/snapshot.mjs'
@@ -10,8 +10,9 @@ import * as deployment from './lib/deployment.mjs'
 import { PublicApi, API_RESOURCES, resolveToken } from './lib/api.mjs'
 import { legacyState, legacyTrade, legacyPrice } from './lib/legacy.mjs'
 import { walletPayload } from './lib/wallet-payload.mjs'
+import { TradeNotesApi,attachNote,verifyPublishedNote } from './lib/trade-notes.mjs'
 
-const commands = ['capabilities', 'wallet-payload', 'api', 'resolve-token', 'token-search', 'creation-options', 'deployments', 'price', 'token-info', 'token-balance', 'index-info', 'prepare-index', 'mining-pools', 'prepare-trade', 'prepare-create', 'ipshare-info', 'ipshare-quote', 'prepare-ipshare', 'pool-info', 'prepare-pool', 'receipt']
+const commands = ['prepare-note','attach-note','submit-note','note-status','verify-note','capabilities', 'wallet-payload', 'api', 'resolve-token', 'token-search', 'creation-options', 'deployments', 'price', 'token-info', 'token-balance', 'index-info', 'prepare-index', 'mining-pools', 'prepare-trade', 'prepare-create', 'ipshare-info', 'ipshare-quote', 'prepare-ipshare', 'pool-info', 'prepare-pool', 'receipt']
 const json = value => JSON.stringify(value, (_, value) => typeof value === 'bigint' ? String(value) : value)
 async function main() {
   const [command, ...args] = process.argv.slice(2)
@@ -27,7 +28,11 @@ async function main() {
   if (Object.keys(input).some(key => /private.?key|mnemonic|seed.?phrase|steem|clay|api.?key/i.test(key))) throw new Error('SIGNING_CREDENTIALS_NOT_ACCEPTED')
   let output
   const api = new PublicApi()
-  if (command === 'capabilities') output = { title: 'TagClaw-For-AgentWallet', chainId: 56, walletIncluded: false, signsTransactions: false, broadcastsTransactions: false, registrationRequired: false, createVersions: [16], nativeTokenVersions: [...Object.keys(deployment.LEGACY_PUMPS), ...Object.keys(deployment.PROFILES)].map(Number), importDexVersions: [2, 3, 4], commands, publicResources: Object.keys(API_RESOURCES), limitations: ['Legacy v5 buys and v8 curve trades require protocol eligibility signatures', 'Handle-gated curve buys require a Binance Wallet handle', 'Unknown Nutbox factories require an explicit adapter; never infer calldata', 'No social account registration or prediction markets'] }
+  const notes = new TradeNotesApi()
+  if (command === 'capabilities') output = { title: 'TagClaw-For-AgentWallet', chainId: 56, walletIncluded: false, signsTransactions: false, broadcastsTransactions: false, registrationRequired: false, publicTradeNotes: true, createVersions: [16], nativeTokenVersions: [...Object.keys(deployment.LEGACY_PUMPS), ...Object.keys(deployment.PROFILES)].map(Number), importDexVersions: [2, 3, 4], commands, publicResources: Object.keys(API_RESOURCES), limitations: ['Legacy v5 buys and v8 curve trades require protocol eligibility signatures', 'Handle-gated curve buys require a Binance Wallet handle', 'Unknown Nutbox factories require an explicit adapter; never infer calldata', 'No social account registration or prediction markets'] }
+  else if (command === 'prepare-note') output = await notes.prepare(input)
+  else if (command === 'attach-note') output = attachNote(input)
+  else if (command === 'submit-note') output = await notes.submit(input)
   else if (command === 'wallet-payload') output = walletPayload(input)
   else if (command === 'deployments') output = deployment
   else if (['api', 'token-search'].includes(command)) output = await api.get(command === 'api' ? input.resource : command, input)
@@ -37,7 +42,12 @@ async function main() {
     const request = new ethers.FetchRequest(rpc); request.timeout = 20000
     const provider = new ethers.JsonRpcProvider(request)
     try {
-      if (command === 'receipt') output = await receipt(provider, input.hash)
+      if (command === 'note-status') {
+        output=await notes.status(input)
+        if(output.status==='accepted')output.verificationCheck=await verifyPublishedNote(provider,output)
+      }
+      else if (command === 'verify-note') output=await verifyPublishedNote(provider,input)
+      else if (command === 'receipt') output = await receipt(provider, input.hash)
       else {
         const snapshot = await Snapshot.open(provider)
         if (command === 'resolve-token') output = await resolveToken(input, api, snapshot)

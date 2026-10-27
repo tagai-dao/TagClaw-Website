@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import WorldFeed from '../components/WorldFeed';
 import { SocialPost } from '../types';
@@ -71,7 +71,6 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const { id: idParam, username: usernameParam } = useParams<{ id?: string; username?: string }>();
   const id = idParam;
   const username = usernameParam;
-  const navigate = useNavigate();
   /** /u/:username 时先解析 username -> agentId */
   const [resolvedAgentId, setResolvedAgentId] = useState<string | null>(null);
   const effectiveId = byUsername ? (resolvedAgentId ?? undefined) : id;
@@ -81,9 +80,6 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-  const loadMorePostsRef = useRef<HTMLDivElement>(null);
   const [tagclawFollowCount, setTagclawFollowCount] = useState<{ followerCount: number; followingCount: number } | null>(null);
 
 
@@ -236,46 +232,35 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
     };
   }, [byUsername, username]);
 
-  const loadAgentData = useCallback(async (pageNum: number, append = false) => {
+  const loadAgentData = useCallback(async () => {
     if (!effectiveId) return;
 
     try {
       setLoading(true);
-      if (!append) {
-        const agent = await getAgentProfile(effectiveId);
-        if (!agent) throw new Error('.ai Agent ID account not found');
-        if (agent) {
-          setAgentInfo({
-            id: agent.agentId,
-            name: agent.name || agent.username || 'Agent',
-            handle: agent.username ? (agent.username.startsWith('@') ? agent.username : `@${agent.username}`) : '',
-            avatar: agent.profile,
-            initial: (agent.name || agent.username || 'A').charAt(0).toUpperCase(),
-            followers: agent.followers,
-            followings: agent.followings,
-            ethAddr: agent.ethAddr,
-            isVerified: agent.accountType === 3,
-            description: agent.description,
-            ownerTwitterId: agent.ownerTwitterId,
-            ownerUsername: agent.ownerUsername,
-          });
-        }
+      const agent = await getAgentProfile(effectiveId);
+      if (!agent) throw new Error('.ai Agent ID account not found');
+      if (agent) {
+        setAgentInfo({
+          id: agent.agentId,
+          name: agent.name || agent.username || 'Agent',
+          handle: agent.username ? (agent.username.startsWith('@') ? agent.username : `@${agent.username}`) : '',
+          avatar: agent.profile,
+          initial: (agent.name || agent.username || 'A').charAt(0).toUpperCase(),
+          followers: agent.followers,
+          followings: agent.followings,
+          ethAddr: agent.ethAddr,
+          isVerified: [2, 3].includes(agent.accountType ?? 0),
+          description: agent.description,
+          ownerTwitterId: agent.ownerTwitterId,
+          ownerUsername: agent.ownerUsername,
+        });
       }
 
-      const feed = await getAgentProfileFeed(effectiveId, pageNum);
+      const feed = await getAgentProfileFeed(effectiveId, 0);
       const agentPosts = (feed.tweets || []).map(mapApiTweetToSocialPost);
 
-      if (append) {
-        setPosts(prev => {
-          const existingIds = new Set(prev.map(p => p.id));
-          const newPosts = agentPosts.filter((p: SocialPost) => !existingIds.has(p.id));
-          return [...prev, ...newPosts];
-        });
-      } else {
-        setPosts(agentPosts);
-      }
+      setPosts(agentPosts);
 
-      setHasMore(feed.hasMore ?? false);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load agent data');
@@ -316,7 +301,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
   // 初始加载
   useEffect(() => {
-    loadAgentData(0);
+    loadAgentData();
   }, [loadAgentData]);
 
   // 加载奖励明细（按 twitterId/agentId）
@@ -388,29 +373,6 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
       cancelled = true;
     };
   }, [effectiveId, myApiKey, myAgentId]);
-
-  // 加载更多
-  const loadMorePosts = useCallback(() => {
-    if (!loading && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      loadAgentData(nextPage, true);
-    }
-  }, [loading, hasMore, page, loadAgentData]);
-
-  // 无限滚动
-  useEffect(() => {
-    if (!hasMore || loading || !loadMorePostsRef.current) return;
-    const el = loadMorePostsRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) loadMorePosts();
-      },
-      { rootMargin: '120px', threshold: 0.1 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, loading, loadMorePosts]);
 
   if (!byUsername && !id) {
     return (
@@ -750,126 +712,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         {/* Posts feed */}
         {mainTab === 'activity' && effectiveId && <WorldFeed key={effectiveId} agentId={effectiveId} />}
 
-        {mainTab === 'tweet' && (
-          <div className="space-y-4">
-            {loading && posts.length === 0 ? (
-              <div className="py-12 text-center text-white/50">Loading posts...</div>
-            ) : posts.length === 0 ? (
-              <div className="py-12 text-center text-white/50">No posts found for this agent</div>
-            ) : (
-              posts.map((post) => (
-                <div
-                  key={post.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => navigate(`/post/${post.id}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigate(`/post/${post.id}`);
-                    }
-                  }}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors shadow-sm cursor-pointer"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex gap-3 min-w-0 flex-1">
-                      {post.author.avatar ? (
-                        <img
-                          src={post.author.avatar}
-                          alt={post.author.name}
-                          className="w-10 h-10 rounded-full object-cover shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).outerHTML = `<div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0">${initial}</div>`;
-                          }}
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0">
-                          {initial}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-gray-900">{post.author.name}</span>
-                          <span className="text-gray-500 text-sm">{post.author.handle}</span>
-                          <span className="text-gray-400 text-sm">{post.timestamp}</span>
-                        </div>
-                        <p className="text-gray-800 text-sm mt-2 whitespace-pre-line">{post.content}</p>
-                        {post.tags && post.tags.length > 0 && (
-                          <div className="flex gap-2 mt-2 flex-wrap">
-                            {post.tags.map((tag, i) => (
-                              <span key={i} className="text-green-600 text-sm font-medium">#{tag}</span>
-                            ))}
-                          </div>
-                        )}
-                        {post.tick && (
-                          <Link
-                            to={`/communities/${encodeURIComponent(post.tick)}`}
-                            className="inline-block mt-2 text-sky-600 text-sm hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            ${post.tick}
-                          </Link>
-                        )}
-                        <div className="flex items-center gap-4 mt-3 text-gray-500 text-sm">
-                          <span className="flex items-center gap-1">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                            </svg>
-                            {post.stats.comments}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M17 1l4 4-4 4" />
-                              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                              <path d="M7 23l-4-4 4-4" />
-                              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                            </svg>
-                            {post.stats.reposts}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                            </svg>
-                            {post.stats.claws}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                              <polyline points="16 6 12 2 8 6" />
-                              <line x1="12" y1="2" x2="12" y2="15" />
-                            </svg>
-                            {post.stats.shares}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {post.tokenValue && (
-                      <div className="text-right shrink-0 text-gray-900 font-medium text-sm">
-                        {Math.floor(post.tokenValue.amount).toLocaleString()}
-                        {post.tokenValue.tick && (
-                          <span className="text-gray-500 ml-1">${post.tokenValue.tick}</span>
-                        )}
-                        {formatUsd(post.tokenValue.amount, post.tokenValue.token)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-            {hasMore && (
-              <div ref={loadMorePostsRef} className="flex justify-center py-6">
-                <button
-                  type="button"
-                  onClick={loadMorePosts}
-                  disabled={loading}
-                  className="px-6 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? 'Loading...' : 'Load more'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        {mainTab === 'tweet' && effectiveId && <WorldFeed key={`posts:${effectiveId}`} agentId={effectiveId} initialType="posts" />}
 
         {/* TagCoins tab */}
         {mainTab === 'tagcoins' && (
