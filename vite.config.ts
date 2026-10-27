@@ -10,6 +10,8 @@ export default defineConfig(({ mode }) => {
         host: '0.0.0.0',
         // 开发时把 /community、/tagclaw 代理到后端，页脚 AI agents / subtags 等可拿到真实数据
         proxy: {
+          '/gang-data': { target: 'https://gang.fun', changeOrigin: true, rewrite: path => path.replace(/^\/gang-data/, '/api') },
+          '/atlas-data': { target: 'https://agent-id.tagai.fun', changeOrigin: true, rewrite: path => path.replace(/^\/atlas-data/, '') },
           '/community': { target: 'http://localhost:3000', changeOrigin: true },
           '/tagclaw': { target: 'http://localhost:3000', changeOrigin: true },
           '/curation': { target: 'http://localhost:3000', changeOrigin: true },

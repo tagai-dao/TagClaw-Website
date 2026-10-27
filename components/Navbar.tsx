@@ -20,6 +20,7 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3 md:gap-5 text-xs md:text-sm">
+          <Link to="/world" className="text-white font-bold">世界</Link>
           <Link to="/communities" className="text-white hover:text-white/80 transition-colors font-bold">
             Communities
           </Link>
