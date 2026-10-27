@@ -1,30 +1,34 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "1.1.0",
+  "version": "2.1.2",
   "files": [
     {
       "path": "SKILL.md",
-      "sha256": "91c4fe4b89c32fc5f786d00c751f0f577c18ff6ca7dc4a697ebcb1815e5f1584"
+      "sha256": "74ceb7a1303ba07ad53b31e766995b78a82e09129f16213ca545e4e4612b2487"
     },
     {
       "path": "package.json",
-      "sha256": "46331eeabfe846933d6c32cef0e187ff42ff030f89896f867847ecf269846a2c"
+      "sha256": "a50103bb3db1fcdf1a8297dc685b0ede7632bebcf0e1e7f2af32501730beee4d"
     },
     {
       "path": "package-lock.json",
-      "sha256": "0c640aad193a562a36f25055f834f13ef8669e248e80d3a777230cae6b1ebf3b"
+      "sha256": "f21a56ac4b83182ac503d6bd8b25e82c98af28a2f97a6c59a9bdec23e1a1da0f"
     },
     {
       "path": "agents/openai.yaml",
-      "sha256": "95e9490e9e0bf3f9e0d55878c7f4ea4a58d4dd61c75433c6cd5b607b184719bc"
+      "sha256": "0dd520c8b986b452cf17d4320b2780581062f0569e408442d69c3de57eea9c9d"
+    },
+    {
+      "path": "references/api.md",
+      "sha256": "6daaf9bc84ca7c7e715bf0952a39152068e442cfada7040905ad03e8bcb96908"
     },
     {
       "path": "references/binance.md",
-      "sha256": "1ecd5a121f913d6609500dd041ce5c821a9a9253767a420467bf0df8b8899ba9"
+      "sha256": "8c88b5661103ecc5bb3bfc6c7412339a708afa6827a0ba5dbd0c770b08d92945"
     },
     {
       "path": "references/creation.md",
-      "sha256": "b5b5340a91e1946f05cebe6455c7ad4963ac17498fca472b771eea7e4c7fac3c"
+      "sha256": "2cb763963456597c48c4b27102752d1007ab59752607d2f9435532f735508a56"
     },
     {
       "path": "references/index.md",
@@ -32,31 +36,47 @@
     },
     {
       "path": "references/ipshare.md",
-      "sha256": "9b1935b28fe8e28ed97235a6d6884e7c67a479f47a3367bce44f3db4823ec635"
+      "sha256": "3b802f8c3be1f61fbdfeafaad4629900f17a7eda9922d8889e566dd6e9f0f828"
     },
     {
       "path": "references/nutbox.md",
-      "sha256": "c95c7ba70f4e58847486cf1f001435c81815e1a5ebe8e5e368f52e0c165b71d9"
+      "sha256": "b2cd39f81be12b54f107060d324c24562097a9f6b04623c9aa589fdf48aa127d"
     },
     {
       "path": "references/protocol.md",
-      "sha256": "e7d446431ca967e33c0b6e1850de1d79f098c1fe2df5c777daaa7fadbc77004a"
+      "sha256": "fbcd1db2e5328a9c04a677ad44cdb92dbbbf412220cfb9bc573d3cd2bbcb4a12"
     },
     {
       "path": "references/queries.md",
-      "sha256": "10de013b094473dd2fffd9dfcb65373c816d83e21a02a754077f4b26b63571c3"
+      "sha256": "0da9cbb15f764141240c020b20bdc45977cc986a5cd13ea5a695320faf6e97c9"
+    },
+    {
+      "path": "references/quickstart.md",
+      "sha256": "24cffd116d3703876281c3fb56b6946fd3f00b14526c7dfdab94a71598923023"
     },
     {
       "path": "references/trading.md",
-      "sha256": "b83bc3f5839ca5f782771082416238828f3c90a37028753d3e1d55fba89e91a7"
+      "sha256": "c278bb9beebe2aac1dbc1dd483b3bc838eb5c14653291118783d31146f031ef2"
+    },
+    {
+      "path": "references/transactions.md",
+      "sha256": "9832e826f15eea9bf09d2b9fe03b8975566032575604a53c75daea2f60f4998f"
+    },
+    {
+      "path": "scripts/lib/api.mjs",
+      "sha256": "1a0b55e8ef87030f8b94612b170bfb582ab450ec30ecbab73a64908d847a0ebb"
+    },
+    {
+      "path": "scripts/lib/constituents.json",
+      "sha256": "07f26503868726ebc97ce1698351d467b772edd92dc134af9651b6a16a8f4046"
     },
     {
       "path": "scripts/lib/creation.mjs",
-      "sha256": "b939a6fdb3d490903cc399808ccccac1e68ad1d3c7edf660bc1633b44205ec26"
+      "sha256": "aa0ef5574bcc3500b89a6680bfc828b2defcb4eb753398d7a45bddab23924f11"
     },
     {
       "path": "scripts/lib/deployment.mjs",
-      "sha256": "1aaaa36d9bcb8953792cce7e5234f247b62d5b13265651611e1f9d3c3001172e"
+      "sha256": "ce5b1b7dcb7992745b2e3f47fe7cb62fbc48879bc3bf0a71408ada6652d3a3f7"
     },
     {
       "path": "scripts/lib/erc20-abi.mjs",
@@ -75,24 +95,32 @@
       "sha256": "4f7dea4c2971fdac44216e3815be66111a50e2e1dfd30a196a6fdfec43cf622c"
     },
     {
+      "path": "scripts/lib/legacy.mjs",
+      "sha256": "fb949a04fdb88c9bde7863ca21c21e29a76a53b2b65441d716258e4cb7061c62"
+    },
+    {
       "path": "scripts/lib/nutbox-abi.mjs",
       "sha256": "19648370308194b1b5d993712cf96efde528b50eb243e2d223252f7a7b951f40"
     },
     {
       "path": "scripts/lib/prepare.mjs",
-      "sha256": "f90dceb778a994768eb735aabab0c0a1c1e8e00f2c9d17293a1b1078be72350c"
+      "sha256": "55ccebf1a18bc8329b69b0ad2ff0053e5f81d4ba73786ff1f0613eeeb9983b4f"
     },
     {
       "path": "scripts/lib/snapshot.mjs",
-      "sha256": "94de91c2580c01020e0b02437cca57b41d16e183992ddda132a8b446c13d14ef"
+      "sha256": "16cb78a06ffda3fd9d5f30fb91ba1d061776cc53809d2526d4122e226699e8a5"
     },
     {
       "path": "scripts/lib/v14-abi.mjs",
       "sha256": "66b76cae5b074db850c5a65d0a9cd7f731dcee9cb1df14b5bbbdb555c0edb663"
     },
     {
+      "path": "scripts/lib/wallet-payload.mjs",
+      "sha256": "a763a18ca11133edffefdfb72cbc9b50251beb3c4c21a619f0eed4bf7fd10135"
+    },
+    {
       "path": "scripts/tagclaw.mjs",
-      "sha256": "f37091470b71075ba6dd65d8043404d98349ab542e315f5f813384d70573a697"
+      "sha256": "4dec7682b4b2310eea794e0cf5379d8e9b8620d56f5c7c5dad8b8c9c53dd5df2"
     }
   ]
 }

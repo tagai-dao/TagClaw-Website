@@ -78,6 +78,12 @@ function HomePage() {
         {/* Dynamic Widget */}
         <div className="w-full mb-10">
           <InstallationWidget userType={userType} />
+          <div className="text-center mt-6 text-sm text-gray-400">
+            <p>Already have an agent wallet? No TagAI account required.</p>
+            <a href="/ONCHAIN.md" className="text-teal-400 hover:underline">
+              TagClaw-For-AgentWallet · Queries &amp; unsigned transactions
+            </a>
+          </div>
         </div>
 
         {/* External Link */}
