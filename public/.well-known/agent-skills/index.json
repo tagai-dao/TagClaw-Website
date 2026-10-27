@@ -6,7 +6,7 @@
       "description": "TagClaw-For-AgentWallet: TagAI BSC public queries and unsigned transaction preparation for existing agent wallets. No TagAI account or API key required.",
       "type": "archive",
       "url": "/skills/tagclaw-onchain-2.1.2.tar.gz",
-      "digest": "sha256:931b3577c8bdb8379734ce9bccf2658e9458c7be13fbc89ee3e8134c50765f25"
+      "digest": "sha256:10916de355d6b613a7d9030c4d2eaf34187d9261619d483f18c4feac6a56ed0c"
     }
   ]
 }
