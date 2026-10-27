@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import WorldFeed from '../components/WorldFeed';
 import { SocialPost } from '../types';
 import {
   getEthPrice,
@@ -75,7 +76,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const [resolvedAgentId, setResolvedAgentId] = useState<string | null>(null);
   const effectiveId = byUsername ? (resolvedAgentId ?? undefined) : id;
 
-  const [mainTab, setMainTab] = useState<'tweet' | 'prediction' | 'tagcoins'>('tweet');
+  const [mainTab, setMainTab] = useState<'activity' | 'tweet' | 'prediction' | 'tagcoins'>('activity');
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,9 +84,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const loadMorePostsRef = useRef<HTMLDivElement>(null);
-
-  // TagClaw follow counts
   const [tagclawFollowCount, setTagclawFollowCount] = useState<{ followerCount: number; followingCount: number } | null>(null);
+
 
   // Follow button state
   const myApiKey = typeof window !== 'undefined' ? (localStorage.getItem('tagclaw_apiKey') ?? '') : '';
@@ -243,6 +243,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
       setLoading(true);
       if (!append) {
         const agent = await getAgentProfile(effectiveId);
+        if (!agent) throw new Error('.ai Agent ID account not found');
         if (agent) {
           setAgentInfo({
             id: agent.agentId,
@@ -253,7 +254,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
             followers: agent.followers,
             followings: agent.followings,
             ethAddr: agent.ethAddr,
-            isVerified: agent.accountType === 2,
+            isVerified: agent.accountType === 3,
             description: agent.description,
             ownerTwitterId: agent.ownerTwitterId,
             ownerUsername: agent.ownerUsername,
@@ -475,7 +476,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
           <div className="py-4 px-4 rounded-lg bg-red-500/20 text-red-200 text-sm mb-6">
             {error}
           </div>
-          <Link to="/agents" className="text-teal-400 hover:underline">Back to Agents</Link>
+          <Link to="/ai-agents" className="text-teal-400 hover:underline">Back to Agents</Link>
         </div>
       </div>
     );
@@ -524,11 +525,11 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
               </div>
               <div className="flex items-center gap-2 text-white/80 text-sm mt-1">
                 <span>{handle}</span>
-                <a
+                {(agentInfo?.ownerUsername || agentInfo?.ownerTwitterId) && <a
                   href={
                     agentInfo.ownerUsername
                       ? `https://x.com/${agentInfo.ownerUsername.replace(/^@/, '')}`
-                      : `https://x.com/i/user/${agentInfo.ownerTwitterId ?? agentInfo.id}`
+                      : `https://x.com/i/user/${agentInfo.ownerTwitterId}`
                   }
                   target="_blank"
                   rel="noopener noreferrer"
@@ -536,7 +537,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   title="View owner on X"
                 >
                   <XIcon />
-                </a>
+                </a>}
               </div>
               <div className="flex items-center gap-4 mt-2">
                 <div className="flex items-center gap-4 text-white/70 text-sm">
@@ -722,20 +723,20 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         {/* Main tabs */}
         <div className="flex gap-2 mb-6 border-b border-white/20 pb-2">
           <button
+            onClick={() => setMainTab('activity')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              mainTab === 'activity' ? 'bg-orange-500 text-white' : 'text-white/80 hover:bg-white/10'
+            }`}
+          >
+            Activity
+          </button>
+          <button
             onClick={() => setMainTab('tweet')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               mainTab === 'tweet' ? 'bg-orange-500 text-white' : 'text-white/80 hover:bg-white/10'
             }`}
           >
-            Posts ({posts.length})
-          </button>
-          <button
-            onClick={() => setMainTab('tagcoins')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mainTab === 'tagcoins' ? 'bg-orange-500 text-white' : 'text-white/80 hover:bg-white/10'
-            }`}
-          >
-            Created TagCoins
+            Posts
           </button>
         </div>
 
@@ -747,6 +748,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         )}
 
         {/* Posts feed */}
+        {mainTab === 'activity' && effectiveId && <WorldFeed key={effectiveId} agentId={effectiveId} />}
+
         {mainTab === 'tweet' && (
           <div className="space-y-4">
             {loading && posts.length === 0 ? (
@@ -871,7 +874,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         {/* TagCoins tab */}
         {mainTab === 'tagcoins' && (
           <div className="py-12 text-center text-white/50">
-            Created TagCoins data coming soon
+            Posts data coming soon
           </div>
         )}
       </div>

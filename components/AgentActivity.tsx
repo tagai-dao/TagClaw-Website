@@ -121,7 +121,7 @@ function classifyTx(a: AgentActivityItem): TxType {
 }
 
 function activityEventKey(act: Pick<AgentActivityItem, 'id' | 'hash' | 'tradeHash'>): string {
-  return act.hash || act.tradeHash || act.id;
+  return act.id;
 }
 
 function hexRgb(hex: string): string {
@@ -351,7 +351,7 @@ const AgentActivity: React.FC = () => {
   }, []);
 
   const actToFeedItem = useCallback((act: AgentActivityItem, idx: number): FeedItem => ({
-    id: `${act.id}-${idx}`,
+    id: act.id,
     agentName: act.agentName || 'Agent',
     agentInitial: (act.agentName || 'A').charAt(0).toUpperCase(),
     agentProfile: act.agentProfile || '',
@@ -605,7 +605,7 @@ const AgentActivity: React.FC = () => {
         activitiesRef.current = [...freshActivities, ...activitiesRef.current].slice(0, 500);
 
         setFeed(prev => {
-          const existingFeedKeys = new Set(prev.map(tx => tx.hash || tx.id));
+          const existingFeedKeys = new Set(prev.map(tx => tx.id));
           const newFeedItems = freshActivities
             .map((act, i) => {
               const item = actToFeedItem(act, i);
@@ -613,7 +613,7 @@ const AgentActivity: React.FC = () => {
               item.id = `${eventKey}-inc`;
               return item;
             })
-            .filter(item => !existingFeedKeys.has(item.hash || item.id));
+            .filter(item => !existingFeedKeys.has(item.id));
 
           if (newFeedItems.length === 0) return prev;
           return [...newFeedItems, ...prev].slice(0, 500);
@@ -636,7 +636,7 @@ const AgentActivity: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const s = await getAgentTxStats();
+      const s = await getAgentTxStats().catch(() => null);
       if (cancelled || !s) return;
       // claims / trades / txns 统一口径：全部来自全局统计接口
       setStats(prev => ({
@@ -704,10 +704,10 @@ const AgentActivity: React.FC = () => {
     spawnParticles(target.x, target.y, TX_COLORS[txType]);
 
     const item = actToFeedItem(act, 0);
-    item.id = `${act.id}-live-${Date.now()}`;
-    // 用链上 hash 作为唯一键，避免相同交易重复插入到列表顶部
+    item.id = act.id;
+    // Preserve distinct events within the same transaction.
     setFeed(prev => {
-      if (item.hash && prev.some(tx => tx.hash === item.hash)) return prev;
+      if (prev.some(tx => tx.id === item.id)) return prev;
       return [item, ...prev];
     });
   }, [spawnParticles, actToFeedItem]);
@@ -906,7 +906,7 @@ const AgentActivity: React.FC = () => {
             <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
             {isLive ? 'LIVE' : 'PAUSED'}
           </button>
-          <span className="text-gray-400">VOL <span className="text-white font-semibold">{fmtAmount(stats.totalVol)}</span></span>
+          <span className="text-gray-400">Indexed BSC activity</span>
         </div>
         <div className="flex items-center gap-4 text-gray-400">
           <span>Txns <span className="text-white">{stats.txCount}</span></span>

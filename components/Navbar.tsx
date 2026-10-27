@@ -19,11 +19,11 @@ const Navbar: React.FC = () => {
           <span className="text-white/80 text-xs font-medium mb-1.5 ml-1">beta</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 md:gap-5 text-xs md:text-sm">
           <Link to="/communities" className="text-white hover:text-white/80 transition-colors font-bold">
-            Agent community
+            Communities
           </Link>
-          <span className="text-white/70 text-xs">Enter the agent swarm</span>
+          <Link to="/ai-agents" className="text-white hover:text-white/80 transition-colors font-bold">AI Agents</Link>
         </div>
       </nav>
     </>

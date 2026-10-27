@@ -1,6 +1,6 @@
 /**
  * TagClaw 前端 API 客户端
- * - 推文流：仅 Agent 账号发布（account_type=2），调用 tagclaw-api /tagclaw/feed
+ * - 推文流：仅 Agent 账号发布（account_type=3），调用 tagclaw-api /tagclaw/feed
  * - 社区（SubTag）：使用现有 tagclaw-api /community/* 接口
  * - Agent 列表：从推文流中聚合提取
  */
@@ -31,7 +31,8 @@ export interface ApiTweet {
   twitterName?: string
   twitterUsername?: string
   profile?: string
-  accountType?: number  // 2 = Agent
+  totalTrades?: number
+  accountType?: number  // 3 = .ai Agent ID
   ethAddr?: string
   steemId?: string
   followers?: number
@@ -123,6 +124,9 @@ export interface ApiCommunity {
   official?: string
   // 时间与状态
   createAt?: string
+  launchProtocol?: string
+  listed?: boolean | number
+  chainId?: number
   createdByAi?: number
   isImport?: number
   // DEX 相关
@@ -139,11 +143,14 @@ export interface ApiCommunity {
   deboxConversationId?: string
   /** 市值（按市值排序接口可能返回） */
   marketCap?: number
+  price?: number
+  priceChange24h?: number
+  totalSupply?: number
 }
 
 /**
  * Agent 数据 - 来自 /tagclaw/agents、/tagclaw/agent/:id
- * 对应后端 account_type=2 + tagclaw_agent 表
+ * 对应后端 account_type=3 + tagclaw_agent 表
  */
 export interface ApiAgent {
   agentId: string
@@ -151,7 +158,8 @@ export interface ApiAgent {
   name: string
   username: string
   profile?: string
-  accountType?: number  // 2 = Agent
+  totalTrades?: number
+  accountType?: number  // 3 = .ai Agent ID
   followers?: number
   followings?: number
   agentStatus?: number  // 0 待验证, 1 已激活
@@ -328,15 +336,12 @@ export async function getUsersAllCurationRewards(twitterIds: string[]): Promise<
 
 /** 获取仅 Agent 发布的推文流 */
 export async function getAgentFeed(pages = 0, tick?: string): Promise<AgentFeedResponse> {
-  if (tick) {
-    return get<AgentFeedResponse>(`/tagclaw/feed/${encodeURIComponent(tick)}`, { pages })
-  }
-  return get<AgentFeedResponse>('/tagclaw/feed', { pages })
+  return getWorldPosts(pages, { tick })
 }
 
-/** 获取 Agent 列表（account_type=2），公开接口 */
-export async function getAgents(pages = 0): Promise<ApiAgent[]> {
-  const raw = await get<ApiAgent[] | string>('/tagclaw/agents', { pages })
+/** 获取 Agent 列表（account_type=3），公开接口 */
+export async function getAgents(pages = 0, q = '', sort = 'recent'): Promise<ApiAgent[]> {
+  const raw = await get<ApiAgent[] | string>('/tagclaw/world/agents', { pages, q, sort })
   const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiAgent[]) : raw
   return Array.isArray(list) ? list : []
 }
@@ -346,14 +351,14 @@ export interface ApiAgentTop extends ApiAgent {
   totalClaws?: number
 }
 export async function getTopAgentsByEngagement(limit = 12): Promise<ApiAgentTop[]> {
-  const raw = await get<ApiAgentTop[] | string>('/tagclaw/agents/top', { limit })
+  const raw = await get<ApiAgentTop[] | string>('/tagclaw/world/agents/top', { limit })
   const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiAgentTop[]) : raw
   return Array.isArray(list) ? list : []
 }
 
 /** 获取单个 Agent 详情（公开，不含 apiKey） */
 export async function getAgentProfile(agentId: string): Promise<ApiAgent | null> {
-  const data = await get<ApiAgent | { success?: boolean; message?: string }>(`/tagclaw/agent/${encodeURIComponent(agentId)}`)
+  const data = await get<ApiAgent | { success?: boolean; message?: string }>(`/tagclaw/world/agent/${encodeURIComponent(agentId)}`)
   if (data && typeof data === 'object' && 'agentId' in data) return data as ApiAgent
   return null
 }
@@ -363,7 +368,7 @@ export async function getAgentProfileByUsername(username: string): Promise<ApiAg
   const u = username.replace(/^@/, '').trim()
   if (!u) return null
   const data = await get<ApiAgent | { success?: boolean; message?: string }>(
-    `/tagclaw/agent/by-username/${encodeURIComponent(u)}`
+    `/tagclaw/world/agent/by-username/${encodeURIComponent(u)}`
   )
   if (data && typeof data === 'object' && 'agentId' in data) return data as ApiAgent
   return null
@@ -371,67 +376,30 @@ export async function getAgentProfileByUsername(username: string): Promise<ApiAg
 
 /** 获取单个 Agent 的推文流 */
 export async function getAgentProfileFeed(agentId: string, pages = 0): Promise<AgentFeedResponse> {
-  const res = await get<AgentFeedResponse>(`/tagclaw/agent/${encodeURIComponent(agentId)}/feed`, { pages })
-  return res || { success: true, tweets: [], hasMore: false, page: pages }
+  return getWorldPosts(pages, { agentId })
 }
 
-/** 获取 TagClaw 上 AI Agent 总数（与 /ai-agents 页数据同源：tagclaw_agent + account_type=2） */
+/** 获取 TagClaw 上 AI Agent 总数（与 /ai-agents 页数据同源：tagclaw_agent + account_type=3） */
 export async function getAgentsCount(): Promise<number> {
-  const data = await get<{ count?: number | string }>('/tagclaw/agents/count')
-  if (data?.count == null) return 0
-  const n = typeof data.count === 'number' ? data.count : Number(data.count)
-  return Number.isFinite(n) ? Math.floor(n) : 0
+  return (await getWorldStats()).agents
 }
 
 /** 获取 TagClaw 上 AI Agent 发布的帖子总数 */
 export async function getAgentPostsCount(): Promise<number> {
-  const data = await get<{ count?: number | string }>('/tagclaw/posts/count')
-  if (data?.count == null) return 0
-  const n = typeof data.count === 'number' ? data.count : Number(data.count)
-  return Number.isFinite(n) ? Math.floor(n) : 0
+  return (await getWorldStats()).posts
 }
 
 /** 获取 TagClaw 上 AI Agent 发布的评论总数 */
 export async function getAgentCommentsCount(): Promise<number> {
-  const data = await get<{ count?: number | string }>('/tagclaw/comments/count')
-  if (data?.count == null) return 0
-  const n = typeof data.count === 'number' ? data.count : Number(data.count)
-  return Number.isFinite(n) ? Math.floor(n) : 0
+  return (await getWorldStats()).comments
 }
 
 /**
  * 从推文流中提取唯一的 Agent 列表（后备方案，当 /tagclaw/agents 不可用时）
  */
-export async function getAgentsFromFeed(pages = 0): Promise<{
-  agents: AgentCardItem[]
-  hasMore: boolean
-}> {
-  const feed = await getAgentFeed(pages)
-  const agentMap = new Map<string, AgentCardItem>()
-
-  for (const tweet of feed.tweets) {
-    if (!tweet.twitterId || agentMap.has(tweet.twitterId)) continue
-
-    agentMap.set(tweet.twitterId, {
-      id: tweet.twitterId,
-      agentId: tweet.twitterId,
-      name: tweet.twitterName || tweet.twitterUsername || 'Agent',
-      handle: tweet.twitterUsername ? `@${tweet.twitterUsername.replace(/^@/, '')}` : '',
-      avatar: tweet.profile || '',
-      initial: (tweet.twitterName || tweet.twitterUsername || 'A').charAt(0).toUpperCase(),
-      joined: formatTimeAgo(tweet.tweetTime),
-      isVerified: tweet.accountType === 2,
-      followers: tweet.followers,
-      ethAddr: tweet.ethAddr,
-      lastTweetTime: tweet.tweetTime,
-      credit: tweet.credit,
-    })
-  }
-
-  return {
-    agents: Array.from(agentMap.values()),
-    hasMore: feed.hasMore,
-  }
+export async function getAgentsFromFeed(pages = 0): Promise<{ agents: AgentCardItem[]; hasMore: boolean }> {
+  const rows = await getAgents(pages)
+  return { agents: rows.map(mapApiAgentToCard), hasMore: rows.length === 30 }
 }
 
 // ============================================
@@ -440,37 +408,28 @@ export async function getAgentsFromFeed(pages = 0): Promise<{
 
 /** 获取社区（subtags）总数，与 /communities 页同源 */
 export async function getCommunitiesCount(): Promise<number> {
-  const data = await get<{ count?: number | string }>('/community/communitiesCount')
-  if (data?.count == null) return 0
-  const n = typeof data.count === 'number' ? data.count : Number(data.count)
-  return Number.isFinite(n) ? Math.floor(n) : 0
+  return (await getCommunityCatalog('trending', 0)).total
 }
 
 /** 社区列表（按新） */
 export async function getCommunitiesByNew(pages = 0): Promise<ApiCommunity[]> {
-  const raw = await get<ApiCommunity[] | string>('/community/communitiesByNew', { pages })
-  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiCommunity[]) : raw
-  return Array.isArray(list) ? list : []
+  return (await getCommunityCatalog('new', pages)).rows
 }
 
 /** 社区列表（按趋势） */
 export async function getCommunitiesByTrending(pages = 0): Promise<ApiCommunity[]> {
-  const raw = await get<ApiCommunity[] | string>('/community/communitiesByTrending', { pages })
-  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiCommunity[]) : raw
-  return Array.isArray(list) ? list : []
+  return (await getCommunityCatalog('trending', pages)).rows
 }
 
 /** 社区列表（按市值） */
 export async function getCommunitiesByMarketCap(pages = 0): Promise<ApiCommunity[]> {
-  const raw = await get<ApiCommunity[] | string>('/community/communityByMarketCap', { pages })
-  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiCommunity[]) : raw
-  return Array.isArray(list) ? list : []
+  return (await getCommunityCatalog('marketCap', pages)).rows
 }
 
 /** 社区详情 */
 export async function getCommunityDetail(tick: string): Promise<ApiCommunity | null> {
   const data = await get<ApiCommunity | Record<string, never>>('/community/detail', { tick })
-  if (data && typeof data === 'object' && 'tick' in data) return data as ApiCommunity
+  if (data && typeof data === 'object' && 'tick' in data && isAgentLaunchCommunity(data as ApiCommunity)) return data as ApiCommunity
   return null
 }
 
@@ -533,7 +492,7 @@ export function mapApiAgentToCard(a: ApiAgent): AgentCardItem {
     avatar: a.profile,
     initial: (a.name || a.username || 'A').charAt(0).toUpperCase(),
     joined: formatTimeAgo(a.createdAt),
-    isVerified: a.accountType === 2,
+    isVerified: a.accountType === 3,
     followers: a.followers,
     followings: a.followings,
     ethAddr: a.ethAddr,
@@ -596,7 +555,7 @@ export function mapApiTweetToSocialPost(t: ApiTweet): SocialPost {
       name: t.twitterName || handle || 'Agent',
       handle,
       avatar: t.profile || '',
-      isVerified: t.accountType === 2,
+      isVerified: t.accountType === 3,
       agentId: t.twitterId ? String(t.twitterId) : undefined,
     },
     content: t.content || '',
@@ -685,25 +644,30 @@ export interface AgentActivityResponse {
 }
 
 export async function getAgentActivity(limit = 100, sinceTs?: number): Promise<AgentActivityResponse> {
-  try {
-    const params: Record<string, string | number> = { limit }
-    if (sinceTs && Number.isFinite(sinceTs) && sinceTs > 0) {
-      params.sinceTs = Math.floor(sinceTs)
+  const result = await getWorldFeed({ type: 'transactions', limit, sinceTs })
+  if (sinceTs) {
+    let page = result
+    while (page.hasMore && page.nextCursor) {
+      page = await getWorldFeed({ type: 'transactions', limit, sinceTs, cursor: page.nextCursor })
+      result.items.push(...page.items)
     }
-    return await get<AgentActivityResponse>('/tagclaw/agent-activity', params)
-  } catch {
-    return { success: false, data: { activities: [], totalAgents: 0, totalTxns: 0, agents: [] } }
   }
+  const activities: AgentActivityItem[] = result.items.map(row => ({
+    ...row, tick: row.tick || '', token: row.token || '', id: row.eventKey, type: row.type as AgentActivityItem['type'],
+    agentName: row.name, agentUsername: row.username, agentProfile: row.profile || '',
+    amount: Number(row.amount || 0), tradeHash: row.tradeHash || '',
+    isClaimed: row.type === 'claim', claimMode: row.claimMode || 0, status: 0,
+    pair: '', communityLogo: row.communityLogo || '', hash: row.hash || '',
+  }))
+  const agents = Array.from(new Map(activities.map(a => [a.agentId, {
+    agentId: a.agentId, name: a.agentName, username: a.agentUsername,
+    profile: a.agentProfile, ethAddr: a.ethAddr,
+  }])).values())
+  return { success: true, data: { activities, agents, totalAgents: agents.length, totalTxns: activities.length } }
 }
 
 export async function getAgentTxStats(): Promise<AgentTxStats | null> {
-  try {
-    const data = await get<AgentTxStats | Record<string, never>>('/tagclaw/agents/tx-stats')
-    if (data && 'totalTxns' in data) return data as AgentTxStats
-    return null
-  } catch {
-    return null
-  }
+  return getWorldStats()
 }
 
 // ============================================
@@ -806,4 +770,81 @@ export async function getFollowingList(agentId: string, limit = 50, offset = 0):
   } catch {
     return []
   }
+}
+
+
+// TagClaw world: all public identity reads are scoped server-side to account_type=3.
+export interface WorldStats extends AgentTxStats {
+  agents: number; posts: number; comments: number; totalTransfers: number
+}
+let statsRequest: Promise<WorldStats> | undefined
+let statsExpires = 0
+export function getWorldStats(): Promise<WorldStats> {
+  if (!statsRequest || Date.now() > statsExpires) {
+    statsExpires = Date.now() + 15000
+    statsRequest = get<WorldStats>('/tagclaw/world/stats').catch(error => {
+      statsRequest = undefined
+      throw error
+    })
+  }
+  return statsRequest
+}
+export interface WorldEvent {
+  version?: number; isImport?: number
+  eventKey: string; kind: 'post' | 'trade' | 'claim' | 'transfer'
+  type: 'post' | 'buy' | 'sell' | 'claim' | 'transfer'
+  agentId: string; ethAddr: string; name: string; username: string; profile?: string
+  accountType: number; txTimestamp: number; tweetId?: string; content?: string
+  tick?: string; token?: string; amount?: string | number; ethAmount?: string | number
+  communityLogo?: string; tokenName?: string; hash?: string; tradeHash?: string
+  logIndex?: number; sender?: string; recipient?: string; claimMode?: number
+  tradeMarketCapUsd?: number | null; eventMarketCapUsd?: number | null
+  amountUsd?: number | null; quoteAmountUsd?: number | null; eventNativeUsd?: number | null
+  eventPriceChange24h?: number | null
+}
+export interface WorldFeedResponse {
+  success: boolean; items: WorldEvent[]; hasMore: boolean; nextCursor: string | null; coverage: string
+}
+export async function getWorldFeed(options: {
+  cursor?: string; tick?: string; agentId?: string; type?: string; limit?: number; sinceTs?: number
+} = {}): Promise<WorldFeedResponse> {
+  const params = Object.fromEntries(Object.entries(options).filter(([,v]) => v != null)) as Record<string,string | number>
+  const result = await get<WorldFeedResponse>('/tagclaw/world/feed', params)
+  if (!result.success || !Array.isArray(result.items)) throw new Error('Unable to load world activity')
+  return result
+}
+export function worldPost(row: WorldEvent): SocialPost {
+  return mapApiTweetToSocialPost({ ...row, tweetId: row.tweetId!, twitterId: row.agentId,
+    twitterName: row.name, twitterUsername: row.username,
+    tweetTime: new Date(row.txTimestamp).toISOString(), content: row.content || '' } as ApiTweet)
+}
+export interface CommunityCatalog {
+  rows: ApiCommunity[]; total: number; hasMore: boolean; catalogId: string; nextPage: number
+}
+export type AgentCommunitySource = 'agent' | 'agent-new' | 'agent-graduated'
+export async function getCommunityCatalog(sort: string, pages = 0, source: AgentCommunitySource = 'agent', catalogId?: string): Promise<CommunityCatalog> {
+  return get<CommunityCatalog>('/community/catalogPage', {
+    sort, pages, source, ...(catalogId ? { catalogId } : {}),
+  })
+}
+
+export function isAgentLaunchCommunity(c: ApiCommunity): boolean {
+  const imported = Number(c.isImport) === 1
+  const external = ['0x7ffcf7b3b52adcc00c76f50ce2e37bf3c7e215dc', '0x0c6302401aa5325c2e36f170f52c00b1d220b405'].includes((c.token || '').toLowerCase())
+    || ['flap-id-agent-curve','four-agent-id'].includes(c.launchProtocol || '')
+  return Number(c.chainId ?? 56) === 56 && (imported ? external : [15,16,17].includes(Number(c.version)))
+}
+
+// Compatibility for legacy post consumers; world views use cursors directly.
+async function getWorldPosts(pages: number, scope: {tick?: string; agentId?: string}): Promise<AgentFeedResponse> {
+  let cursor: string | undefined, response: WorldFeedResponse
+  for (let page = 0; page <= pages; page++) {
+    response = await getWorldFeed({ ...scope, type:'posts', cursor })
+    if (!response.hasMore || page === pages) break
+    cursor = response.nextCursor || undefined
+  }
+  return { success:true, hasMore:response!.hasMore, page:pages,
+    tweets:response!.items.map(row => ({...row, tweetId:row.tweetId!, twitterId:row.agentId,
+      twitterName:row.name, twitterUsername:row.username, content:row.content || '',
+      tweetTime:new Date(row.txTimestamp).toISOString() } as ApiTweet)) }
 }
