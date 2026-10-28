@@ -1,26 +1,26 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "files": [
     {
       "path": "SKILL.md",
-      "sha256": "b0da068a906b3a652a012348a0582447a2cdaa8cba2b0277629d8a81eac046ad"
+      "sha256": "70ccfbc4a299b9e0e32d047b83546e9265b0cfe67a0d8535f7010e4a9a2bbd0c"
     },
     {
       "path": "package.json",
-      "sha256": "e754b7b0e3f2b2a0b9f2980b224ed9305eaf2f8ac8039b7ae7c9d17614a41155"
+      "sha256": "faf5759b15079fb16e45a68016a6d4db6ca9d946ceefe916f633694eebb524f4"
     },
     {
       "path": "package-lock.json",
-      "sha256": "64a55a7db7320c95f6c8b2187ebf4e02a3db9575860137d5cbb5d2fe853256e7"
+      "sha256": "642e0800c447e91c8fae9f257aa7e6482095020300f544f06180a758bcbf1fda"
     },
     {
       "path": "agents/openai.yaml",
-      "sha256": "a2cd71c256b5431d011f898da55eb8578656e20c51218276d0e2f23899bc9a0a"
+      "sha256": "066fbc71137a23c225d21c15a6efc8e9f754a9574f8fb2db676ad7a6c9cf790d"
     },
     {
       "path": "references/api.md",
-      "sha256": "84bfc1360ccb172fa9a2f1dce126fdf2fedb8a9a1946a47eca283e2a32e93bfd"
+      "sha256": "43ea3c72674fb0829c48f71b52f7c694100a0a90861ae394de9f813e646f04a0"
     },
     {
       "path": "references/binance.md",
@@ -28,7 +28,7 @@
     },
     {
       "path": "references/creation.md",
-      "sha256": "2cb763963456597c48c4b27102752d1007ab59752607d2f9435532f735508a56"
+      "sha256": "0dba233c38df39b3855f77d5b50e16899edd94648c756181b8e3b1279240f3b8"
     },
     {
       "path": "references/index.md",
@@ -44,7 +44,7 @@
     },
     {
       "path": "references/protocol.md",
-      "sha256": "fbcd1db2e5328a9c04a677ad44cdb92dbbbf412220cfb9bc573d3cd2bbcb4a12"
+      "sha256": "3350d438d604a896f0e75e7ffd706a08fc1973957a89c07ae42470ae7f954203"
     },
     {
       "path": "references/queries.md",
@@ -52,7 +52,7 @@
     },
     {
       "path": "references/quickstart.md",
-      "sha256": "983aa7357fa8f0da43047bfdb9f7aa720d6f8706acee9aa8dae41125f66960ba"
+      "sha256": "e1a35a0d635852dfc34ec0ce98a9152173aa15354d86debc75e08952cefa9aa7"
     },
     {
       "path": "references/trade-notes.md",
@@ -60,15 +60,19 @@
     },
     {
       "path": "references/trading.md",
-      "sha256": "01b781aae8c2c466ac5d3b3982b62a86417d1432880bbbf70d56dc65e3a5404e"
+      "sha256": "8021fe56bba8df5baf826f58f3a6c9bd791689f0aea073d5db0aff1fc703e8d4"
     },
     {
       "path": "references/transactions.md",
       "sha256": "9832e826f15eea9bf09d2b9fe03b8975566032575604a53c75daea2f60f4998f"
     },
     {
+      "path": "scripts/lib/agent-swap.mjs",
+      "sha256": "0a30dbbc3da2459b72a71c7dc79e00c7386c3707c2355b298446977b43e4dbdb"
+    },
+    {
       "path": "scripts/lib/api.mjs",
-      "sha256": "0a748716203a464c24147c8e97495fbd478c81e97fe35f41757ac72fcb83a289"
+      "sha256": "dec890740534c09441300922bfc8c9029fe3b739d4c85e40c60d40134fed0d42"
     },
     {
       "path": "scripts/lib/constituents.json",
@@ -76,11 +80,11 @@
     },
     {
       "path": "scripts/lib/creation.mjs",
-      "sha256": "aa0ef5574bcc3500b89a6680bfc828b2defcb4eb753398d7a45bddab23924f11"
+      "sha256": "fbcad7d0a602a65a4fec196afbea22ae4a13a11a89aa97888ca5bf2f40bf1010"
     },
     {
       "path": "scripts/lib/deployment.mjs",
-      "sha256": "7f219b4916080e5ef1b83442eea442f5fd611701e8aadf7275299a2e73ab69f9"
+      "sha256": "fd737c055552af1eeebd61a2dc9f542568ad995350be5d79cd1929593a08a701"
     },
     {
       "path": "scripts/lib/erc20-abi.mjs",
@@ -100,7 +104,7 @@
     },
     {
       "path": "scripts/lib/legacy.mjs",
-      "sha256": "0401ccf890cb0c94e29836ec903d999da74dc1aed3c99b7fb646619af7973bb9"
+      "sha256": "930d8144993ca7f8c2f37ad4b2e81354b152f37b6eadb9f2d5ebcaa7f6bd3ad6"
     },
     {
       "path": "scripts/lib/nutbox-abi.mjs",
@@ -108,7 +112,7 @@
     },
     {
       "path": "scripts/lib/prepare.mjs",
-      "sha256": "1fc65acc1d3728749de4ef89393db5882d5bf021234b4f5cf5e0f23a88efb189"
+      "sha256": "f7765ad16ebb5ab0a7b82228ce2ede7ff091d9c3b5bb0e328e93813d443ca23f"
     },
     {
       "path": "scripts/lib/snapshot.mjs",
@@ -116,7 +120,7 @@
     },
     {
       "path": "scripts/lib/trade-notes.mjs",
-      "sha256": "9d67711bb018e544f796a54507eb6a6b5df4736a9c09b7be1fab7d9fee1752e6"
+      "sha256": "16cadb1e8057c5134dfb894d53e8b5524059791c6e83555d24a46818e6453f9e"
     },
     {
       "path": "scripts/lib/v14-abi.mjs",
@@ -128,7 +132,7 @@
     },
     {
       "path": "scripts/tagclaw.mjs",
-      "sha256": "34a39f147434a1022443e5e84932f489e91f88ac9cd1ec9ecd424dcaef6bc7c2"
+      "sha256": "261a243f5268d7212259c9bafc77d427f54bf15216d0795aefed9a8cf6565816"
     }
   ]
 }
