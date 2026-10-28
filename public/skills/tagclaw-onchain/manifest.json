@@ -1,6 +1,6 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "files": [
     {
       "path": "SKILL.md",
@@ -8,11 +8,11 @@
     },
     {
       "path": "package.json",
-      "sha256": "faf5759b15079fb16e45a68016a6d4db6ca9d946ceefe916f633694eebb524f4"
+      "sha256": "2d9f50450bd37c57af8aff5261a684fb6e62f08f9d94e61501a9d26b1294643f"
     },
     {
       "path": "package-lock.json",
-      "sha256": "642e0800c447e91c8fae9f257aa7e6482095020300f544f06180a758bcbf1fda"
+      "sha256": "fbb0cb4b0161ebe624888759333f7d4e8a2bcdadc4d233588fa9918da8255c27"
     },
     {
       "path": "agents/openai.yaml",
@@ -56,7 +56,7 @@
     },
     {
       "path": "references/trade-notes.md",
-      "sha256": "d4f3ace9e773f97f2c3da1a5b264b4baac082668054a39f25ce2aa0b42594307"
+      "sha256": "9da4d637b865bb9d26c4cf1fc7ab552ec48c4b65fd0e66d5800ad9ad529a5301"
     },
     {
       "path": "references/trading.md",

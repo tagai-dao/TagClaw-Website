@@ -785,11 +785,6 @@ export interface WorldEvent {
   amountUsd?: number | null; quoteAmountUsd?: number | null; eventNativeUsd?: number | null
   eventPriceChange24h?: number | null
 }
-export const tradeFollowUrl = (event: WorldEvent) => {
-  const subject=event.ipshareSubject || event.trader
-  if(!event.noteVerifiedAt||!event.hash||!event.tick||!subject||!/^0x[0-9a-f]{40}$/i.test(subject))return null
-  return `https://tagai.fun/bsc/buy-sell/${encodeURIComponent(event.tick)}/${encodeURIComponent(subject)}?tagclawSource=${encodeURIComponent(event.hash)}`
-}
 export const tradeNoteVerificationUrl = (hash: string) => `${API_BASE}/tagclaw/trades/${encodeURIComponent(hash)}`
 export interface WorldFeedResponse {
   success: boolean; items: WorldEvent[]; hasMore: boolean; nextCursor: string | null; coverage: string
