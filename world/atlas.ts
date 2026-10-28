@@ -26,11 +26,11 @@ async function blockTime(block:number,signal:AbortSignal):Promise<number> {
   if(Number(result?.number)!==block||!Number.isFinite(timestamp)||timestamp<=0)throw new Error('BSC 区块时间无效');
   blockTimes.set(block,timestamp);return timestamp;
 }
-export async function atlasTownEvents(bundle:AtlasBundle,town:Pick<ApiCommunity,'token'|'tick'>,signal:AbortSignal,readTime=blockTime):Promise<WorldEvent[]> {
+export async function atlasTownEvents(bundle:AtlasBundle,town:Pick<ApiCommunity,'token'|'tick'>,signal:AbortSignal,readTime=blockTime,limit=24):Promise<WorldEvent[]> {
   const {manifest,agents,feed}=bundle;
   if(manifest.chainId!==56||manifest.identitySnapshotBlock!==manifest.snapshotBlock||!manifest.tokens.some(item=>item.address.toLowerCase()===town.token?.toLowerCase()))return [];
   const owners=new Map(agents.filter(agent=>agent.chainVerified===true&&agent.block===manifest.identitySnapshotBlock&&agent.name.endsWith('.ai')).map(agent=>[agent.owner.toLowerCase(),agent]));
-  const rows=feed.filter(row=>row.kind==='token'&&row.assetId.toLowerCase()===town.token?.toLowerCase()&&owners.get(row.owner.toLowerCase())?.name===row.name&&['buy','sell'].includes(row.direction)&&/^0x[\da-f]{64}$/i.test(row.tx)&&Number.isSafeInteger(row.logIndex)&&row.logIndex>=0&&Number.isSafeInteger(row.block)&&row.block>0&&row.block<=manifest.snapshotBlock).sort((a,b)=>b.block-a.block||b.logIndex-a.logIndex).slice(0,24);
+  const rows=feed.filter(row=>row.kind==='token'&&row.assetId.toLowerCase()===town.token?.toLowerCase()&&owners.get(row.owner.toLowerCase())?.name===row.name&&['buy','sell'].includes(row.direction)&&/^0x[\da-f]{64}$/i.test(row.tx)&&Number.isSafeInteger(row.logIndex)&&row.logIndex>=0&&Number.isSafeInteger(row.block)&&row.block>0&&row.block<=manifest.snapshotBlock).sort((a,b)=>b.block-a.block||b.logIndex-a.logIndex).slice(0,Math.min(24,Math.max(1,limit)));
   const result:WorldEvent[]=[];
   // Bounded parallel metadata reads. No balance/contract calls are made here.
   for(let offset=0;offset<rows.length;offset+=4){

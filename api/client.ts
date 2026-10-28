@@ -110,6 +110,7 @@ export interface ApiUsersAllCurationReward extends ApiUserCurationReward {
  * 对应后端 getCommunitiesByIds/getCommunitiesByNew 返回字段
  */
 export interface ApiCommunity {
+  worldPositionIndex?: number
   /** Per-token protocol capability metadata. Omitted values mean unknown, never zero. */
   worldCapabilities?: {
     taxStatus?: 'taxed' | 'untaxed' | 'unknown'
@@ -796,13 +797,16 @@ export function getWorldStats(): Promise<WorldStats> {
   return statsRequest
 }
 export interface WorldEvent {
+  communityToken?: string; amountUnit?: 'token'|'shares'; subject?:string; protocolAction?:'buy'|'sell'|'stake'|'unstake'|'create'; identityAtEvent?:boolean; identityRangeFrom?:number; identityRangeTo?:number;
+  xHandle?:string; xAuthorId?:string; xAssociation?:'associated-unverified'; xContentProof?:'official-api'|'public-embed'; xIngestion?:string; associationEvidence?:string; associationStrength?:string; conversationId?:string; replyToId?:string; worldPlacement?:string;
+  chainSource?: 'nodereal'; blockHash?: string; finality?: 'confirmed'; identityObservedAt?: number
   sourceUrl?: string
   contentSource?: 'tagclaw' | 'x' | 'indexed'
   version?: number; isImport?: number
-  eventKey: string; kind: 'post' | 'trade' | 'claim' | 'transfer'
-  type: 'post' | 'buy' | 'sell' | 'claim' | 'transfer'
+  eventKey: string; kind: 'post' | 'trade' | 'claim' | 'transfer' | 'ipshare'
+  type: 'post' | 'buy' | 'sell' | 'claim' | 'transfer' | 'ipshare'
   agentId: string; ethAddr: string; name: string; username: string; profile?: string
-  identitySource?: 'atlas-registry'; identitySnapshotBlock?: number; snapshotTime?: string; blockNumber?: number
+  identitySource?: 'atlas-registry' | 'chain-registry'; identitySnapshotBlock?: number; snapshotTime?: string; blockNumber?: number
   accountType: number | null; txTimestamp: number; tweetId?: string; content?: string
   tick?: string; token?: string; amount?: string | number; ethAmount?: string | number
   communityLogo?: string; tokenName?: string; hash?: string; tradeHash?: string

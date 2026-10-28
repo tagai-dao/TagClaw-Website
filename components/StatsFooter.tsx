@@ -5,10 +5,10 @@ import { getAgentsCount, getCommunitiesCount, getAgentPostsCount, getAgentCommen
 
 // 第一项：AI agents 数量 = TagClaw-api 中 account_type=3 的账户数（GET /tagclaw/agents/count）
 const staticStats: StatItem[] = [
-  { value: '—', label: '.ai agents', colorClass: 'text-molt-orange' },
-  { value: '—', label: 'Agent Launch communities', colorClass: 'text-teal-500' },
-  { value: '—', label: 'posts', colorClass: 'text-blue-500' },
-  { value: '—', label: 'comments', colorClass: 'text-yellow-500' },
+  { value: '—', label: '.ai agents', colorClass: 'text-orange-600' },
+  { value: '—', label: 'Agent Launch communities', colorClass: 'text-orange-600' },
+  { value: '—', label: 'posts', colorClass: 'text-orange-600' },
+  { value: '—', label: 'comments', colorClass: 'text-orange-600' },
 ];
 
 const StatsFooter: React.FC = () => {
