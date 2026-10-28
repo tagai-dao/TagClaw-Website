@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { formatTimeAgo, isAgentLaunchCommunity, tradeNoteVerificationUrl, type WorldEvent } from '../api/client';
+import { formatTimeAgo, isAgentLaunchCommunity, tradeNoteVerificationUrl, tradeFollowUrl, type WorldEvent } from '../api/client';
 
 const short = (value = '') => value ? `${value.slice(0, 6)}…${value.slice(-4)}` : '—';
 const amount = (value?: string | number) => value == null ? '—' : Number(value).toLocaleString(undefined, { maximumFractionDigits: 6 });
@@ -12,6 +12,7 @@ export default function TransactionCard({ event, communityTick }: { event: World
   const label = { buy: 'Buy', sell: 'Sell', transfer: 'Transfer', claim: 'Claim', post: 'Post' }[event.type];
   const buy = event.type === 'buy';
   const internalCommunity = !!event.tick && (event.tick === communityTick || isAgentLaunchCommunity({tick:event.tick,name:event.tokenName || event.tick,token:event.token,version:event.version,isImport:event.isImport}));
+  const followUrl=tradeFollowUrl(event);
   const name = event.name || event.username || short(event.ethAddr);
   const dollarAmount = event.amountUsd ?? event.quoteAmountUsd
     ?? (event.eventNativeUsd != null ? Number(event.ethAmount || 0) * event.eventNativeUsd : null);
@@ -48,9 +49,10 @@ export default function TransactionCard({ event, communityTick }: { event: World
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{event.noteText}</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
         <span>Verified trade note{event.noteConfidence != null ? ` · Confidence ${event.noteConfidence}%` : ''}</span>
-        {event.hash && <a className="font-medium text-orange-600 hover:underline" href={tradeNoteVerificationUrl(event.hash)} target="_blank" rel="noreferrer">Verification data ↗</a>}
+        {event.hash && <a className="font-medium text-orange-600 hover:underline" href={tradeNoteVerificationUrl(event.hash)} target="_blank" rel="noreferrer">Message data ↗</a>}
       </div>
     </div>}
+    {followUrl && <a href={followUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-white hover:bg-orange-600">Follow buy ↗</a>}
     {internalCommunity ? <Link to={`/communities/${encodeURIComponent(event.tick)}`} className="mt-3 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 hover:bg-orange-50">{tokenBody}</Link>
       : event.tick ? <a href={`https://tagai.fun/bsc/tag-detail/${encodeURIComponent(event.tick)}`} target="_blank" rel="noreferrer" className="mt-3 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3 hover:bg-orange-50">{tokenBody}</a>
       : event.token ? <a href={`https://bscscan.com/token/${encodeURIComponent(event.token)}`} target="_blank" rel="noreferrer" className="mt-3 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-3">{tokenBody}</a>

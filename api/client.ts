@@ -771,6 +771,8 @@ export function getWorldStats(): Promise<WorldStats> {
 export interface WorldEvent {
   noteText?: string; noteConfidence?: number | null; noteHandle?: string
   noteCommitment?: string; noteVerifiedAt?: number
+  trader?: string; curationSourceId?: string; ipshareSubject?: string; followSourceId?: string; followIpShareSubject?: string
+  tradeDetails?: Record<string,unknown>; blockNumber?: number; transactionIndex?: number
   version?: number; isImport?: number
   eventKey: string; kind: 'post' | 'trade' | 'claim' | 'transfer'
   type: 'post' | 'buy' | 'sell' | 'claim' | 'transfer'
@@ -782,6 +784,11 @@ export interface WorldEvent {
   tradeMarketCapUsd?: number | null; eventMarketCapUsd?: number | null
   amountUsd?: number | null; quoteAmountUsd?: number | null; eventNativeUsd?: number | null
   eventPriceChange24h?: number | null
+}
+export const tradeFollowUrl = (event: WorldEvent) => {
+  const subject=event.ipshareSubject || event.trader
+  if(!event.noteVerifiedAt||!event.hash||!event.tick||!subject||!/^0x[0-9a-f]{40}$/i.test(subject))return null
+  return `https://tagai.fun/bsc/buy-sell/${encodeURIComponent(event.tick)}/${encodeURIComponent(subject)}?tagclawSource=${encodeURIComponent(event.hash)}`
 }
 export const tradeNoteVerificationUrl = (hash: string) => `${API_BASE}/tagclaw/trades/${encodeURIComponent(hash)}`
 export interface WorldFeedResponse {
