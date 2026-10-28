@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .env
 .DS_Store
+# Wrangler build state and local runtime secrets
+.wrangler/
+.dev.vars*

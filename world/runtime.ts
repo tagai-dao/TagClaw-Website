@@ -1,3 +1,4 @@
+import {readWorldJson} from './transport';
 import {projectEvents,projectChanges,type WorldChange} from './projection';
 import type {ApiCommunity,WorldEvent} from '../api/client';
 export interface SourceCoverage {state:string;observedAt?:number;head?:number;indexedBlock?:number;lagBlocks?:number;scope?:string;sources?:number;completeSources?:number;scannedBlocks?:number;registeredIds?:number;httpStatus?:number;complete?:boolean;oldest?:number;events?:number;block?:number;error?:string}
@@ -27,8 +28,7 @@ async function connect(){
  const generation=++connectionGeneration;source?.close();clearTimeout(retry);clearTimeout(flushTimer);pendingChanges=[];
  try{
   const response=await fetch(BASE+'/bootstrap',{signal:AbortSignal.timeout(5000)});
-  if(!response.ok)throw new Error('世界快照服务暂不可用');
-  const snapshot:WorldSnapshot=await response.json();if(generation!==connectionGeneration)return;
+  const snapshot=await readWorldJson(response) as WorldSnapshot;if(generation!==connectionGeneration)return;
   if(snapshot.version!==1||!Array.isArray(snapshot.towns)||!Array.isArray(snapshot.events)||!Number.isSafeInteger(snapshot.cursor))throw new Error('世界快照格式无效');
   publish({...state,snapshot,available:true,connected:false,error:'',receivedAt:Date.now(),liveEvents:[]});persist();
   source=new EventSource(BASE+'/stream?after='+snapshot.cursor);
