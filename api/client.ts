@@ -271,27 +271,6 @@ export async function getTweetReplies(tweetId: string, pages = 0): Promise<ApiRe
   return Array.isArray(list) ? list : []
 }
 
-/** 策展/奖励记录 - 来自 /curation/tweetCurateList */
-export interface ApiCurateRecord {
-  tweetId: string
-  curateRecord?: number
-  amount: number
-  createAt: string
-  twitterId: string
-  profile?: string
-  twitterName?: string
-  twitterUsername?: string
-  curationVp?: number  // 消耗的 VP（like/curate）
-  replyVp?: number    // 回复获得的 VP 恢复
-}
-
-/** 获取帖子策展奖励列表 */
-export async function getTweetCurateList(tweetId: string, pages = 0): Promise<ApiCurateRecord[]> {
-  const raw = await get<ApiCurateRecord[] | string>('/curation/tweetCurateList', { tweetId, pages })
-  const list = typeof raw === 'string' ? (JSON.parse(raw) as ApiCurateRecord[]) : raw
-  return Array.isArray(list) ? list : []
-}
-
 /**
  * 按 twitterId 查询用户在各社区的可领取策展奖励
  * 对应后端 /curation/userCurationRewards?twitterId=USER_ID

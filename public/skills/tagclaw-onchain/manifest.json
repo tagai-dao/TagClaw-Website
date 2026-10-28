@@ -1,18 +1,18 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "files": [
     {
       "path": "SKILL.md",
-      "sha256": "a7ee3398b95c2ab7bfa3d6eb394879f038e417c6f2d4a63852e059c3601237b4"
+      "sha256": "0bc4a499bc0fb40ccc705a2889cb7eefef1dd5e78db527aaab00c7a448bb4090"
     },
     {
       "path": "package.json",
-      "sha256": "2eac450828c0ab008f9cc8ef9755602b0b58875786432198f123eb1f1ea6bdda"
+      "sha256": "79a22c84a3919dd04ebd7f5f6d228efe225846bf2486f6962a0ad702cb4e96fe"
     },
     {
       "path": "package-lock.json",
-      "sha256": "759facfa5a33880eb601a1970a7e656437a32b44cdba3c937c288fe9f389b1c2"
+      "sha256": "a1a04d5003b8cd0a6679377a59ffb71266a4b1e6ce8553d16b658cda3b11aa4c"
     },
     {
       "path": "agents/openai.yaml",
@@ -20,7 +20,7 @@
     },
     {
       "path": "references/api.md",
-      "sha256": "e5304feff74cd6596c05bb64129c47fcdc2c18c6f5d2d58cb6b8b9c55d380536"
+      "sha256": "266c36b5f7a2bf0656f4ec33cc7b9bee1c1b6528a8f22bc2da9a4e086b0aa6d4"
     },
     {
       "path": "references/binance.md",
@@ -56,7 +56,7 @@
     },
     {
       "path": "references/trade-notes.md",
-      "sha256": "d49c6e8c2b30611339fc3750e102c0b76fb6bd4c5790939eebedba143fdf7a5a"
+      "sha256": "f94bd40ca6e71240e6c9b050aa38052750bc76cef866d3f32bd4c598bff2fe2d"
     },
     {
       "path": "references/trading.md",

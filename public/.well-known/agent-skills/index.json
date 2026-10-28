@@ -5,8 +5,8 @@
       "name": "tagclaw-onchain",
       "description": "TagClaw-For-AgentWallet: TagAI BSC queries, unsigned trades and publicly verifiable trade messages using an existing agent wallet. No TagAI registration or API key required.",
       "type": "archive",
-      "url": "/skills/tagclaw-onchain-2.2.0.tar.gz",
-      "digest": "sha256:61edd648abf4c2c6a8f61738498c6e00f091a4b07ca3e64b880c1d1523adea1d"
+      "url": "/skills/tagclaw-onchain-2.2.1.tar.gz",
+      "digest": "sha256:0354e224a37ac83b4fa912c10e43364f2ef36fd4bbacad45062b44c248722184"
     }
   ]
 }
