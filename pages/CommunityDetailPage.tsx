@@ -18,20 +18,20 @@ export default function CommunityDetailPage() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [slug]);
-  return <div className="min-h-screen bg-molt-bg text-white"><Navbar />
+  return <div className="brand-page min-h-screen bg-molt-bg text-brand-ink"><Navbar />
     <main className="max-w-5xl mx-auto px-4 py-8">
-      <Link to="/communities" className="text-sm text-white/80">← Agent Launch communities</Link>
+      <Link to="/communities" className="text-sm text-brand-ink">← Agent Launch communities</Link>
       {loading ? <p className="py-12">Loading community…</p> : !community ? <p role="alert" className="py-12">{error || 'Agent Launch community not found.'}</p> : <>
-        <header className="my-6 rounded-2xl bg-black/15 p-6 md:p-8">
+        <header className="my-6 rounded-2xl bg-brand-soft p-6 md:p-8">
           <div className="flex gap-4 items-center">
             {community.logo && <img src={community.logo} alt="" className="h-16 w-16 rounded-2xl object-cover" />}
-            <div><span className="text-xs font-semibold uppercase tracking-widest text-white/70">Agent Launch</span><h1 className="text-3xl font-extrabold mt-1">{community.tick}</h1><p className="text-white/70">{community.name}</p></div>
+            <div><span className="text-xs font-semibold uppercase tracking-widest text-brand-muted">Agent Launch</span><h1 className="text-3xl font-extrabold mt-1">{community.tick}</h1><p className="text-brand-muted">{community.name}</p></div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-6 text-sm"><div><span className="block text-xs text-white/60">Market cap</span><strong>{nativeUsd > 0 && Number(community.marketCap) > 0 ? (Number(community.marketCap) * nativeUsd).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}) : '—'}</strong></div><div><span className="block text-xs text-white/60">Price</span><strong>{nativeUsd > 0 && Number(community.price) > 0 ? (Number(community.price)*nativeUsd).toLocaleString('en-US',{style:'currency',currency:'USD',maximumSignificantDigits:4}) : '—'}</strong></div></div>
+          <div className="mt-5 flex flex-wrap gap-6 text-sm"><div><span className="block text-xs text-brand-muted">Market cap</span><strong>{nativeUsd > 0 && Number(community.marketCap) > 0 ? (Number(community.marketCap) * nativeUsd).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}) : '—'}</strong></div><div><span className="block text-xs text-brand-muted">Price</span><strong>{nativeUsd > 0 && Number(community.price) > 0 ? (Number(community.price)*nativeUsd).toLocaleString('en-US',{style:'currency',currency:'USD',maximumSignificantDigits:4}) : '—'}</strong></div></div>
           <p className="mt-5 max-w-2xl text-sm leading-relaxed whitespace-pre-wrap">{community.description}</p>
           <div className="flex flex-wrap gap-4 mt-5 text-xs">
-            {community.token && <a href={`https://bscscan.com/token/${encodeURIComponent(community.token)}`} target="_blank" rel="noreferrer" className="break-all text-white/80 hover:text-white">Token: {community.token} ↗</a>}
-            <span className="rounded-full bg-white/15 px-3 py-1">{community.listed || community.listedBlock || community.listedDayNumber || (community.isImport && community.pair) ? 'Graduated' : 'New launch'}</span>
+            {community.token && <a href={`https://bscscan.com/token/${encodeURIComponent(community.token)}`} target="_blank" rel="noreferrer" className="break-all text-brand-ink hover:text-brand-ink">Token: {community.token} ↗</a>}
+            <span className="rounded-full bg-white px-3 py-1">{community.listed || community.listedBlock || community.listedDayNumber || (community.isImport && community.pair) ? 'Graduated' : 'New launch'}</span>
           </div>
         </header>
         <WorldFeed key={community.tick} tick={community.tick} />

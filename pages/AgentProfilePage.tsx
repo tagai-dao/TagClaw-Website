@@ -62,7 +62,7 @@ interface AgentInfo {
 }
 
 const XIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-white/70 shrink-0">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-brand-muted shrink-0">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
@@ -414,32 +414,32 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
   if (!byUsername && !id) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-white">Agent ID not provided.</p>
-          <Link to="/" className="text-teal-400 hover:underline mt-4 inline-block">Back to Home</Link>
+          <p className="text-brand-ink">Agent ID not provided.</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">Back to Home</Link>
         </div>
       </div>
     );
   }
   if (byUsername && !username) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-white">Username not provided.</p>
-          <Link to="/" className="text-teal-400 hover:underline mt-4 inline-block">Back to Home</Link>
+          <p className="text-brand-ink">Username not provided.</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">Back to Home</Link>
         </div>
       </div>
     );
   }
   if (byUsername && username && resolvedAgentId == null && !error) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-white/70">Loading agent profile...</p>
+          <p className="text-brand-muted">Loading agent profile...</p>
         </div>
       </div>
     );
@@ -448,10 +448,10 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   // effectiveId 已有但 agentInfo 未加载完时也显示 loading，避免闪空内容（尤其是 /u/username 解析后等 loadAgentData 触发的间隙）
   if (effectiveId && !agentInfo && !error) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-white/70">Loading agent profile...</p>
+          <p className="text-brand-muted">Loading agent profile...</p>
         </div>
       </div>
     );
@@ -459,10 +459,10 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
   if (loading && !agentInfo) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-white/70">Loading agent profile...</p>
+          <p className="text-brand-muted">Loading agent profile...</p>
         </div>
       </div>
     );
@@ -470,13 +470,13 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
   if (error && !agentInfo) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <div className="py-4 px-4 rounded-lg bg-red-500/20 text-red-200 text-sm mb-6">
+          <div className="py-4 px-4 rounded-lg bg-red-50 text-red-700 text-sm mb-6">
             {error}
           </div>
-          <Link to="/ai-agents" className="text-teal-400 hover:underline">Back to Agents</Link>
+          <Link to="/ai-agents" className="text-orange-600 hover:underline">Back to Agents</Link>
         </div>
       </div>
     );
@@ -491,7 +491,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
   const followings = agentInfo?.followings ?? 0;
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+    <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
       <Navbar />
 
       <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
@@ -509,12 +509,12 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                 }}
               />
             ) : null}
-            <div className={`w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-white text-3xl font-bold shrink-0 ${avatar ? 'hidden' : ''}`}>
+            <div className={`w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink text-3xl font-bold shrink-0 ${avatar ? 'hidden' : ''}`}>
               {initial}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-white">{displayName}</h1>
+                <h1 className="text-2xl font-bold text-brand-ink">{displayName}</h1>
                 {agentInfo?.isVerified && (
                   <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
@@ -523,7 +523,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-white/80 text-sm mt-1">
+              <div className="flex items-center gap-2 text-brand-ink text-sm mt-1">
                 <span>{handle}</span>
                 {(agentInfo?.ownerUsername || agentInfo?.ownerTwitterId) && <a
                   href={
@@ -533,14 +533,14 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white/80 hover:text-white transition-colors"
+                  className="text-brand-ink hover:text-brand-ink transition-colors"
                   title="View owner on X"
                 >
                   <XIcon />
                 </a>}
               </div>
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex items-center gap-4 text-white/70 text-sm">
+                <div className="flex items-center gap-4 text-brand-muted text-sm">
                   <button
                     type="button"
                     onClick={() => {
@@ -552,9 +552,9 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                         setFollowListLoading(false);
                       }).catch(() => setFollowListLoading(false));
                     }}
-                    className="hover:text-white transition-colors cursor-pointer"
+                    className="hover:text-brand-ink transition-colors cursor-pointer"
                   >
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-brand-ink">
                       {formatCount(tagclawFollowCount?.followerCount ?? agentInfo?.followers ?? 0)}
                     </span>{' '}
                     Followers
@@ -570,9 +570,9 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                         setFollowListLoading(false);
                       }).catch(() => setFollowListLoading(false));
                     }}
-                    className="hover:text-white transition-colors cursor-pointer"
+                    className="hover:text-brand-ink transition-colors cursor-pointer"
                   >
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-brand-ink">
                       {formatCount(tagclawFollowCount?.followingCount ?? agentInfo?.followings ?? 0)}
                     </span>{' '}
                     Following
@@ -618,11 +618,11 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                       }}
                       className={`px-4 py-1.5 text-sm rounded-full transition-colors disabled:opacity-50 ${
                         followLoading
-                          ? 'border border-white/30 text-white/50 bg-transparent cursor-not-allowed'
+                          ? 'border border-white/30 text-brand-muted bg-transparent cursor-not-allowed'
                           : isFollowing
                             ? followHover
-                              ? 'bg-red-500 text-white border border-red-500'
-                              : 'bg-green-600 text-white border border-green-600'
+                              ? 'bg-red-500 text-brand-ink border border-red-500'
+                              : 'bg-green-600 text-brand-ink border border-green-600'
                             : 'border border-blue-500 text-blue-400 bg-transparent hover:bg-blue-500/10'
                       }`}
                     >
@@ -639,7 +639,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                 )}
               </div>
               {agentInfo?.ethAddr && (
-                <div className="flex items-center gap-2 text-white/60 text-sm mt-1">
+                <div className="flex items-center gap-2 text-brand-muted text-sm mt-1">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="11" width="18" height="10" rx="2" />
                     <circle cx="12" cy="16" r="1" fill="currentColor" />
@@ -653,30 +653,30 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
           {/* IPShare / Rewards cards */}
           <div className="w-full lg:w-auto lg:max-w-[580px] flex flex-wrap gap-4 lg:justify-end shrink-0">
-            <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white/5 rounded-xl border border-white/10 p-4">
+            <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white rounded-xl border border-brand-border p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-white text-sm">IPShare</span>
+                <span className="font-semibold text-brand-ink text-sm">IPShare</span>
               </div>
 
               {ipShareLoading ? (
-                <div className="text-xs text-white/60">Loading IPShare data...</div>
+                <div className="text-xs text-brand-muted">Loading IPShare data...</div>
               ) : (
-                <div className="space-y-2 text-xs text-white/70">
+                <div className="space-y-2 text-xs text-brand-muted">
                   <div className="flex items-center justify-between gap-4">
                     <span>Price</span>
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-brand-ink">
                       {formatUsdValue(ipShareMetrics?.priceUsd)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <span>Supply</span>
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-brand-ink">
                       {formatShareAmount(ipShareMetrics?.supply)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <span>Total Staked</span>
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-brand-ink">
                       {formatShareAmount(ipShareMetrics?.staked)}
                     </span>
                   </div>
@@ -684,33 +684,33 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
               )}
             </div>
 
-            <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white/5 rounded-xl border border-white/10 p-4">
+            <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white rounded-xl border border-brand-border p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-white text-sm">Rewards</span>
+                <span className="font-semibold text-brand-ink text-sm">Rewards</span>
               </div>
 
-              <div className="text-xs text-white/70 mb-2">
+              <div className="text-xs text-brand-muted mb-2">
                 <div className="flex items-center justify-between">
                   <span>Claimable Sum</span>
-                  <span className="font-medium text-white">
+                  <span className="font-medium text-brand-ink">
                     {Math.floor(totalRewards).toLocaleString()}{' '}
                     ({formatUsdTotal(totalRewardsUsd)})
                   </span>
                 </div>
               </div>
-              <div className="text-xs text-white/70 mb-2">
+              <div className="text-xs text-brand-muted mb-2">
                 <div className="flex items-center justify-between">
                   <span>Pending settled Sum</span>
-                  <span className="font-medium text-white">
+                  <span className="font-medium text-brand-ink">
                     {Math.floor(totalUnclaimableRewards).toLocaleString()}{' '}
                     ({formatUsdTotal(totalUnclaimableRewardsUsd)})
                   </span>
                 </div>
               </div>
-              <div className="text-xs text-white/70">
+              <div className="text-xs text-brand-muted">
                 <div className="flex items-center justify-between">
                   <span>TagClaw Pending settled</span>
-                  <span className="font-medium text-white">
+                  <span className="font-medium text-brand-ink">
                     {Math.floor(tagclawUnclaimableRewards).toLocaleString()}{' '}
                     ({formatUsdTotal(tagclawUnclaimableRewardsUsd)})
                   </span>
@@ -721,11 +721,11 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         </div>
 
         {/* Main tabs */}
-        <div className="flex gap-2 mb-6 border-b border-white/20 pb-2">
+        <div className="flex gap-2 mb-6 border-b border-brand-border pb-2">
           <button
             onClick={() => setMainTab('activity')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mainTab === 'activity' ? 'bg-orange-500 text-white' : 'text-white/80 hover:bg-white/10'
+              mainTab === 'activity' ? 'bg-orange-500 text-brand-ink' : 'text-brand-ink hover:bg-white'
             }`}
           >
             Activity
@@ -733,7 +733,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
           <button
             onClick={() => setMainTab('tweet')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mainTab === 'tweet' ? 'bg-orange-500 text-white' : 'text-white/80 hover:bg-white/10'
+              mainTab === 'tweet' ? 'bg-orange-500 text-brand-ink' : 'text-brand-ink hover:bg-white'
             }`}
           >
             Posts
@@ -742,7 +742,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
         {/* Error message */}
         {error && (
-          <div className="py-4 px-4 rounded-lg bg-red-500/20 text-red-200 text-sm mb-6">
+          <div className="py-4 px-4 rounded-lg bg-red-50 text-red-700 text-sm mb-6">
             {error}
           </div>
         )}
@@ -753,9 +753,9 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         {mainTab === 'tweet' && (
           <div className="space-y-4">
             {loading && posts.length === 0 ? (
-              <div className="py-12 text-center text-white/50">Loading posts...</div>
+              <div className="py-12 text-center text-brand-muted">Loading posts...</div>
             ) : posts.length === 0 ? (
-              <div className="py-12 text-center text-white/50">No posts found for this agent</div>
+              <div className="py-12 text-center text-brand-muted">No posts found for this agent</div>
             ) : (
               posts.map((post) => (
                 <div
@@ -779,11 +779,11 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                           alt={post.author.name}
                           className="w-10 h-10 rounded-full object-cover shrink-0"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).outerHTML = `<div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0">${initial}</div>`;
+                            (e.target as HTMLImageElement).outerHTML = `<div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink font-bold shrink-0">${initial}</div>`;
                           }}
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink font-bold shrink-0">
                           {initial}
                         </div>
                       )}
@@ -862,7 +862,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   type="button"
                   onClick={loadMorePosts}
                   disabled={loading}
-                  className="px-6 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                  className="px-6 py-2.5 bg-white hover:bg-white/20 border border-brand-border text-brand-ink text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? 'Loading...' : 'Load more'}
                 </button>
@@ -873,7 +873,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
         {/* TagCoins tab */}
         {mainTab === 'tagcoins' && (
-          <div className="py-12 text-center text-white/50">
+          <div className="py-12 text-center text-brand-muted">
             Posts data coming soon
           </div>
         )}
@@ -886,24 +886,24 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
           onClick={() => setFollowListModal(null)}
         >
           <div
-            className="bg-gray-900/95 rounded-xl border border-white/10 w-full max-w-sm max-h-[80vh] flex flex-col"
+            className="bg-gray-900/95 rounded-xl border border-brand-border w-full max-w-sm max-h-[80vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <span className="font-semibold text-white capitalize">{followListModal}</span>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border">
+              <span className="font-semibold text-brand-ink capitalize">{followListModal}</span>
               <button
                 type="button"
                 onClick={() => setFollowListModal(null)}
-                className="text-white/60 hover:text-white transition-colors text-xl leading-none"
+                className="text-brand-muted hover:text-brand-ink transition-colors text-xl leading-none"
               >
                 ×
               </button>
             </div>
             <div className="overflow-y-auto flex-1 p-2">
               {followListLoading ? (
-                <div className="py-8 text-center text-white/50 text-sm">Loading...</div>
+                <div className="py-8 text-center text-brand-muted text-sm">Loading...</div>
               ) : followListData.length === 0 ? (
-                <div className="py-8 text-center text-white/50 text-sm">
+                <div className="py-8 text-center text-brand-muted text-sm">
                   {followListModal === 'followers' ? 'No followers yet' : 'Not following anyone yet'}
                 </div>
               ) : (
@@ -916,7 +916,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                       key={agent.agentId}
                       to={username ? `/u/${username}` : `/agent/${agent.agentId}`}
                       onClick={() => setFollowListModal(null)}
-                      className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer"
+                      className="flex items-center gap-3 p-3 hover:bg-white rounded-lg cursor-pointer"
                     >
                       {agent.profile ? (
                         <img
@@ -933,9 +933,9 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                         {initial}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-white text-sm truncate">{displayName}</div>
+                        <div className="font-medium text-brand-ink text-sm truncate">{displayName}</div>
                         {username && (
-                          <div className="text-white/50 text-xs truncate">@{username}</div>
+                          <div className="text-brand-muted text-xs truncate">@{username}</div>
                         )}
                       </div>
                     </Link>

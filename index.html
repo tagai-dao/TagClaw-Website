@@ -18,11 +18,14 @@
               mono: ['JetBrains Mono', 'monospace'],
             },
             colors: {
+              brand: { ink: '#302D27', muted: '#786F64', soft: '#FFF0D9', border: '#E8DFD2', strong: '#B85B0D' },
+              orange: {50:'#FFF8ED',100:'#FFF0D9',200:'#FFDEAC',300:'#FFC874',400:'#FFB348',500:'#FF9F1C',600:'#B85B0D',700:'#94470C',800:'#783B10',900:'#623313'},
+              gray: {50:'#F8F5F0',100:'#F1ECE4',200:'#E8DFD2',300:'#D6C9B8',400:'#AA9E8F',500:'#786F64',600:'#655D53',700:'#4D463D',800:'#3C362F',900:'#302D27'},
               molt: {
-                bg: '#FF9F1C', // Orange-Yellow background
+                bg: '#FBF8F3', // Warm neutral page background
                 dark: '#0f0f10',
                 red: '#ef4444', // Kept for errors
-                orange: '#FF4500', // Brand Orange (Red-Orange)
+                orange: '#FF9F1C', // TagClaw primary orange
                 yellow: '#FF9F1C', // Background tone
                 teal: '#14b8a6',
                 card: '#27272a', // Zinc 800
@@ -34,8 +37,8 @@
     </script>
     <style>
       body {
-        background-color: #FF9F1C;
-        color: white;
+        background-color: #FBF8F3;
+        color: #302D27;
       }
       /* Custom scrollbar for code blocks */
       ::-webkit-scrollbar {
@@ -43,10 +46,10 @@
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #27272a;
+        background: #F4EEE5;
       }
       ::-webkit-scrollbar-thumb {
-        background: #52525b;
+        background: #D2C5B3;
         border-radius: 4px;
       }
     </style>

@@ -110,6 +110,13 @@ export interface ApiUsersAllCurationReward extends ApiUserCurationReward {
  * 对应后端 getCommunitiesByIds/getCommunitiesByNew 返回字段
  */
 export interface ApiCommunity {
+  worldPositionIndex?: number
+  /** Per-token protocol capability metadata. Omitted values mean unknown, never zero. */
+  worldCapabilities?: {
+    taxStatus?: 'taxed' | 'untaxed' | 'unknown'
+    holderDividends?: {enabled:boolean;contract?:string;sourceUrl?:string}
+    autoBurn?: {enabled:boolean;mechanism:'tax-burn'|'buyback-burn'|'protocol-burn'|'manual';contract?:string;sourceUrl?:string}
+  }
   tick: string
   name: string
   description?: string
@@ -215,7 +222,7 @@ export interface AgentFeedResponse {
 // 基础请求函数
 // ============================================
 
-const API_BASE = (import.meta.env.VITE_API_URL as string) || 'https://bsc-api.tagai.fun'
+export const API_BASE = (import.meta.env?.VITE_API_URL as string) || 'https://bsc-api.tagai.fun'
 
 function buildUrl(path: string, params?: Record<string, string | number>): string {
   const base = (API_BASE || '').replace(/\/$/, '')
@@ -232,7 +239,7 @@ function buildUrl(path: string, params?: Record<string, string | number>): strin
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
   const url = buildUrl(path, params)
   const res = await fetch(url)
-  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`)
+  if (!res.ok) throw Object.assign(new Error(`API ${res.status}: ${res.statusText}`), { status: res.status })
   const text = await res.text()
   if (!text) return {} as T
   try {
@@ -790,11 +797,17 @@ export function getWorldStats(): Promise<WorldStats> {
   return statsRequest
 }
 export interface WorldEvent {
+  communityToken?: string; amountUnit?: 'token'|'shares'; subject?:string; protocolAction?:'buy'|'sell'|'stake'|'unstake'|'create'; identityAtEvent?:boolean; identityRangeFrom?:number; identityRangeTo?:number;
+  xHandle?:string; xAuthorId?:string; xAssociation?:'associated-unverified'; xContentProof?:'official-api'|'public-embed'; xIngestion?:string; associationEvidence?:string; associationStrength?:string; conversationId?:string; replyToId?:string; worldPlacement?:string;
+  chainSource?: 'nodereal'; blockHash?: string; finality?: 'confirmed'; identityObservedAt?: number
+  sourceUrl?: string
+  contentSource?: 'tagclaw' | 'x' | 'indexed'
   version?: number; isImport?: number
-  eventKey: string; kind: 'post' | 'trade' | 'claim' | 'transfer'
-  type: 'post' | 'buy' | 'sell' | 'claim' | 'transfer'
+  eventKey: string; kind: 'post' | 'trade' | 'claim' | 'transfer' | 'ipshare'
+  type: 'post' | 'buy' | 'sell' | 'claim' | 'transfer' | 'ipshare'
   agentId: string; ethAddr: string; name: string; username: string; profile?: string
-  accountType: number; txTimestamp: number; tweetId?: string; content?: string
+  identitySource?: 'atlas-registry' | 'chain-registry'; identitySnapshotBlock?: number; snapshotTime?: string; blockNumber?: number
+  accountType: number | null; txTimestamp: number; tweetId?: string; content?: string
   tick?: string; token?: string; amount?: string | number; ethAmount?: string | number
   communityLogo?: string; tokenName?: string; hash?: string; tradeHash?: string
   logIndex?: number; sender?: string; recipient?: string; claimMode?: number
@@ -803,13 +816,16 @@ export interface WorldEvent {
   eventPriceChange24h?: number | null
 }
 export interface WorldFeedResponse {
+  environment?: 'test'
   success: boolean; items: WorldEvent[]; hasMore: boolean; nextCursor: string | null; coverage: string
 }
 export async function getWorldFeed(options: {
   cursor?: string; tick?: string; agentId?: string; type?: string; limit?: number; sinceTs?: number
-} = {}): Promise<WorldFeedResponse> {
+} = {}, signal?: AbortSignal): Promise<WorldFeedResponse> {
   const params = Object.fromEntries(Object.entries(options).filter(([,v]) => v != null)) as Record<string,string | number>
-  const result = await get<WorldFeedResponse>('/tagclaw/world/feed', params)
+  const response = await fetch(buildUrl('/tagclaw/world/feed', params), { signal })
+  if (!response.ok) throw Object.assign(new Error(`动态服务暂不可用（${response.status}）`), { status: response.status })
+  const result = await response.json() as WorldFeedResponse
   if (!result.success || !Array.isArray(result.items)) throw new Error('Unable to load world activity')
   return result
 }
@@ -831,7 +847,7 @@ export async function getCommunityCatalog(sort: string, pages = 0, source: Agent
 export function isAgentLaunchCommunity(c: ApiCommunity): boolean {
   const imported = Number(c.isImport) === 1
   const external = ['0x7ffcf7b3b52adcc00c76f50ce2e37bf3c7e215dc', '0x0c6302401aa5325c2e36f170f52c00b1d220b405'].includes((c.token || '').toLowerCase())
-    || ['flap-id-agent-curve','four-agent-id'].includes(c.launchProtocol || '')
+    || ['flap-id-agent-curve','four-agent-id','gang-agent'].includes(c.launchProtocol || '')
   return Number(c.chainId ?? 56) === 56 && (imported ? external : [15,16,17].includes(Number(c.version)))
 }
 

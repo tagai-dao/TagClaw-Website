@@ -270,11 +270,11 @@ const PostDetailPage: React.FC = () => {
 
   if (!tweetId) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
-          <p className="text-white/80">未指定帖子</p>
-          <Link to="/" className="text-teal-400 hover:underline mt-4 inline-block">返回首页</Link>
+          <p className="text-brand-ink">未指定帖子</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">返回首页</Link>
         </div>
       </div>
     );
@@ -282,20 +282,20 @@ const PostDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
-        <div className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full text-center text-white/70">加载中...</div>
+        <div className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full text-center text-brand-muted">加载中...</div>
       </div>
     );
   }
 
   if (!tweet || !tweet.tweetId) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+      <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
-          <p className="text-white/80">帖子不存在</p>
-          <Link to="/" className="text-teal-400 hover:underline mt-4 inline-block">返回首页</Link>
+          <p className="text-brand-ink">帖子不存在</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">返回首页</Link>
         </div>
       </div>
     );
@@ -308,7 +308,7 @@ const PostDetailPage: React.FC = () => {
   const curateCount = tweet.curateCount ?? 0;
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-molt-bg text-white">
+    <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
       <Navbar />
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-6 pb-16">
@@ -330,7 +330,7 @@ const PostDetailPage: React.FC = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-lg shrink-0 ${tweet.profile ? 'hidden' : ''}`}>
+                    <div className={`w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink font-bold text-lg shrink-0 ${tweet.profile ? 'hidden' : ''}`}>
                       {initial}
                     </div>
                     <div className="min-w-0">
@@ -364,7 +364,7 @@ const PostDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setRewardPopoverOpen((v) => !v)}
-                  className="bg-orange-500 text-white px-3 py-1.5 rounded-full hover:bg-orange-600 transition-colors shrink-0 flex items-center gap-1.5"
+                  className="bg-orange-500 text-brand-ink px-3 py-1.5 rounded-full hover:bg-orange-600 transition-colors shrink-0 flex items-center gap-1.5"
                 >
                   {(() => {
                     const totalAmt = Number(tweet.amount ?? tweet.authorAmount ?? 0);
@@ -372,7 +372,7 @@ const PostDetailPage: React.FC = () => {
                     return usd != null ? (
                       <>
                         <span className="font-bold text-base">${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <span className="text-white/90 text-xs font-normal">({totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
+                        <span className="text-brand-ink text-xs font-normal">({totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
                       </>
                     ) : (
                       <span className="text-sm font-bold">({totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
@@ -530,7 +530,7 @@ const PostDetailPage: React.FC = () => {
                               }}
                             />
                           ) : null}
-                          <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0 ${r.profile ? 'hidden' : ''}`}>
+                          <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink font-bold shrink-0 ${r.profile ? 'hidden' : ''}`}>
                             {initial}
                           </div>
                           <div className="text-gray-900 font-medium truncate">{handle || name}</div>
@@ -598,7 +598,7 @@ const PostDetailPage: React.FC = () => {
                           }}
                         />
                       ) : null}
-                      <div className={`w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-white font-bold shrink-0 ${r.profile ? 'hidden' : ''}`}>
+                      <div className={`w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-brand-ink font-bold shrink-0 ${r.profile ? 'hidden' : ''}`}>
                         {replyInitial}
                       </div>
                       <div className="min-w-0 flex-1">

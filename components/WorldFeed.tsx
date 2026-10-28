@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getWorldFeed, worldPost, type WorldEvent } from '../api/client';
 import PostCard from './PostCard';
 import TransactionCard from './TransactionCard';
+import { publicWindow } from '../world/source';
 
 type Filter = 'all' | 'posts' | 'transactions' | 'buy' | 'sell' | 'transfer' | 'claim';
 export default function WorldFeed({ tick, agentId, initialType = 'all' }: { tick?: string; agentId?: string; initialType?: Filter }) {
@@ -11,6 +12,7 @@ export default function WorldFeed({ tick, agentId, initialType = 'all' }: { tick
   const [more, setMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [coverage, setCoverage] = useState('');
   const generation = useRef(0), pending = useRef(false);
   const retry = useRef<{ next?: string; replace: boolean }>({ replace: true });
   const load = useCallback(async (next?: string, replace = false) => {
@@ -20,10 +22,18 @@ export default function WorldFeed({ tick, agentId, initialType = 'all' }: { tick
     retry.current = { next, replace };
     setLoading(true); setError('');
     try {
-      const result = await getWorldFeed({ tick, agentId, type, ...(next ? { cursor: next } : {}) });
+      let result;
+      let limitedNotice='';
+      try { result=await getWorldFeed({ tick, agentId, type, ...(next ? { cursor: next } : {}) }); }
+      catch (failure) {
+        if ((failure as {status?:number}).status !== 404) throw failure;
+        const window=await publicWindow();
+        result={...window,items:window.items.filter(event=>(!tick||event.tick===tick)&&(!agentId||event.agentId===agentId)&&(type==='all'||(type==='posts'?event.kind==='post':type==='transactions'?event.kind!=='post':event.type===type)))};
+        limitedNotice=window.notice;
+      }
       if (request !== generation.current) return;
       setItems(previous => replace ? result.items : Array.from(new Map([...previous, ...result.items].map(item => [item.eventKey, item])).values()));
-      setCursor(result.nextCursor); setMore(result.hasMore);
+      setCursor(result.nextCursor); setMore(result.hasMore); setCoverage(limitedNotice);
     } catch (err) {
       if (request === generation.current) setError(err instanceof Error ? err.message : 'Unable to load activity');
     } finally {
@@ -43,6 +53,7 @@ export default function WorldFeed({ tick, agentId, initialType = 'all' }: { tick
         {(['all','posts','transactions','buy','sell','transfer','claim'] as Filter[]).map(filter => <button key={filter} aria-pressed={type === filter} onClick={() => setType(filter)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${type === filter ? 'bg-orange-500 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>{filter}</button>)}
       </div>
     </div>
+    {coverage && <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs text-amber-800">{coverage}</div>}
     {error && <div role="alert" className="rounded-xl bg-white p-4 text-sm text-red-600">{error}<button className="ml-3 underline" onClick={() => load(retry.current.next, retry.current.replace)}>Retry</button></div>}
     {loading && !items.length && <div role="status" className="rounded-xl bg-white p-12 text-center text-gray-500">Loading world activity…</div>}
     {!loading && !error && !items.length && <div className="rounded-xl bg-white p-12 text-center text-gray-500">No activity matches this filter.</div>}

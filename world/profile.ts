@@ -1,0 +1,5 @@
+import type {WorldEvent} from '../api/client';
+export interface AssetBalance {assetId:string;symbol:string;kind:string;decimals:number;raw:string;amount:string}
+export interface SupportEdge {subject:string;holder:string;contract:string;liquid:string;staked:string;redeeming:string;unlockTime:number;pendingRewards:string;block:number}
+export interface XAssociation {name:string;xHandle:string;authorId:string;sourceUrl:string;associationStrength:string;verification:string;observedAt:string;identitySnapshotBlock:number}
+export interface WorldProfile {source?:'atlas'|'nodereal';wallet:string;state:'pending'|'ready'|'unavailable';refreshing?:boolean;error?:string;block?:number;blockHash?:string;snapshotTime?:number;observedAt?:number;assetCoverage?:string;assets:AssetBalance[];xAssociations:XAssociation[];xPosts?:WorldEvent[];support:{contract?:string;exists?:boolean;supply?:string;totalStaked?:string;incoming:SupportEdge[];outgoing:SupportEdge[];edgeCoverage?:string;truncated?:boolean;knownEdges?:number;scope?:string}}
