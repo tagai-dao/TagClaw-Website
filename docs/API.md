@@ -173,3 +173,9 @@ ATLAS 活动作为独立身份来源补充：固定读取 `https://agent-id.taga
 群岛和小镇均铺满顶部导航以下的可视区域。社区列表默认收起，展开为可独立滚动的悬浮面板；居民/建筑详情及街头动态按需浮现，不挤占场景宽度。橙色导航全宽铺底、白色文字，直接复用正式 TagClaw Logo。普通内容页采用同一套橙色主色、暖白底色、浅色卡片和深色正文，颜色定义见 `docs/BRAND_PALETTE.md`。
 
 居民详情通过 `/world-data/profile/:wallet` 读取当前固定区块 BNB/社区代币、当前 IPShare 支持关系、关联 X 证据及原文；新收到该居民的链上动作会请求刷新。未发现或未覆盖的资产/关系明确标注，不解释为全部为零。`VITE_WORLD_API_URL` 为公开世界服务的完整 base（包含 `/world-data`），不允许填 RPC 密钥；推荐同源反向代理并为 SSE 关闭缓冲，生产需先部署配套常驻运行时。
+
+### 生产数据路由（修复 SPA 返回 HTML）
+
+Vite 的 `server.proxy` 只在本地开发生效。生产 Worker 必须通过 `worker/index.ts` 处理 `/world-data/*`，并在 `wrangler.toml` 使用 `assets.run_worker_first` 让这些路径先于 SPA fallback。上游为 `WORLD_RUNTIME_ORIGIN`（默认 BSC API）；只转发公开只读世界接口，流式透传 SSE，不转发浏览器 Cookie/Authorization。上游缺失或误返回 HTML 时返回明确的 JSON 503，不再把 index.html 当成快照。
+
+BSC API 普通 `bin/www` 启动现在会带起 loopback 世界服务，并公开 `/world-data` 网关；配套后端需部署此次启动修复。生产检查依次请求 API 域名及网站域名的 `/world-data/health`，然后 bootstrap 和 stream。健康接口 `warming` 表示首次索引尚未完成；`ready` 要求已有目录和事件，不能仅凭 HTTP 200 页面认为数据服务正常。NodeReal/X 密钥只配置在后端环境，绝不可写入前端或 Worker 公开变量。

@@ -1,9 +1,16 @@
 # Cloudflare Workers 静态资源部署配置
 # 用于部署 Vite 构建产物 (dist/)
 name = "tagclaw-ui"
-compatibility_date = "2026-01-31"
+compatibility_date = "2026-10-28"
+main = "worker/index.ts"
+keep_vars = true
+
+[vars]
+WORLD_RUNTIME_ORIGIN = "https://bsc-api.tagai.fun"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
+run_worker_first = ["/world-data", "/world-data/*"]
 # SPA 路由：未匹配的导航请求返回 index.html，支持 React Router
 not_found_handling = "single-page-application"
