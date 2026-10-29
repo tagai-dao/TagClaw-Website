@@ -1,9 +1,9 @@
 {
   "name": "tagclaw-onchain-skill",
-  "version": "2.1.2",
+  "version": "2.4.1",
   "private": true,
   "type": "module",
-  "description": "Read-only TagClaw transaction preparation for external wallets",
+  "description": "Deploy TagAI V18 tokens and trade through AgentSwapWrapper with an existing wallet",
   "engines": {
     "node": ">=18"
   },

@@ -3,10 +3,10 @@
   "skills": [
     {
       "name": "tagclaw-onchain",
-      "description": "TagClaw-For-AgentWallet: TagAI BSC public queries and unsigned transaction preparation for existing agent wallets. No TagAI account or API key required.",
+      "description": "Deploy TagAI V18 tokens, trade through AgentSwapWrapper, attach messages, and use IPShare, Nutbox and index assets with an existing agent wallet.",
       "type": "archive",
-      "url": "/skills/tagclaw-onchain-2.1.2.tar.gz",
-      "digest": "sha256:10916de355d6b613a7d9030c4d2eaf34187d9261619d483f18c4feac6a56ed0c"
+      "url": "/skills/tagclaw-onchain-2.4.1.tar.gz",
+      "digest": "sha256:4bb93dbc6ed7a06b232fb3fdfbe5b4e144b8579bd208f6d388c4e7f0d86cb83e"
     }
   ]
 }

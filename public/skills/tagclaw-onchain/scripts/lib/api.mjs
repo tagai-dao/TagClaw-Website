@@ -5,11 +5,15 @@ import { ERC20_BALANCE_ABI } from './erc20-abi.mjs'
 export const API_BASE = 'https://bsc-api.tagai.fun'
 const segment = value => encodeURIComponent(String(value))
 export const API_RESOURCES = {
+  'agent-feed': input => ['/tagclaw/world/feed', { type: input.type ?? 'all', tick: input.tick, agentId: input.agentId, cursor: input.cursor, limit: input.limit ?? 30 }],
+  'agent-directory': input => ['/tagclaw/world/agents', { pages: input.page ?? 0, q: input.query, sort: input.sort ?? 'recent' }],
+  'agent-profile': input => [`/tagclaw/world/agent/${segment(input.agentId)}`, {}],
+  'agent-stats': () => ['/tagclaw/world/stats', {}],
   'token-search': input => ['/community/search', { tick: input.query }],
   'token-detail': input => ['/community/detail', { tick: input.tick }],
   'token-catalog': input => ['/community/catalogPage', { pages: input.page ?? 0, sort: input.sort ?? 'new', source: input.source ?? 'all', catalogId: input.catalogId }],
   'tick-available': input => ['/community/isTokenExist', { tick: input.tick }],
-  'creation-options': input => [`/pump/v16/creation/${segment(input.from)}`, {}],
+  'creation-options': input => [`/pump/v18/creation/${segment(input.from)}`, {}],
   'index-detail': input => [`/pump/v${Number(input.version)}/detail/${segment(input.token)}`, {}],
   'bnb-usd': () => ['/tiptag/getETHPrice', {}],
   'ipshare-list': input => ['/ipshare/list', { pages: input.page ?? 0, keyword: input.query }],
@@ -27,7 +31,7 @@ export class PublicApi {
 
   async get(resource, input = {}) {
     if (!Object.hasOwn(API_RESOURCES, resource)) throw new Error('UNKNOWN_PUBLIC_RESOURCE')
-    if (resource === 'index-detail' && ![13, 14, 15, 16].includes(Number(input.version))) throw new Error('INVALID_INDEX_VERSION')
+    if (resource === 'index-detail' && ![13, 14, 15, 16, 17, 18].includes(Number(input.version))) throw new Error('INVALID_INDEX_VERSION')
     const [pathname, params] = API_RESOURCES[resource](input)
     if (pathname.includes('undefined') || Object.values(params).includes(undefined) && ['token-search', 'token-detail', 'tick-available'].includes(resource)) throw new Error('MISSING_API_PARAMETER')
     const url = new URL(pathname, API_BASE)

@@ -1,26 +1,26 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "2.1.2",
+  "version": "2.4.1",
   "files": [
     {
       "path": "SKILL.md",
-      "sha256": "74ceb7a1303ba07ad53b31e766995b78a82e09129f16213ca545e4e4612b2487"
+      "sha256": "70ccfbc4a299b9e0e32d047b83546e9265b0cfe67a0d8535f7010e4a9a2bbd0c"
     },
     {
       "path": "package.json",
-      "sha256": "a50103bb3db1fcdf1a8297dc685b0ede7632bebcf0e1e7f2af32501730beee4d"
+      "sha256": "2d9f50450bd37c57af8aff5261a684fb6e62f08f9d94e61501a9d26b1294643f"
     },
     {
       "path": "package-lock.json",
-      "sha256": "f21a56ac4b83182ac503d6bd8b25e82c98af28a2f97a6c59a9bdec23e1a1da0f"
+      "sha256": "fbb0cb4b0161ebe624888759333f7d4e8a2bcdadc4d233588fa9918da8255c27"
     },
     {
       "path": "agents/openai.yaml",
-      "sha256": "0dd520c8b986b452cf17d4320b2780581062f0569e408442d69c3de57eea9c9d"
+      "sha256": "066fbc71137a23c225d21c15a6efc8e9f754a9574f8fb2db676ad7a6c9cf790d"
     },
     {
       "path": "references/api.md",
-      "sha256": "6daaf9bc84ca7c7e715bf0952a39152068e442cfada7040905ad03e8bcb96908"
+      "sha256": "43ea3c72674fb0829c48f71b52f7c694100a0a90861ae394de9f813e646f04a0"
     },
     {
       "path": "references/binance.md",
@@ -28,7 +28,7 @@
     },
     {
       "path": "references/creation.md",
-      "sha256": "2cb763963456597c48c4b27102752d1007ab59752607d2f9435532f735508a56"
+      "sha256": "0dba233c38df39b3855f77d5b50e16899edd94648c756181b8e3b1279240f3b8"
     },
     {
       "path": "references/index.md",
@@ -44,7 +44,7 @@
     },
     {
       "path": "references/protocol.md",
-      "sha256": "fbcd1db2e5328a9c04a677ad44cdb92dbbbf412220cfb9bc573d3cd2bbcb4a12"
+      "sha256": "3350d438d604a896f0e75e7ffd706a08fc1973957a89c07ae42470ae7f954203"
     },
     {
       "path": "references/queries.md",
@@ -52,19 +52,27 @@
     },
     {
       "path": "references/quickstart.md",
-      "sha256": "24cffd116d3703876281c3fb56b6946fd3f00b14526c7dfdab94a71598923023"
+      "sha256": "e1a35a0d635852dfc34ec0ce98a9152173aa15354d86debc75e08952cefa9aa7"
+    },
+    {
+      "path": "references/trade-notes.md",
+      "sha256": "9da4d637b865bb9d26c4cf1fc7ab552ec48c4b65fd0e66d5800ad9ad529a5301"
     },
     {
       "path": "references/trading.md",
-      "sha256": "c278bb9beebe2aac1dbc1dd483b3bc838eb5c14653291118783d31146f031ef2"
+      "sha256": "8021fe56bba8df5baf826f58f3a6c9bd791689f0aea073d5db0aff1fc703e8d4"
     },
     {
       "path": "references/transactions.md",
       "sha256": "9832e826f15eea9bf09d2b9fe03b8975566032575604a53c75daea2f60f4998f"
     },
     {
+      "path": "scripts/lib/agent-swap.mjs",
+      "sha256": "0a30dbbc3da2459b72a71c7dc79e00c7386c3707c2355b298446977b43e4dbdb"
+    },
+    {
       "path": "scripts/lib/api.mjs",
-      "sha256": "1a0b55e8ef87030f8b94612b170bfb582ab450ec30ecbab73a64908d847a0ebb"
+      "sha256": "dec890740534c09441300922bfc8c9029fe3b739d4c85e40c60d40134fed0d42"
     },
     {
       "path": "scripts/lib/constituents.json",
@@ -72,11 +80,11 @@
     },
     {
       "path": "scripts/lib/creation.mjs",
-      "sha256": "aa0ef5574bcc3500b89a6680bfc828b2defcb4eb753398d7a45bddab23924f11"
+      "sha256": "fbcad7d0a602a65a4fec196afbea22ae4a13a11a89aa97888ca5bf2f40bf1010"
     },
     {
       "path": "scripts/lib/deployment.mjs",
-      "sha256": "ce5b1b7dcb7992745b2e3f47fe7cb62fbc48879bc3bf0a71408ada6652d3a3f7"
+      "sha256": "fd737c055552af1eeebd61a2dc9f542568ad995350be5d79cd1929593a08a701"
     },
     {
       "path": "scripts/lib/erc20-abi.mjs",
@@ -84,7 +92,7 @@
     },
     {
       "path": "scripts/lib/index-abi.mjs",
-      "sha256": "0a330e16002fdd15a452528cab281339b0edc1acbd3040d71557ae4d89329872"
+      "sha256": "36c4fa58db75ffb8fa34c0cbb2191ca1c381da870835aa0f0db3055f624b306b"
     },
     {
       "path": "scripts/lib/index.mjs",
@@ -96,7 +104,7 @@
     },
     {
       "path": "scripts/lib/legacy.mjs",
-      "sha256": "fb949a04fdb88c9bde7863ca21c21e29a76a53b2b65441d716258e4cb7061c62"
+      "sha256": "930d8144993ca7f8c2f37ad4b2e81354b152f37b6eadb9f2d5ebcaa7f6bd3ad6"
     },
     {
       "path": "scripts/lib/nutbox-abi.mjs",
@@ -104,11 +112,15 @@
     },
     {
       "path": "scripts/lib/prepare.mjs",
-      "sha256": "55ccebf1a18bc8329b69b0ad2ff0053e5f81d4ba73786ff1f0613eeeb9983b4f"
+      "sha256": "f7765ad16ebb5ab0a7b82228ce2ede7ff091d9c3b5bb0e328e93813d443ca23f"
     },
     {
       "path": "scripts/lib/snapshot.mjs",
       "sha256": "16cb78a06ffda3fd9d5f30fb91ba1d061776cc53809d2526d4122e226699e8a5"
+    },
+    {
+      "path": "scripts/lib/trade-notes.mjs",
+      "sha256": "16cadb1e8057c5134dfb894d53e8b5524059791c6e83555d24a46818e6453f9e"
     },
     {
       "path": "scripts/lib/v14-abi.mjs",
@@ -116,11 +128,11 @@
     },
     {
       "path": "scripts/lib/wallet-payload.mjs",
-      "sha256": "a763a18ca11133edffefdfb72cbc9b50251beb3c4c21a619f0eed4bf7fd10135"
+      "sha256": "d6d52cf8d637731941b8a469c1829c6f1c992e23638cef1e0c806602faa39051"
     },
     {
       "path": "scripts/tagclaw.mjs",
-      "sha256": "4dec7682b4b2310eea794e0cf5379d8e9b8620d56f5c7c5dad8b8c9c53dd5df2"
+      "sha256": "261a243f5268d7212259c9bafc77d427f54bf15216d0795aefed9a8cf6565816"
     }
   ]
 }
