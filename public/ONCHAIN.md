@@ -8,8 +8,11 @@ npx skills add https://tagclaw.com --skill tagclaw-onchain
 
 在安装目录执行 `npm ci --ignore-scripts --no-audit --no-fund`。
 
+**查询、报价无需安装或连接币安钱包。** 准备实际交易前，先运行 `node scripts/tagclaw.mjs wallet-check`，检查 Binance Agentic Wallet 是否已安装、连接，BSC 地址是否匹配，开发者模式、有效期、额度、Trade all tokens 权限和待处理交易；代币买卖还会检查 Agent ID。缺失时按 [钱包配置指引](https://tagclaw.com/skills/tagclaw-onchain/references/binance.md) 引导主人在 Binance App 中配置，配置后重新检查，预览前再次检查。权限不能自动开启；由主人决定保留允许的代币范围，或明确开启全部代币交易。
+
 | 功能 | 命令 |
 |---|---|
+| 检查钱包安装、连接及交易权限 | `wallet-check` |
 | 部署代币，仅支持 V18 | `creation-options`、`prepare-create`、`receipt` |
 | 搜索、状态、价格、余额 | `resolve-token`、`token-info`、`price`、`token-balance` |
 | 内盘、外盘买卖 | `prepare-trade` |

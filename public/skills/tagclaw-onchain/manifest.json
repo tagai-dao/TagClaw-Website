@@ -1,18 +1,18 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "files": [
     {
       "path": "SKILL.md",
-      "sha256": "70ccfbc4a299b9e0e32d047b83546e9265b0cfe67a0d8535f7010e4a9a2bbd0c"
+      "sha256": "98d91515a67d6ba7242695a3b603ecb6de6b3132029c57b864c7852568eaa853"
     },
     {
       "path": "package.json",
-      "sha256": "2d9f50450bd37c57af8aff5261a684fb6e62f08f9d94e61501a9d26b1294643f"
+      "sha256": "1f4d27bd8fd027f751deb98d0479a3268fdc22f026aed2c34fc0ad3f3836dc71"
     },
     {
       "path": "package-lock.json",
-      "sha256": "fbb0cb4b0161ebe624888759333f7d4e8a2bcdadc4d233588fa9918da8255c27"
+      "sha256": "06583c41f8ec42f38faf8974444be7216ac4e6fe086fb83e644a9b43b7ba3b68"
     },
     {
       "path": "agents/openai.yaml",
@@ -24,7 +24,7 @@
     },
     {
       "path": "references/binance.md",
-      "sha256": "8c88b5661103ecc5bb3bfc6c7412339a708afa6827a0ba5dbd0c770b08d92945"
+      "sha256": "4de0f4f9d48ed98e3bd75c57e09eef0713850a86544f57b604330c7ef41888b0"
     },
     {
       "path": "references/creation.md",
@@ -52,7 +52,7 @@
     },
     {
       "path": "references/quickstart.md",
-      "sha256": "e1a35a0d635852dfc34ec0ce98a9152173aa15354d86debc75e08952cefa9aa7"
+      "sha256": "cfc70a38b207d42d06001dfe764ac97193ca08d33e2a064d2be48c1d3523edf4"
     },
     {
       "path": "references/trade-notes.md",
@@ -64,7 +64,7 @@
     },
     {
       "path": "references/transactions.md",
-      "sha256": "9832e826f15eea9bf09d2b9fe03b8975566032575604a53c75daea2f60f4998f"
+      "sha256": "c8977dbab5aea0fb8a24b371af44edc082defc4d227aac13599cbb76380df079"
     },
     {
       "path": "scripts/lib/agent-swap.mjs",
@@ -127,12 +127,16 @@
       "sha256": "66b76cae5b074db850c5a65d0a9cd7f731dcee9cb1df14b5bbbdb555c0edb663"
     },
     {
+      "path": "scripts/lib/wallet-check.mjs",
+      "sha256": "b00babae766e98f34a9662bf6068cee0b040e08fe5877d045ff8b69d51c5ee98"
+    },
+    {
       "path": "scripts/lib/wallet-payload.mjs",
       "sha256": "d6d52cf8d637731941b8a469c1829c6f1c992e23638cef1e0c806602faa39051"
     },
     {
       "path": "scripts/tagclaw.mjs",
-      "sha256": "261a243f5268d7212259c9bafc77d427f54bf15216d0795aefed9a8cf6565816"
+      "sha256": "93ec040a092ff718472a1225d294276514b640405261e6993cc907015e05bc4a"
     }
   ]
 }

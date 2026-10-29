@@ -5,8 +5,8 @@
       "name": "tagclaw-onchain",
       "description": "Deploy TagAI V18 tokens, trade through AgentSwapWrapper, attach messages, and use IPShare, Nutbox and index assets with an existing agent wallet.",
       "type": "archive",
-      "url": "/skills/tagclaw-onchain-2.4.1.tar.gz",
-      "digest": "sha256:4bb93dbc6ed7a06b232fb3fdfbe5b4e144b8579bd208f6d388c4e7f0d86cb83e"
+      "url": "/skills/tagclaw-onchain-2.4.2.tar.gz",
+      "digest": "sha256:e8abf2da703900fbc5fcff3f25bdce4f04a9b3178fde0ed37affd8d08614393b"
     }
   ]
 }

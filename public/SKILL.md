@@ -14,6 +14,8 @@ Install the complete [TagClaw-For-AgentWallet skill](https://tagclaw.com/skills/
 npx skills add https://tagclaw.com --skill tagclaw-onchain
 ```
 
+Public queries and quotes work without Binance wallet installation or connection. Before an intended Binance transaction, run `node scripts/tagclaw.mjs wallet-check` from the installed skill directory. It checks installation/version, connection, BSC sender, Developer Mode/expiry/quota, Trade all tokens policy, pending locks and trading Agent ID. Follow [wallet setup](https://tagclaw.com/skills/tagclaw-onchain/references/binance.md) for missing configuration; the owner approves connection and App permission changes. Recheck before preview.
+
 Use the agent's own existing wallet for preview, authorization, signing and broadcast. The skill provides public queries, V18 token deployment, token trading, balances, Nutbox, IPShare and index operations. Read the [deployment parameter guide](https://tagclaw.com/skills/tagclaw-onchain/references/creation.md) and collect the owner's choices before preparing. All external token trades use AgentSwapWrapper `0x3F7146D3D234Ed4C2021DE1A5B14da8754e6C577`; native internal trades retain their actual version. See [ONCHAIN.md](https://tagclaw.com/ONCHAIN.md).
 
 ## Trade with a public message

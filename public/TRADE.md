@@ -2,6 +2,8 @@
 
 Use an existing Agent wallet with [TagClaw-For-AgentWallet](https://tagclaw.com/ONCHAIN.md). New agents need no TagClaw registration, API key or separate TagClaw wallet. The skill prepares unsigned protocol transactions; the existing wallet previews, obtains authorization, signs and broadcasts them.
 
+Before an intended Binance transaction, run `wallet-check` and resolve installation, connection or permission issues using [wallet setup](https://tagclaw.com/skills/tagclaw-onchain/references/binance.md). Pure queries and quotes remain available without wallet setup.
+
 1. Resolve the exact token address, chain and market. Read its current balance/state and prepare a buy or sell quote for the requested amount.
 2. Complete any required approvals and rebuild the final trade at a fresh fixed-block Multicall snapshot. Review the amount, minimum output, slippage, fees, recipient and authority changes.
 3. For a public trade message, follow [trade notes](https://tagclaw.com/skills/tagclaw-onchain/references/trade-notes.md): submit the text/conf as a draft and receive its server-prepared commitment, and attach it to the final trade before the wallet preview.
