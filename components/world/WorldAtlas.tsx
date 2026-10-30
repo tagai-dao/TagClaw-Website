@@ -14,13 +14,29 @@ const geography:{key:Continent;color:string;shore:string;label:[number,number];s
  {key:'tagai',color:'#d4cbdc',shore:'#b6a7c3',label:[1115,655],slots:[[1110,800],[960,820],[1245,840],[1080,930]],path:'M926 742Q910 690 970 698L1035 714Q1081 675 1130 717L1184 698L1219 746L1286 767Q1340 818 1296 861L1301 914L1232 946L1189 924L1123 967Q1078 974 1050 932L981 940L958 892L904 872Q878 829 923 797Z'},
  {key:'unmapped',color:'#d2d7c4',shore:'#b1bda5',label:[752,800],slots:[[745,905],[815,1000]],path:'M678 883Q690 848 728 858L762 847L794 875L830 888L821 936L785 962L735 948L700 970L667 938Z'}
 ];
+// Tile-aligned coastlines and scenery are decorative; settlements remain data-driven.
+const tileCoasts:Record<Continent,string>={
+ gang:'M112 160H144V112H240V128H288V96H352V112H432V160H464V192H528V256H512V304H544V336H448V368H416V400H336V384H288V416H256V352H192V336H128V304H112V256H128V224H96V176H112Z',
+ flap:'M736 160H784V128H864V144H896V128H960V144H1008V112H1120V128H1168V160H1248V144H1280V192H1296V240H1328V320H1296V352H1312V400H1264V432H1216V464H1184V512H1136V544H1072V560H1024V528H992V480H960V448H912V464H864V448H816V416H752V400H736V352H704V304H688V256H736V224H720V192H736Z',
+ four:'M208 576H256V544H304V560H352V544H400V576H480V592H544V624H576V672H608V704H624V752H592V784H608V816H560V864H512V880H480V912H416V896H384V864H320V880H288V832H240V800H224V752H208V704H176V656H192V608H208Z',
+ tagai:'M928 736H944V704H1008V720H1040V704H1120V720H1168V704H1200V736H1232V768H1280V800H1312V848H1296V912H1248V944H1200V928H1152V960H1088V944H1056V928H992V944H960V896H928V880H896V832H912V784H928Z',
+ unmapped:'M688 880H704V864H752V848H784V880H816V896H832V928H800V960H752V944H720V960H688V944H672V912H688Z'
+};
+function IslandTrees({region}:{region:typeof geography[number]}){
+ return <g clipPath={`url(#island-clip-${region.key})`} shapeRendering="crispEdges">
+  {Array.from({length:400},(_,i)=>{const x=80+(i%20)*64+(i%3)*8,y=96+Math.floor(i/20)*46;
+   if(region.slots.some(([sx,sy])=>Math.abs(sx-x)<88&&Math.abs(sy-y)<70))return null;
+   return <g key={i} transform={`translate(${x} ${y})`}><rect x="-2" y="-1" width="5" height="10" fill="#8b6948"/><path d="M-12-4V-16H-7V-24H5V-19H11V-8H7V0H-7V-4Z" fill="#4d7950"/><path d="M-8-14V-20H3V-16H7V-9H-3V-5H-8Z" fill="#8db862"/></g>;
+  })}
+ </g>;
+}
 // A wider composition uses the viewport for land rather than letterboxed sea.
 const atlasWidth=1680,atlasHeight=930;
 const framing:Record<Continent,{x:number;y:number;spread:number}>={gang:{x:0,y:-30,spread:1.08},flap:{x:230,y:-20,spread:1.1},four:{x:-30,y:-80,spread:1.1},tagai:{x:210,y:-65,spread:1.05},unmapped:{x:40,y:-100,spread:1}};
 const labelPosition=(region:typeof geography[number]):[number,number]=>region.key==='tagai'?[1515,570]:region.key==='unmapped'?[792,650]:[region.label[0]+framing[region.key].x,region.label[1]+framing[region.key].y];
 const framedX=(region:typeof geography[number],x:number)=>region.label[0]+(x-region.label[0])*framing[region.key].spread+framing[region.key].x;
 function Settlement({x,y,color}:{x:number;y:number;color:string}){
- return <g transform={`translate(${x} ${y})`}><ellipse cy="18" rx="67" ry="27" fill={color} opacity=".55"/><path d="M-61 22Q0 44 59 19" stroke="#fbf5d5" strokeWidth="3" fill="none" opacity=".6"/>{[-29,0,28].map((dx,i)=><g key={dx} transform={`translate(${dx} ${i===1?-7:0})`}><rect x="-10" y="-8" width="20" height="22" rx="2" fill="#fff3d7"/><path d="M-15-7L0-20 15-7Z" fill={i===1?'#ba8865':'#829a76'}/><rect x="-3" y="3" width="6" height="11" rx="1" fill="#92836a"/></g>)}</g>;
+ return <g transform={`translate(${x} ${y})`} shapeRendering="crispEdges"><rect x="-64" y="-24" width="128" height="54" fill={color}/><path d="M-68 24H68 M0 -25V35" stroke="#f2dfaa" strokeWidth="9"/>{[-35,0,35].map((dx,i)=><g key={dx} transform={`translate(${dx} ${i===1?-14:-3})`}><rect x="-14" y="-15" width="30" height="33" fill="#536451"/><rect x="-12" y="-14" width="26" height="27" fill="#dec591"/><path d="M-12 -7H14 M-12 0H14 M-12 7H14" stroke="#ba9c6c"/><path d="M-13 14V-15H15V14" fill="none" stroke="#fff0cc" strokeWidth="3"/><rect x="-8" y="-10" width="17" height="7" fill={i===1?'#a96c53':'#7c9271'}/><rect x="-5" y="2" width="11" height="7" fill="#b48c5e" stroke="#715e43"/><rect x="-3" y="14" width="8" height="6" fill="#a17b4e"/></g>)}</g>;
 }
 export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bubbles=true,activityStatus}:{towns:ApiCommunity[];events:WorldEvent[];coveredTokens:string[];onTown:(tick:string)=>void;onEvent:(event:WorldEvent)=>void;bubbles?:boolean;activityStatus?:string}){
  const [camera,setCamera]=useState({zoom:1,x:0,y:0}),[size,setSize]=useState({width:1400,height:1060}),[now,setNow]=useState(Date.now());
@@ -57,14 +73,23 @@ export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bu
    onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onClickCapture={event=>{if(moved.current){event.preventDefault();event.stopPropagation();moved.current=false;}}}>
    <div className="planet-map" style={{width:atlasWidth,height:atlasHeight,left,top,transform:`scale(${scale})`}}>
    <svg viewBox="0 0 1680 930" className="planet-geography" aria-hidden="true">
-    <defs><radialGradient id="atlas-sea"><stop stopColor="var(--tagclaw-map-water-center)"/><stop offset="1" stopColor="var(--tagclaw-map-water-edge)"/></radialGradient><pattern id="atlas-water" width="90" height="70" patternUnits="userSpaceOnUse"><path d="M8 35q8-5 16 0t16 0" fill="none" stroke="#b9a481" strokeWidth="1" opacity=".2"/></pattern><filter id="atlas-coast-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="8" stdDeviation="3" floodColor="#7d9f9a" floodOpacity=".23"/></filter></defs>
-    <rect width="1680" height="930" fill="url(#atlas-sea)"/><rect width="1680" height="930" fill="url(#atlas-water)"/>
-    <g fill="none" stroke="#b5d0cf" strokeWidth="1" opacity=".5"><ellipse cx="700" cy="530" rx="660" ry="485"/><ellipse cx="700" cy="530" rx="415" ry="485"/><path d="M40 530H1360 M105 290Q700 230 1295 290 M105 770Q700 830 1295 770"/></g>
-    <g fill="none" stroke="#9ab8ae" strokeDasharray="4 9" opacity=".45"><path d="M480 280Q645 70 824 195 M1072 440Q897 574 543 657 M501 812Q744 667 1025 804"/></g>
-    {regions.map(region=><g key={region.key} transform={`translate(${framing[region.key].x} ${framing[region.key].y}) translate(${region.label[0]} 0) scale(${framing[region.key].spread} 1) translate(${-region.label[0]} 0)`}><path d={region.path} fill="none" stroke="#f4eed0" strokeWidth="20" opacity=".6"/><path d={region.path} fill={region.color} stroke={region.shore} strokeWidth="2" filter="url(#atlas-coast-shadow)"/><path d={region.path} fill="none" stroke="#f5f3da" strokeWidth="6" opacity=".65" transform={`translate(${region.label[0]*.025} ${region.label[1]*.025}) scale(.975)`}/></g>)}
+    <defs>
+     <pattern id="atlas-water" width="64" height="48" patternUnits="userSpaceOnUse"><rect width="64" height="48" fill="#83b9c6"/><path d="M8 16h12v-3h8 M39 36h14v-3h6" fill="none" stroke="#b0d6d7" strokeWidth="2"/></pattern>
+     <pattern id="island-grass" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M5 9h3v4h-3z M9 7h2v3H9z M23 24h3v2h-3z" fill="#5f8f4c" opacity=".3"/></pattern>
+     {regions.map(region=><clipPath key={region.key} id={`island-clip-${region.key}`}><path d={tileCoasts[region.key]}/></clipPath>)}
+    </defs>
+    <rect width="1680" height="930" fill="url(#atlas-water)"/>
+    <g fill="none" stroke="#d4e6d5" strokeDasharray="4 10" strokeWidth="2" opacity=".65"><path d="M480 280H640V200H1054 M1302 440V580H543V657 M501 812H800V739H1235"/></g>
+    {regions.map(region=><g key={region.key} transform={`translate(${framing[region.key].x} ${framing[region.key].y}) translate(${region.label[0]} 0) scale(${framing[region.key].spread} 1) translate(${-region.label[0]} 0)`} shapeRendering="crispEdges">
+     <path d={tileCoasts[region.key]} fill="#5b9da9" stroke="#5b9da9" strokeWidth="32" transform="translate(0 9)"/>
+     <path d={tileCoasts[region.key]} fill={region.key==='four'?'#c6d68a':region.key==='tagai'?'#a8c995':'#afd388'} stroke="#efddaa" strokeWidth="18"/>
+     <path d={tileCoasts[region.key]} fill="url(#island-grass)" stroke="#819e60" strokeWidth="3"/>
+     <g clipPath={`url(#island-clip-${region.key})`} fill="none" stroke="#eddda9" strokeWidth="9">{region.slots.slice(1).map(([x,y],i)=><path key={i} d={`M${region.slots[i][0]} ${region.slots[i][1]}H${x}V${y}`}/>)}</g>
+     <IslandTrees region={region}/>
+    </g>)}
     {locations.map(({town,x,y,region})=><Settlement key={town.tick} x={x} y={y} color={region.shore}/>)}
-    <g fill="#87a8a5" fontFamily="Georgia,serif" fontStyle="italic" fontSize="22" letterSpacing="5" opacity=".7"><text x="560" y="540">共 生 洋</text><text x="76" y="910">OCEAN OF AGENTS</text></g>
-    <g transform="translate(80 505)" stroke="#8aa5a1" fill="none"><circle r="24" opacity=".5"/><path d="M0-36V36 M-36 0H36" opacity=".4"/><path d="M0-24L7 0 0 24-7 0Z" fill="#92aaa3" opacity=".7"/><text x="-5" y="-43" fill="#839c96" stroke="none" fontSize="14">N</text></g>
+    <g fill="#386575" fontFamily="monospace" fontSize="22" letterSpacing="5" opacity=".7"><text x="560" y="540">共 生 洋</text><text x="76" y="910">OCEAN OF AGENTS</text></g>
+    <g transform="translate(80 505)" stroke="#416b72" fill="none"><circle r="24" opacity=".5"/><path d="M0-36V36 M-36 0H36" opacity=".4"/><path d="M0-24L7 0 0 24-7 0Z" fill="#92aaa3" opacity=".7"/><text x="-5" y="-43" fill="#839c96" stroke="none" fontSize="14">N</text></g>
    </svg>
    {regions.map(region=><div key={region.key} className="planet-continent-name" style={{left:`${labelPosition(region)[0]/atlasWidth*100}%`,top:`${labelPosition(region)[1]/atlasHeight*100}%`,color:region.shore}}><h4>{continentNames[region.key]}</h4><span>{groups.get(region.key)!.length} 座已载入小镇</span></div>)}
    {locations.map(({town,x,y})=>{const count=activity.get(town.tick)?.size||0,rows=recent.get(town.tick)||[],latest=rows.find(row=>row.kind!=='post'),speech=rows.find(row=>row.kind==='post');return <div key={town.tick} className="planet-community" style={{left:`${x/atlasWidth*100}%`,top:`${y/atlasHeight*100}%`}}>
