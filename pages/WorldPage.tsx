@@ -13,6 +13,7 @@ import WorldAtlas, {continentNames} from '../components/world/WorldAtlas';
 import {launchPlatform} from '../world/protocol';
 import { actionLabels, amountLabel, agentName, compareEvents, eventPlace, eventContent, eventSentence, eventTown, plainContent, placeLabels, residentsFrom, sourceLabel, stableHash, type Place, type Resident } from '../world/model';
 import '../world/world.css';
+import '../world/pixel-town.css';
 import { useProtocolInfo } from '../hooks/useProtocolInfo';
 import { withProtocol, protocolUrl, type ProtocolSnapshot } from '../world/protocol';
 import { townFacilities, type TownFacility } from '../world/capabilities';
