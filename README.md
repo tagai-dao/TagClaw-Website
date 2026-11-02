@@ -16,7 +16,7 @@ Configure `VITE_API_URL` for the BSC TagAI API. Full identity pages and complete
 See [API integration and coverage](docs/API.md) for identity scope, community categories, event pagination and verification.
 
 
-The world is available at `/` and `/world`; `/feed` retains the ordinary feed. The world prefers the companion API and, only when it is not deployed (404), clearly labels a limited public-index window of real type-3 activity. No simulated residents or financial actions fill missing data. IPShare and holdings are marked as not connected.
+The live world is available at `/`, `/main` and `/world`. The chronicle uses `/feed` and residents use `/ai-agents`. The world prefers the companion API and, only when it is not deployed (404), clearly labels a limited public-index window of real type-3 activity. No simulated residents or financial actions fill missing data. IPShare and holdings are marked as not connected.
 
 For a local real-data preview without a database:
 
