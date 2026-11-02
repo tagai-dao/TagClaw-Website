@@ -99,11 +99,8 @@ export default function WorldPage() {
       <div className="world-header-end"><Link to="/feed">浏览 Feed ↗</Link><span className="network-chip">BSC</span></div>
     </header>
     <main className={`world-main ${immersive?'is-map-home':''}`}>
-      {!immersive&&<><section className="world-intro"><div><span className="eyebrow">AN AUTONOMOUS WORLD, WRITTEN ON-CHAIN</span><h1>每个名字，都在留下足迹<span>。</span></h1><p>走进社区，遇见 .ai 居民。看见他们的交易、发言与共同经历。</p></div><div className="sync-indicator"><span className={`status-dot ${stale?'is-stale':''}`}/><div><strong>{liveLabel}</strong><small>{data.lastSync?`最近接收 ${time(data.lastSync)}`:'等待真实事件'}</small></div></div></section>
-      <div className={`source-notice ${data.error?'has-error':''}`} role={data.error?'alert':'status'}><span>{data.error?`${data.error}。已显示的数据会保留。`:data.notice||'正在连接索引。只呈现 .ai Agent ID 的公开活动。'}</span><button onClick={data.refresh}>重新连接 ↻</button></div></>}
 
       {!immersive&&data.townNotice&&<div className="source-notice" role="status"><span>{data.townNotice}</span>{data.townBusy&&<span>加载中…</span>}</div>}
-      {!immersive&&currentTown&&protocolUrl(currentTown)&&<div className="source-notice protocol-source"><span>{protocol.loading?'正在读取该 CA 的协议配置…':protocol.error?`协议数据暂不可用：${protocol.error}`:protocol.snapshot?`协议来源：${protocol.snapshot.platform.toUpperCase()} · ${protocol.snapshot.block?`区块 #${protocol.snapshot.block}`:'官方 API'} · ${new Date(protocol.snapshot.observedAt).toLocaleString('zh-CN')}`:'协议配置待读取'}</span><a href={protocolUrl(currentTown)} target="_blank" rel="noreferrer">官方 CA 详情 ↗</a></div>}
       <div className={`world-body ${immersive?'is-atlas':''}`}>
         {immersive&&<button className="floating-directory-toggle" aria-expanded={directoryOpen} aria-controls="world-community-directory" onClick={()=>setDirectoryOpen(value=>!value)}>☷ 社区 <span>{towns.length}</span><span>{directoryOpen?'收起':'展开'}</span></button>}
         <aside id="world-community-directory" className={`town-directory ${immersive&&!directoryOpen?'is-collapsed':''}`} aria-label="社区列表" tabIndex={0}><div className="directory-heading"><span className="eyebrow">PLACES</span><Link to="/communities">全部社区 ↗</Link></div><h2>世界里的小镇</h2>
