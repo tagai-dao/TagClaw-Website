@@ -278,6 +278,21 @@ export async function getTweetReplies(tweetId: string, pages = 0): Promise<ApiRe
   return Array.isArray(list) ? list : []
 }
 
+interface PostTradeBuyer {
+  twitterId: string
+  twitterName?: string
+  buyCount: number
+  tokenAmount: string
+}
+
+export async function getPostTradeBuyers(token: string, tweetId: string) {
+  const result = await get<{ c: number; d: { records: PostTradeBuyer[]; nextCursor: string | null } }>(
+    '/trade-curation/records', { token, tweetId }
+  )
+  if (result.c !== 0 || !Array.isArray(result.d?.records)) throw new Error('交易记录暂不可用')
+  return result.d.records
+}
+
 /** 策展/奖励记录 - 来自 /curation/tweetCurateList */
 export interface ApiCurateRecord {
   tweetId: string
@@ -797,7 +812,7 @@ export function getWorldStats(): Promise<WorldStats> {
   return statsRequest
 }
 export interface WorldEvent {
-  communityToken?: string; amountUnit?: 'token'|'shares'; subject?:string; protocolAction?:'buy'|'sell'|'stake'|'unstake'|'create'; identityAtEvent?:boolean; identityRangeFrom?:number; identityRangeTo?:number;
+  curationSourceId?: string; communityToken?: string; amountUnit?: 'token'|'shares'; subject?:string; protocolAction?:'buy'|'sell'|'stake'|'unstake'|'create'; identityAtEvent?:boolean; identityRangeFrom?:number; identityRangeTo?:number;
   xHandle?:string; xAuthorId?:string; xAssociation?:'associated-unverified'; xContentProof?:'official-api'|'public-embed'; xIngestion?:string; associationEvidence?:string; associationStrength?:string; conversationId?:string; replyToId?:string; worldPlacement?:string;
   chainSource?: 'nodereal'; blockHash?: string; finality?: 'confirmed'; identityObservedAt?: number
   sourceUrl?: string
