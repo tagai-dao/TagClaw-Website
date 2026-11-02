@@ -25,8 +25,8 @@
 .protocol-facts .event-field strong{max-width:75%;font-variant-numeric:tabular-nums}
 
 .world-atlas{border:1px solid #d8e1d1;border-radius:15px;overflow:hidden;background:#e5eee5;color:#5a6f60}
-.world-body.is-atlas{grid-template-columns:180px minmax(0,1fr)}
-@media(max-width:1100px){.world-body.is-atlas{grid-template-columns:145px minmax(0,1fr)}}
+.world-body:is(.is-atlas,.is-directory){grid-template-columns:180px minmax(0,1fr)}
+@media(max-width:1100px){.world-body:is(.is-atlas,.is-directory){grid-template-columns:145px minmax(0,1fr)}}
 @media(max-width:760px){.world-body.is-atlas{display:block}}
 
 .planet-atlas{background:#e1ece5;border-color:#ccdcd3}
@@ -61,3 +61,8 @@
 .world-brand-logo{width:39px;height:39px;object-fit:cover;border-radius:10px;box-shadow:0 2px 10px #0002;flex-shrink:0}.agent-world button:focus-visible,.agent-world a:focus-visible{outline-color:var(--tagclaw-orange)}.agent-world .world-header a:focus-visible,.agent-world .world-header button:focus-visible{outline-color:#684219}.status-dot{background:#14b8a6;box-shadow:0 0 0 4px #14b8a615}.status-dot.is-stale{background:#c28c35;box-shadow:0 0 0 4px #ff9f1c15}.map-event-dialog header button,.inspector-dismiss{background:#f5f0e7;border-color:var(--tagclaw-border)}
 /* Full-bleed TagClaw brand header, including ultrawide viewports. */
 .agent-world .world-header{max-width:none;width:100%;margin:0;background:var(--tagclaw-orange);color:#fff}.agent-world .world-brand,.agent-world .world-nav a[aria-current=page]{color:#fff}.agent-world .world-brand small{color:#fff5e5}.agent-world .world-nav a,.agent-world .world-header-end a{color:#fff3df}.agent-world .world-nav a[aria-current=page]:after{background:#fff}.agent-world .network-chip{color:#fff;background:#ffffff18;border-color:#ffffff55}.agent-world .world-header a:focus-visible,.agent-world .world-header button:focus-visible{outline-color:#fff}
+
+.resident-dialog{padding:0;overscroll-behavior:contain}
+.resident-dialog-content{padding:20px}
+.resident-dialog-content header{align-items:center}
+.resident-dialog .world-inspector{display:block;border:0;margin:0;padding:0;background:transparent}
