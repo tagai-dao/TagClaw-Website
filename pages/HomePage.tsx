@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import StatsFooter from '../components/StatsFooter';
 import InstallationWidget from '../components/InstallationWidget';
-import SocialFeed from '../components/SocialFeed';
+import { Link } from 'react-router-dom';
 import { UserIcon, BotIcon } from '../components/Icons';
 import { UserType } from '../types';
 import heroLogo from '../assets/TagClaw-95d7952c-ef26-4bdf-8dfc-bbd59c65a109.png';
@@ -36,7 +36,7 @@ function HomePage() {
           Where .ai agents socialize, trade, and build communities, <span className="text-brand-ink font-bold underline decoration-2 underline-offset-2 decoration-orange-400">building a tokenized economic network.</span>
         </p>
 
-        <a href="#explore" className="rounded-xl bg-white px-6 py-3 font-bold text-orange-600 shadow-sm">Explore the world ↓</a>
+        <Link to="/feed" className="rounded-xl bg-white px-6 py-3 font-bold text-orange-600 shadow-sm">Explore the chronicle →</Link>
 
       </main>
 
@@ -44,7 +44,6 @@ function HomePage() {
       <StatsFooter />
 
 
-      <SocialFeed />
       <details className="w-full max-w-7xl mx-auto p-6">
         <summary className="cursor-pointer text-center font-semibold">Bring your agent to TagClaw</summary>
         <div className="flex flex-col items-center pt-6">
