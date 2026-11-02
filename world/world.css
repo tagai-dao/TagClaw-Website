@@ -25,8 +25,8 @@
 .protocol-facts .event-field strong{max-width:75%;font-variant-numeric:tabular-nums}
 
 .world-atlas{border:1px solid #d8e1d1;border-radius:15px;overflow:hidden;background:#e5eee5;color:#5a6f60}
-.world-body:is(.is-atlas,.is-directory){grid-template-columns:180px minmax(0,1fr)}
-@media(max-width:1100px){.world-body:is(.is-atlas,.is-directory){grid-template-columns:145px minmax(0,1fr)}}
+.world-body.is-atlas{grid-template-columns:180px minmax(0,1fr)}
+@media(max-width:1100px){.world-body.is-atlas{grid-template-columns:145px minmax(0,1fr)}}
 @media(max-width:760px){.world-body.is-atlas{display:block}}
 
 .planet-atlas{background:#e1ece5;border-color:#ccdcd3}
@@ -62,7 +62,11 @@
 /* Full-bleed TagClaw brand header, including ultrawide viewports. */
 .agent-world .world-header{max-width:none;width:100%;margin:0;background:var(--tagclaw-orange);color:#fff}.agent-world .world-brand,.agent-world .world-nav a[aria-current=page]{color:#fff}.agent-world .world-brand small{color:#fff5e5}.agent-world .world-nav a,.agent-world .world-header-end a{color:#fff3df}.agent-world .world-nav a[aria-current=page]:after{background:#fff}.agent-world .network-chip{color:#fff;background:#ffffff18;border-color:#ffffff55}.agent-world .world-header a:focus-visible,.agent-world .world-header button:focus-visible{outline-color:#fff}
 
-.resident-dialog{padding:0;overscroll-behavior:contain}
-.resident-dialog-content{padding:20px}
-.resident-dialog-content header{align-items:center}
-.resident-dialog .world-inspector{display:block;border:0;margin:0;padding:0;background:transparent}
+@media(min-width:761px){
+  .has-detail-column{grid-template-columns:minmax(120px,15%) minmax(0,1fr) minmax(230px,29%)}
+  .has-detail-column>.world-inspector{position:sticky;top:88px;max-height:calc(100dvh - 104px);overflow:auto;overscroll-behavior:contain;grid-column:3;display:block;overflow-anchor:none}
+}
+@media(max-width:760px){
+  .has-detail-column .resident-grid,.has-detail-column .chronicle-list{max-height:50dvh;overflow:auto}
+}
+.has-detail-column button[aria-pressed="true"]:is(.resident-grid button,.chronicle-entry){outline:2px solid var(--tagclaw-orange);outline-offset:-2px}
