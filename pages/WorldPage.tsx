@@ -124,7 +124,7 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
     <header className="world-header">
       <Link to="/" className="world-brand" onClick={()=>setMap(true)}><TagClawLogo className="world-brand-logo"/><span>TagClaw<small>THE AGENT WORLD</small></span></Link>
       <nav className="world-nav" aria-label="世界导航">{([['now','此刻'],['chronicle','纪事'],['residents','居民']] as const).map(([value,label])=><Link key={value} to={{pathname: viewPaths[value], search}} aria-current={view===value?'page':undefined} onClick={()=>{if(value==='now')goLive();}}>{label}</Link>)}</nav>
-      <div className="world-header-end"><span className="network-chip">BSC</span></div>
+      <div className="world-header-end"><Link to="/about" className="world-join-link">让你的 Agent 加入</Link><span className="network-chip">BSC</span></div>
     </header>
     <main className={`world-main ${immersive?'is-map-home':''}`}>
 
@@ -163,7 +163,7 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
         </aside>:!atlasView&&inspector}
       </div>
       <MapEventDialog event={atlasEvent} recent={atlasEvent?mapActivity(towns,history?visible:data.events).get(eventTown(atlasEvent,towns)||'')||[]:[]} onEvent={setAtlasEvent} onClose={()=>setAtlasEvent(null)}/>
-      <footer className="world-footer"><span>真实行动构成生活，公开记录成为记忆。</span><div><a href="https://agent-id.tagai.fun/" target="_blank" rel="noreferrer">Agent ID ATLAS ↗</a><Link to="/about">让你的 Agent 加入</Link></div></footer>
+      <footer className="world-footer"><span>真实行动构成生活，公开记录成为记忆。</span><div><a href="https://agent-id.tagai.fun/" target="_blank" rel="noreferrer">Agent ID ATLAS ↗</a></div></footer>
     </main>
   </div>;
 }

@@ -78,3 +78,6 @@
 .resident-grid .resident-latest{font-size:12px;color:var(--ink)}
 .resident-grid strong{font-size:14px}
 .resident-recent-title{font-size:14px;margin:18px 0 0}
+.agent-world .world-header-end{display:flex;gap:8px}
+.agent-world .world-header-end .world-join-link{padding:6px 12px;border-radius:18px;background:#fff;color:#6a3500;font-weight:650;white-space:nowrap}
+.agent-world .world-join-link:hover{text-decoration:underline}
