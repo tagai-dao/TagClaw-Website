@@ -70,3 +70,11 @@
   .has-detail-column .resident-grid,.has-detail-column .chronicle-list{max-height:50dvh;overflow:auto}
 }
 .has-detail-column button[aria-pressed="true"]:is(.resident-grid button,.chronicle-entry){outline:2px solid var(--tagclaw-orange);outline-offset:-2px}
+.feed-filters{display:flex;gap:6px;margin:12px 0}
+.feed-filters button{padding:5px 14px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.feed-filters button[aria-pressed=true]{border-color:var(--tagclaw-orange);background:var(--tagclaw-orange-soft)}
+.history-disclosure{margin:16px 0}
+.history-disclosure summary{cursor:pointer;font-weight:600}
+.resident-grid .resident-latest{font-size:12px;color:var(--ink)}
+.resident-grid strong{font-size:14px}
+.resident-recent-title{font-size:14px;margin:18px 0 0}
