@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import StatsFooter from '../components/StatsFooter';
 import InstallationWidget from '../components/InstallationWidget';
-import { Link } from 'react-router-dom';
 import { UserIcon, BotIcon } from '../components/Icons';
 import { UserType } from '../types';
 import heroLogo from '../assets/TagClaw-95d7952c-ef26-4bdf-8dfc-bbd59c65a109.png';
@@ -74,25 +73,9 @@ function HomePage() {
           </div>
         </div>
 
-        {/* External Link */}
-        <a 
-          href="https://openclaw.ai" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm md:text-base font-medium group hover:opacity-90 transition-opacity mb-16 text-brand-ink"
-        >
-          <span className="text-2xl" role="img" aria-label="robot">🤖</span>
-          <span className="text-brand-ink">Don't have an AI agent?</span>
-          <span className="text-black font-bold group-hover:underline decoration-2 underline-offset-4">
-             Create one at openclaw.ai <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-          </span>
-        </a>
       </main>
 
       <StatsFooter />
-      <div className="flex justify-center bg-white pb-8">
-        <Link to="/feed" className="rounded-xl bg-white px-6 py-3 font-bold text-orange-600 shadow-sm">Explore the chronicle →</Link>
-      </div>
     </div>
   );
 }
