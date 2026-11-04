@@ -21,7 +21,8 @@ export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bu
  const [selectedIsland,selectIsland]=useState<Continent|null>(null);
  const viewport=useRef<HTMLDivElement>(null),drag=useRef<{x:number;y:number;originX:number;originY:number}|null>(null),moved=useRef(false);
  const fit=Math.min(size.width/atlasWidth,size.height/atlasHeight),scale=fit*camera.zoom;
- const left=(size.width-atlasWidth*scale)/2+camera.x,top=(size.height-atlasHeight*scale)/2+camera.y;
+ const mapWidth=size.width/fit;
+ const left=(size.width-mapWidth*scale)/2+camera.x,top=(size.height-atlasHeight*scale)/2+camera.y;
  useEffect(()=>{
   const node=viewport.current;if(!node)return;
   const observer=new ResizeObserver(([entry])=>{setSize({width:entry.contentRect.width,height:entry.contentRect.height});setCamera({zoom:1,x:0,y:0});});observer.observe(node);
@@ -59,9 +60,9 @@ export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bu
    onPointerDown={event=>{if(event.button!==0)return;moved.current=false;drag.current={x:event.clientX,y:event.clientY,originX:camera.x,originY:camera.y};}}
    onPointerMove={event=>{if(!drag.current||camera.zoom===1)return;const dx=event.clientX-drag.current.x,dy=event.clientY-drag.current.y;if(Math.hypot(dx,dy)<5)return;moved.current=true;event.currentTarget.setPointerCapture(event.pointerId);setCamera(previous=>({...previous,x:drag.current!.originX+dx,y:drag.current!.originY+dy}));}}
    onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onClickCapture={event=>{if(moved.current){event.preventDefault();event.stopPropagation();moved.current=false;}}}>
-   <div className="planet-map" style={{width:atlasWidth,height:atlasHeight,left,top,transform:`scale(${scale})`}}>
+   <div className="planet-map" style={{width:mapWidth,height:atlasHeight,left,top,transform:`scale(${scale})`}}>
    <IslandGround src="/town/world-atlas.webp"/>
-   {regions.map(region=><button key={region.key} className="island-sign" style={{left:region.x,top:region.y-region.height/2-40}} onClick={()=>selectIsland(region.key)}>{continentNames[region.key]} · {groups.get(region.key)!.length}</button>)}
+   {regions.map(region=><button key={region.key} className="island-sign" style={{left:region.x/atlasWidth*100+'%',top:region.y-region.height/2-40}} onClick={()=>selectIsland(region.key)}>{continentNames[region.key]} · {groups.get(region.key)!.length}</button>)}
    {locations.map(({town,x,y,diameter})=>{const count=activity.get(town.tick)?.size||0,rows=recent.get(town.tick)||[],latest=rows.find(row=>row.kind!=='post'),speech=rows.find(row=>row.kind==='post');return <div key={town.token||town.tick} className="planet-community town-marker" style={{width:diameter,height:diameter,left:`${x/atlasWidth*100}%`,top:`${y/atlasHeight*100}%`}}>
     {bubbles&&(latest||speech)&&<div className="planet-island-bubbles">{[latest,speech].filter((item):item is WorldEvent=>!!item).map(latest=><button key={latest.eventKey} className={`planet-activity-bubble ${latest.kind==='post'?'is-speech':'is-transaction'}`} aria-label={`查看 ${town.tick} 的最新${latest.kind==='post'?'发言':'链上动态'}：${eventSentence(latest)}`} onClick={()=>onEvent(latest)}>
       <span key={latest.eventKey} className="map-bubble-content"><span className="map-bubble-meta"><b>{latest.kind==='post'?'发言':'链上动态'}</b><time dateTime={new Date(latest.txTimestamp).toISOString()}>{latest.identitySource==='atlas-registry'?(latest.chainSource==='nodereal'?'身份快照 · ':'历史快照 · '):''}{activityTime(latest.txTimestamp,now)}</time></span>
