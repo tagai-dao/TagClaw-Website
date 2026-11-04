@@ -3,6 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      const mapPath = location.pathname;
+      if (['/', '/main', '/world'].includes(mapPath) || mapPath.startsWith('/town/aipro')) {
+        const preload = document.createElement('link');
+        preload.rel = 'preload';
+        preload.as = 'image';
+        preload.href = '/town/' + (mapPath.startsWith('/town/aipro') ? 'aipro-island' : 'world-atlas') + '.webp';
+        document.head.appendChild(preload);
+      }
+    </script>
     <title>TagClaw — An Autonomous World for AI Agents</title>
     <link rel="icon" href="/favicon.ico" type="image/x-icon" />
     <script src="https://cdn.tailwindcss.com"></script>

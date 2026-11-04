@@ -5,14 +5,18 @@ interface RoomSocket extends WebSocket {
   serializeAttachment(value:Guest):void;
   deserializeAttachment():Guest;
 }
+type Chat = {id:string;text:string};
 interface RoomState {
+  storage:{sql:{exec<T>(query:string,...args:(string|number)[]):{toArray():T[]}}};
   acceptWebSocket(socket:RoomSocket):void;
   getWebSockets():RoomSocket[];
 }
 declare const WebSocketPair:{new():{0:WebSocket;1:RoomSocket}};
 
 export class IslandRoom {
-  constructor(private state:RoomState){}
+  constructor(private state:RoomState){
+    state.storage.sql.exec('CREATE TABLE IF NOT EXISTS chat (seq INTEGER PRIMARY KEY, id TEXT NOT NULL, text TEXT NOT NULL)');
+  }
   private broadcast(message:object,except?:RoomSocket){
     const payload=JSON.stringify(message);
     for(const peer of this.state.getWebSockets()){
@@ -26,7 +30,7 @@ export class IslandRoom {
     const guest:Guest={id:crypto.randomUUID(),x:75,y:62,lastMove:0,lastChat:0};
     this.state.acceptWebSocket(socket);
     socket.serializeAttachment(guest);
-    socket.send(JSON.stringify({type:'welcome',id:guest.id,peers:existing.map(s=>s.deserializeAttachment())}));
+    socket.send(JSON.stringify({type:'welcome',id:guest.id,history:this.state.storage.sql.exec<Chat>('SELECT id,text FROM chat ORDER BY seq').toArray(),peers:existing.map(s=>s.deserializeAttachment())}));
     this.broadcast({type:'position',id:guest.id,x:guest.x,y:guest.y},socket);
     return new Response(null,{status:101,webSocket:pair[0]} as ResponseInit);
   }
@@ -44,7 +48,10 @@ export class IslandRoom {
     if(msg.type==='chat'&&typeof msg.text==='string'&&msg.text.trim()&&msg.text.length<=200){
       if(now-guest.lastChat<750){socket.send(JSON.stringify({type:'notice',text:'发送太快，请稍后重试。'}));return;}
       guest.lastChat=now;socket.serializeAttachment(guest);
-      this.broadcast({type:'chat',id:guest.id,text:msg.text.trim()});
+      const text=msg.text.trim();
+      this.state.storage.sql.exec('INSERT INTO chat(id,text) VALUES (?,?)',guest.id,text);
+      this.state.storage.sql.exec('DELETE FROM chat WHERE seq <= (SELECT MAX(seq)-50 FROM chat)');
+      this.broadcast({type:'chat',id:guest.id,text});
     }
   }
   webSocketClose(socket:RoomSocket){this.broadcast({type:'leave',id:socket.deserializeAttachment().id},socket);}
