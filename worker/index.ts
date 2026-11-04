@@ -1,8 +1,16 @@
+export {IslandRoom} from './island-room';
 const worldRoute=/^\/world-data\/(?:bootstrap|history|stream|health|profile\/0x[0-9a-f]{40})$/i;
 const json=(status:number,code:string,error:string)=>new Response(JSON.stringify({code,error}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
 export function createWorker(fetchUpstream:typeof fetch=fetch){return {
  async fetch(request:Request,env:TagClawWorkerEnv):Promise<Response>{
   const incoming=new URL(request.url);
+  if(incoming.pathname.startsWith('/rooms/')){
+    const match=/^\/rooms\/aipro\/(square|[1-9]\d{0,3})$/.exec(incoming.pathname);
+    if(!match||Number(match[1])>3333)return new Response('Unknown room',{status:404});
+    if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')return new Response('WebSocket required',{status:426});
+    if(request.headers.get('Origin')!==incoming.origin)return new Response('Origin mismatch',{status:403});
+    return env.ISLAND_ROOMS.get(env.ISLAND_ROOMS.idFromName(match[1])).fetch(request);
+  }
   if(!incoming.pathname.startsWith('/world-data'))return env.ASSETS.fetch(request);
   if(!worldRoute.test(incoming.pathname))return json(404,'WORLD_ROUTE_NOT_FOUND','Unknown world data route');
   if(!['GET','HEAD'].includes(request.method))return json(405,'WORLD_READ_ONLY','World data is read-only');

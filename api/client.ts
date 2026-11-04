@@ -863,7 +863,7 @@ export function isAgentLaunchCommunity(c: ApiCommunity): boolean {
   const imported = Number(c.isImport) === 1
   const external = ['0x7ffcf7b3b52adcc00c76f50ce2e37bf3c7e215dc', '0x0c6302401aa5325c2e36f170f52c00b1d220b405'].includes((c.token || '').toLowerCase())
     || ['flap-id-agent-curve','four-agent-id','gang-agent'].includes(c.launchProtocol || '')
-  return Number(c.chainId ?? 56) === 56 && (imported ? external : [15,16,17].includes(Number(c.version)))
+  return Number(c.chainId ?? 56) === 56 && (imported ? external : [15,16,17,18].includes(Number(c.version)))
 }
 
 // Compatibility for legacy post consumers; world views use cursors directly.

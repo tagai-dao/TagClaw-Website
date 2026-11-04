@@ -1,10 +1,15 @@
-.aipro-walk{max-width:720px;margin:auto;padding:24px;color:#27352a;background:#faf7ea;min-height:100vh}
-.aipro-walk h1{font-size:clamp(24px,5vw,44px);margin:20px 0 4px}
-.aipro-walk p{margin:12px 0;line-height:1.6}
-.aipro-grid{display:grid;grid-template-columns:repeat(11,1fr);overflow:hidden;border:4px solid #374c42;margin:16px 0;background:#a3bc75}
-.aipro-grid>*{aspect-ratio:1;display:grid;place-items:center;font-size:clamp(16px,4vw,34px);padding:0}
-.aipro-grid .water{background:#659ca7}.aipro-grid .tree{background:#94ad6d}.aipro-grid .grass{cursor:crosshair;background:linear-gradient(140deg,#adbf7d,#a1b978)}
-.aipro-grid .building{background:#d9bc82;border:1px solid #977741;cursor:pointer}
-.aipro-walk input,.aipro-walk form button{border:1px solid #796b49;padding:6px;border-radius:4px}
-.aipro-walk section img{float:right;image-rendering:pixelated;margin-left:1em}
-.aipro-grid svg{width:82%;height:82%;pointer-events:none}
+.ip-game{position:fixed;inset:0;overflow:hidden;background:#164768;color:#352c36;font:700 14px/1.45 system-ui,sans-serif;isolation:isolate}
+.ip-camera,.ip-shade{position:absolute;inset:0;overflow:hidden}.ip-camera{outline:0;touch-action:none}.ip-island{position:absolute;image-rendering:pixelated;cursor:crosshair}
+.ip-game button,.ip-game input{font:inherit}.ip-game button{cursor:pointer}.ip-game button:focus-visible,.ip-game a:focus-visible{outline:3px solid #ffc15b;outline-offset:2px}
+.ip-ground{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.ip-site,.ip-avatar,.ip-resident{position:absolute;transform:translate(-50%,-100%);text-align:center}.ip-site{min-width:7%;height:9%;display:grid;align-items:end;justify-content:center;border:none;background:transparent;color:white}
+.ip-site span,.ip-avatar small,.ip-resident small{background:#302736e6;color:#fff4d8;border:2px solid #99794e;border-radius:10px;line-height:1.2;padding:2px 7px;white-space:nowrap;text-shadow:1px 1px #362834;font-weight:800}.ip-site:hover span{color:#ffe08a;border-color:#ffc159}
+.ip-avatar,.ip-resident{display:grid;justify-items:center;gap:1px}.ip-avatar{pointer-events:none;transition:left 65ms linear,top 65ms linear}.ip-avatar img,.ip-resident img{height:clamp(28px,4.4vh,50px);image-rendering:pixelated}.ip-resident{background:none;border:0}.ip-resident small,.ip-avatar small{font-size:10px}
+.ip-title,.ip-network,.ip-tools,.ip-log,.ip-switch{position:absolute}.ip-title{top:10px;left:10px;display:flex;align-items:center;gap:6px}.ip-title button,.ip-title strong,.ip-tools button,.ip-switch button,.ip-dialog{background:#fff8ec;border:3px solid #51415b;border-radius:14px;box-shadow:0 3px 0 #30283c99;color:#382f3e}.ip-title strong,.ip-title button{padding:8px 13px}.ip-network{top:12px;right:12px;background:#272840ed;border:2px solid #716981;border-radius:24px;color:#fff;padding:6px 12px}
+.ip-tools{top:24%;left:12px;display:grid;gap:9px}.ip-tools button{display:grid;justify-items:center;padding:3px 6px;font-size:11px;line-height:1.25}.ip-tools b{font-size:22px}
+.ip-log{bottom:12px;left:12px;width:min(230px,39vw);color:#f9f1e6;background:#222234e8;padding:10px 13px;border-radius:14px;font-size:12px}.ip-log button{border:0;background:none;color:inherit}.ip-log p{margin:6px 0;overflow-wrap:anywhere}.ip-log a{color:#a4e7ce}
+.ip-switch{bottom:12px;left:52%;transform:translateX(-50%);display:flex;gap:5px}.ip-switch button{padding:5px 10px;white-space:nowrap}.ip-switch button[aria-pressed=true]{color:#28795e}
+.ip-shade{display:grid;place-items:center;background:#10182365}.ip-dialog{position:relative;width:min(350px,92vw);max-height:82dvh;overflow:auto;padding:24px}.ip-dialog h2{margin:4px 0 12px;font-size:24px}.ip-dialog small{color:#8a6735;letter-spacing:2px}.ip-close{position:absolute;right:10px;top:8px;background:none;border:0;font-size:24px!important}.ip-portrait{width:90px;border-radius:6px}.ip-dialog input,.ip-dialog form button{border:1px solid #836a51;border-radius:6px;padding:5px}.ip-dialog input{width:6em}
+@media(max-width:650px){.ip-switch{left:auto;right:7px;transform:none}.ip-title strong{padding:7px}.ip-tools{left:5px}.ip-network{font-size:11px}}
+.ip-title .ip-radio{background:#68c6a3;padding:7px 11px}
+.ip-log form{display:flex;gap:4px}.ip-log input{min-width:0;flex:1;color:#332b39;border-radius:6px;padding:3px 6px}.ip-log form button{color:#98f5c9}.ip-log form button:disabled{opacity:.5}
+.ip-messages{max-height:18vh;overflow:auto}.ip-directory{display:grid;gap:8px}.ip-resident{transition:left 75ms linear,top 75ms linear;pointer-events:none}

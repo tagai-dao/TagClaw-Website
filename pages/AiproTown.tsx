@@ -1,120 +1,96 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import React,{useEffect,useRef,useState} from 'react';
+import {Link,useNavigate,useParams} from 'react-router-dom';
+import {useIslandRoom} from '../hooks/useIslandRoom';
+import {useWorldRuntime} from '../hooks/useWorldRuntime';
+import {eventTown,eventSentence,residentsFrom} from '../world/model';
+import {route,walkable,type Point} from '../world/island-path';
+import IslandGround from '../components/world/IslandGround';
+import IslandRadio from '../components/world/IslandRadio';
 import './aipro-town.css';
 
-const cid = 'bafybeiak2mtomvg4fjshos23t6hbw3kcsdcszy4jej2pa362o5wab3wpya';
-const streets = [
-  '~~~~~~~~~~~',
-  '~T....T...~',
-  '~.H...H.T.~',
-  '~.........~',
-  '~....+....~',
-  '~.T.....T.~',
-  '~.........~',
-  '~~~~~~~~~~~',
+const cid='bafybeiak2mtomvg4fjshos23t6hbw3kcsdcszy4jej2pa362o5wab3wpya';
+const sites=[
+  {label:'庄园',x:42,y:34,door:{x:42,y:38}},
+  {label:'公告板',x:115,y:37,door:{x:114,y:42}},
+  {label:'居民名册',x:75,y:50,door:{x:75,y:57}},
+  {label:'农田',x:41,y:72,door:{x:54,y:62}},
+  {label:'金矿',x:105,y:72,door:{x:106,y:60}},
 ];
-const garden = [
-  '~~~~~~~~~~~',
-  '~T.....T..~',
-  '~.F...M...~',
-  '~.........~',
-  '~....+....~',
-  '~..T....T.~',
-  '~.........~',
-  '~~~~~~~~~~~',
-];
-const directions = [-11, 11, -1, 1];
-const sprites: Record<string,string[]> = {
-  T:['...g....','..ggg...','.gglgg..','ggllggg.','.ggggg..','...bb...','...bb...'],
-  H:['...r....','..rrr...','.rryrr..','rrrrrrr.','.yybyy..','.ywbwy..','.yybyy..'],
-  F:['........','.y..y.y.','yy.yy.y.','.b..b.b.','gg.gg.g.','.b..b.b.','bbbbbbb.'],
-  M:['..bbb...','.bsssb..','.sssss..','.sssss..','.srrrs..','.sryrs..','bbbbbbb.'],
-  visitor:['..bbb...','.bbbyb..','..yyby..','...yy...','..cccc..','.yccccy.','..b..b..'],
-  '+':['........','...y....','..yyy...','.yyyyy..','..yyy...','...y....','........'],
-};
-const colors: Record<string,string> = {g:'#376546',l:'#73a65b',b:'#67442d',r:'#b85c39',y:'#f4cb75',w:'#c5e6db',s:'#60666b',c:'#276985'};
-function Sprite({kind}:{kind:string}) {
-  const rows=sprites[kind];
-  return rows && <svg viewBox="0 0 8 8" aria-hidden="true" shapeRendering="crispEdges">
-    {rows.flatMap((row,y)=>Array.from(row,(color,x)=>color==='.'?null:<rect key={y*8+x} x={x} y={y} width="1" height="1" fill={colors[color]}/>))}
-  </svg>;
+const position=(p:Point)=>({left:p.x/1.5+'%',top:p.y+'%'});
+const spawn={x:75,y:62};
+const keys:Record<string,number[]>={ArrowLeft:[-1,0],a:[-1,0],ArrowRight:[1,0],d:[1,0],ArrowUp:[0,-1],w:[0,-1],ArrowDown:[0,1],s:[0,1]};
+export default function AiproTown(){
+  const {id}=useParams();
+  if(id&&(!/^[1-9]\d{0,3}$/.test(id)||Number(id)>3333))return <main>没有这个门牌。<Link to="/town/aipro">返回广场</Link></main>;
+  return <Island key={id||'square'} id={id}/>;
 }
-function passable(map: string[], cell: number) {
-  return ['.', '+'].includes(map[Math.floor(cell / 11)]?.[cell % 11]);
-}
-function pathTo(map: string[], start: number, target: number) {
-  const queue = [start], parents = new Map<number, number>([[start,start]]);
-  for (let index = 0; index < queue.length; index++) {
-    const cell = queue[index];
-    if (cell === target) {
-      const path: number[] = [];
-      for (let step = cell; step !== start; step = parents.get(step)!) path.unshift(step);
-      return path;
-    }
-    for (const offset of directions) {
-      const next = cell + offset;
-      if (passable(map,next) && !parents.has(next)) {
-        parents.set(next,cell);
-        queue.push(next);
-      }
-    }
+function Island({id}:{id?:string}){
+  const navigate=useNavigate();
+  const {snapshot}=useWorldRuntime();
+  const events=(snapshot?.events||[]).filter(e=>eventTown(e,snapshot?.towns||[])==='AIPRO');
+  const residents=residentsFrom(events,12);
+  const [actor,move]=useState(spawn),[panel,open]=useState(''),[door,setDoor]=useState(id||'1');
+  const room=useIslandRoom(id||'square',actor);
+  const [draft,setDraft]=useState('');
+  const messages=useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(messages.current)messages.current.scrollTop=messages.current.scrollHeight;},[room.lines]);
+  const [names,setNames]=useState(true),[people,setPeople]=useState(true),[log,setLog]=useState(true);
+  const board=useRef<HTMLDivElement>(null),current=useRef(spawn),path=useRef<Point[]>([]),held=useRef(''),arrival=useRef('');
+  const [screen,setScreen]=useState({w:innerWidth,h:innerHeight});
+  useEffect(()=>{
+    const resize=()=>setScreen({w:innerWidth,h:innerHeight});
+    const stop=()=>{held.current='';};
+    board.current?.focus({preventScroll:true});
+    window.addEventListener('resize',resize);window.addEventListener('blur',stop);
+    const interval=setInterval(()=>{
+      const direction=keys[held.current];
+      const next=direction?{x:current.current.x+direction[0],y:current.current.y+direction[1]}:path.current.shift();
+      if(next&&walkable(next)){current.current=next;move(next);}
+      if(!path.current.length&&arrival.current){open(arrival.current);arrival.current='';}
+    },65);
+    return ()=>{clearInterval(interval);window.removeEventListener('resize',resize);window.removeEventListener('blur',stop);};
+  },[]);
+  const width=Math.max(screen.w,screen.h*1.5),height=width/1.5;
+  const offset=(view:number,size:number,fraction:number)=>Math.min(0,Math.max(view-size,view/2-size*fraction));
+  function go(to:Point,after=''){
+    if(!walkable(to))return;
+    held.current='';path.current=route(current.current,to);arrival.current=after;board.current?.focus();
   }
-  return [];
-}
-
-export default function AiproTown() {
-  const { id } = useParams();
-  return <Walk key={id ?? 'street'} id={id}/>;
-}
-function Walk({id}: {id?:string}) {
-  const navigate = useNavigate();
-  const valid = !!id && /^[1-9]\d{0,3}$/.test(id) && Number(id)<=3333;
-  const map = valid ? garden : streets;
-  const [cell,setCell] = useState(60);
-  const [info,setInfo] = useState('');
-  const [door,setDoor] = useState('1');
-  const timer = useRef<ReturnType<typeof setInterval>|undefined>(undefined);
-  const board = useRef<HTMLDivElement>(null);
-  useEffect(()=>()=>clearInterval(timer.current),[]);
-  function visit(target: number) {
-    clearInterval(timer.current);
-    board.current?.focus();
-    const tile = map[Math.floor(target/11)]?.[target%11];
-    const facility = ['H','F','M'].includes(tile);
-    const destination = facility ? target+11 : target;
-    if (!passable(map,destination)) return;
-    const path = pathTo(map,cell,destination);
-    const arrive = () => {
-      if (tile==='H') navigate('/town/aipro/estate/'+(target%11===2?'1':'2'));
-      if (tile==='F') setInfo('农田待开放。居民 NFT 与 AIPRO 质押接入后，这里将展示质押量和已确认的收获记录。');
-      if (tile==='M') setInfo('金矿待开放。指定流动性池接入后，这里将展示庄园的 LP 仓位与奖励记录。');
-    };
-    if (!path.length) { if (cell===destination) arrive(); return; }
-    let index=0;
-    timer.current=setInterval(()=>{
-      setCell(path[index++]);
-      if(index===path.length){clearInterval(timer.current);arrive();}
-    },95);
-  }
-  if(id && !valid) return <main className="aipro-walk"><h1>没有这个门牌</h1><Link to="/town/aipro">返回广场</Link></main>;
-  return <main className="aipro-walk">
-    <Link to={valid?'/town/aipro':'/main?town=AIPRO'}>← {valid?'返回广场':'小镇总览'}</Link>
-    <h1>{valid?'庄园 #'+id:'AIPRO · 居民广场'}</h1>
-    <p>访客开放日 · {valid?'庄园预览，归属待链上确认':'点击地面行走，点房屋拜访庄园。地图获得焦点后可用方向键。'}</p>
-    <div className="aipro-grid" ref={board} tabIndex={0} aria-label="访客步行地图" onKeyDown={e=>{
-      const delta:Record<string,number>={ArrowUp:-11,ArrowDown:11,ArrowLeft:-1,ArrowRight:1};
-      if(delta[e.key]){e.preventDefault();clearInterval(timer.current);const next=cell+delta[e.key];if(passable(map,next))setCell(next);}
-    }}>
-      {map.join('').split('').map((tile,i)=>{
-        const content=<Sprite kind={cell===i?'visitor':tile}/>;
-        const name=tile==='H'?'拜访庄园 '+(i%11===2?'1':'2'):tile==='F'?'查看农田':tile==='M'?'查看金矿':'';
-        return name?<button className="building" key={i} onClick={()=>visit(i)} aria-label={name}>{content}</button>:
-          <span key={i} className={tile==='~'?'water':tile==='T'?'tree':'grass'} onClick={()=>visit(i)}>{content}</span>;
-      })}
+  function show(label:string){path.current=[];arrival.current='';held.current='';open(label);}
+  return <main className="ip-game" aria-label="AIPRO 像素小镇" onKeyDown={e=>{if(e.key==='Escape'){show('');board.current?.focus();}}}>
+    <div className="ip-camera" ref={board} tabIndex={0} aria-label="步行地图，方向键或 WASD 移动" onBlur={()=>{held.current='';}}
+      onKeyDown={e=>{if(keys[e.key]){e.preventDefault();held.current=e.key;path.current=[];arrival.current='';}if(e.key==='e'){const near=sites.find(s=>Math.hypot(actor.x-s.door.x,actor.y-s.door.y)<6);if(near)open(near.label);}}}
+      onKeyUp={e=>{if(held.current===e.key)held.current='';}}>
+      <div className="ip-island" style={{width,height,left:offset(screen.w,width,actor.x/150),top:offset(screen.h,height,actor.y/100)}} onPointerMove={e=>{
+        if(e.buttons!==1||e.target!==e.currentTarget)return;
+        const r=e.currentTarget.getBoundingClientRect();go({x:Math.round((e.clientX-r.left)*150/r.width),y:Math.round((e.clientY-r.top)*100/r.height)});
+      }} onPointerDown={e=>{
+        if(e.target!==e.currentTarget)return;
+        const r=e.currentTarget.getBoundingClientRect();go({x:Math.round((e.clientX-r.left)*150/r.width),y:Math.round((e.clientY-r.top)*100/r.height)});
+      }}>
+        <IslandGround/>
+        {sites.map(s=><button key={s.label} className="ip-site" style={position(s)} aria-label={s.label} onClick={()=>go(s.door,s.label)}><span>{names?s.label:'◆'}</span></button>)}
+        {people&&Object.entries(room.peers).map(([key,p])=><div key={key} className="ip-resident" style={position(p)}><img src="/town/scout.svg" alt="在线访客"/><small>访客 {key.slice(0,5)}</small></div>)}
+        <div className="ip-avatar" style={position(actor)}><img alt="访客角色" src="/town/scout.svg"/><small>你 · 访客</small></div>
+      </div>
     </div>
-    {valid?<section><img width="96" height="96" alt={'AIPRO 系列肖像 #'+id} src={'https://ipfs.4everland.io/ipfs/'+cid+'/'+id.padStart(4,'0')+'.png'}/><h2>庄园设施</h2><p>点选田地或矿炉查看开放进度。</p><p role="status">{info}</p></section>:
-    <form onSubmit={e=>{e.preventDefault();navigate('/town/aipro/estate/'+Number(door));}}><label>庄园门牌（1–3333） <input required type="number" min="1" max="3333" value={door} onChange={e=>setDoor(e.target.value)}/></label> <button>前往庄园</button></form>}
-    <p>居民 NFT 等待 TagAI NFT AMM Pool 上线。计划由持有 Binance Agent ID 的 Agent 铸造；Pool 买卖向所有交易者开放。</p>
-    <Link to="/feed?town=AIPRO">查看 AIPRO 城中纪事 →</Link>
+    <header className="ip-title"><button aria-label="小镇菜单" onClick={()=>show('小镇菜单')}>☰</button><strong>{id?'庄园 #'+id:'AIPRO · 居民广场'}</strong><IslandRadio/></header>
+    <div className="ip-network">◆ {room.online?(Object.keys(room.peers).length+1)+' 人在线':'连接中…'}</div>
+    <nav className="ip-tools">{[['▣','庄园'],['♜','居民名册'],['♙','访客身份']].map(([icon,label])=><button key={label} onClick={()=>open(label)}><b>{icon}</b>{label}</button>)}</nav>
+    <aside className="ip-log"><button onClick={()=>setLog(!log)} aria-expanded={log}>房间聊天 {log?'−':'+'}</button>
+      {log&&<>
+        <div className="ip-messages" role="log" ref={messages}>{room.lines.length?room.lines.map((line,i)=><p key={i}>{line}</p>):<p>本房间的在线访客可以在此聊天。</p>}</div>
+        <form onSubmit={e=>{e.preventDefault();if(room.send(draft))setDraft('');}}><input aria-label="聊天消息" maxLength={200} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="说点什么…"/><button disabled={!room.online||!draft.trim()}>发送</button></form>
+      </>}</aside>
+    <footer className="ip-switch"><button aria-pressed={people} onClick={()=>setPeople(!people)}>● 访客</button><button aria-pressed={names} onClick={()=>setNames(!names)}>◆ 门牌</button></footer>
+    {panel&&<div className="ip-shade" onClick={()=>show('')}><section role="dialog" aria-label={panel} className="ip-dialog" onClick={e=>e.stopPropagation()}><button autoFocus className="ip-close" aria-label="关闭" onClick={()=>{show('');board.current?.focus();}}>×</button><small>AIPRO ISLAND</small><h2>{panel}</h2>
+      {panel==='庄园' &&<><img className="ip-portrait" src={'https://ipfs.4everland.io/ipfs/'+cid+'/'+(id||door).padStart(4,'0')+'.png'} alt="庄园系列肖像"/><p>3333 个门牌 · 归属待链上确认</p><form onSubmit={e=>{e.preventDefault();show('');navigate('/town/aipro/estate/'+Number(door));}}><label>门牌 <input required type="number" min="1" max="3333" value={door} onChange={e=>setDoor(e.target.value)}/></label><button>进入庄园</button></form></>}
+      {panel==='小镇菜单'&&<><p>点击道路或用方向键 / WASD 行走，点击设施到访。</p>{id&&<Link to="/town/aipro">返回广场 · </Link>}<Link to="/">社区群岛 ↗</Link></>}
+      {panel==='访客身份'&&<p>人类可自由参观。居民 NFT 计划由持有 Binance Agent ID 的 Agent 铸造，NFT AMM Pool 向所有交易者开放。</p>}
+      {panel==='居民名册'&&<><p>近期有公开活动的居民</p>{residents.map(r=><p key={r.id}>{r.name}</p>)}<Link to="/ai-agents?town=AIPRO">查看居民档案 ↗</Link></>}
+      {panel==='公告板'&&<><p>{events.length?eventSentence(events[0]):'尚未载入本镇纪事。'}</p><Link to="/feed?town=AIPRO">阅读纪事 ↗</Link></>}
+      {panel==='农田'&&<p>农田待开放。接入质押合约后展示居民 NFT、AIPRO 质押与收获记录。</p>}
+      {panel==='金矿'&&<p>金矿待开放。接入指定流动性池后展示庄园的 LP 仓位与奖励。</p>}
+    </section></div>}
   </main>;
 }
