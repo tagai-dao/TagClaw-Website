@@ -81,3 +81,15 @@
 .agent-world .world-header-end{display:flex;gap:8px}
 .agent-world .world-header-end .world-join-link{padding:6px 12px;border-radius:18px;background:#fff;color:#6a3500;font-weight:650;white-space:nowrap}
 .agent-world .world-join-link:hover{text-decoration:underline}
+.planet-atlas .planet-viewport.is-camera{background:#174b77}.planet-map canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated}
+.planet-atlas .island-sign,.island-toolbar button,.island-manifest{color:#392e3d;background:#fff5df;border:3px solid #54425a;border-radius:12px;box-shadow:0 3px 0 #332a4580}
+.planet-atlas .island-sign{position:absolute;transform:translate(-50%,-50%);font:bold 20px system-ui;padding:5px 12px;z-index:4;cursor:pointer}
+.planet-atlas .planet-community>button{background:#302a3ee8;border:2px solid #c2a471;padding:4px 8px;border-radius:12px;width:max-content;max-width:95%;margin:auto}.planet-atlas .planet-community>button strong,.planet-atlas .planet-community>button small{color:#fff4d6;text-shadow:none}
+.island-toolbar{position:absolute;bottom:12px;right:12px;z-index:23;display:flex;gap:4px;flex-wrap:wrap}.island-toolbar button,.island-manifest button{cursor:pointer;font-weight:700;padding:5px 9px}
+.island-manifest{position:absolute;z-index:32;bottom:58px;right:12px;width:min(320px,90vw);max-height:55dvh;overflow:auto;padding:16px}.island-manifest h3,.island-manifest h4{margin:6px 0}.island-manifest button{margin:2px;border-radius:6px;background:#eadfc6}.manifest-close{float:right}
+@media(max-width:760px){.island-toolbar{bottom:50px;left:8px;right:8px;justify-content:center}.island-manifest{bottom:96px}}
+.planet-atlas .town-marker{transform:translate(-50%,-50%)}
+.planet-atlas .town-marker>.token-pin{display:grid;place-items:center;position:relative;width:100%;max-width:none;height:100%;margin:0;padding:0;overflow:hidden;border:3px solid #ffe7aa;border-radius:50%;color:white;line-height:1;box-shadow:0 0 0 2px #443547,0 4px 0 #362b42aa}
+.token-pin img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.token-pin img[hidden]{display:none}
+.token-activity{position:absolute;right:8%;bottom:8%;width:18%;height:18%;border-radius:50%;background:#7df2a6;border:1px solid #244c37}
+.town-marker:not(:hover):not(:focus-within) .planet-island-bubbles{visibility:hidden}

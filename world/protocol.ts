@@ -14,7 +14,7 @@ export function launchPlatform(town:ApiCommunity|null):LaunchPlatform|null {
   if(town.launchProtocol==='flap-id-agent-curve')return 'flap';
   if(town.launchProtocol==='four-agent-id')return 'four';
   if(['gang','gang-agent'].includes(town.launchProtocol||'')||town.token.toLowerCase()===GANG)return 'gang';
-  if([15,16,17].includes(Number(town.version))&&Number(town.isImport||0)===0)return 'tagai';
+  if([15,16,17,18].includes(Number(town.version))&&Number(town.isImport||0)===0)return 'tagai';
   return null;
 }
 export function protocolUrl(town:ApiCommunity|null):string|undefined {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { type ApiCommunity, type WorldEvent } from '../api/client';
 import { useWorldRuntime } from '../hooks/useWorldRuntime';
 import {mapActivity} from '../world/map-activity';
@@ -87,7 +87,7 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
   const stale=lastReceived>30000||!!data.error||data.coverage?.chain?.state==='unavailable'||(data.coverage?.chain?.lagBlocks||0)>30;
   const snapshotOnly=scoped.length>0&&scoped.every(event=>event.identitySource==='atlas-registry');
   const liveLabel=history?'历史回放':data.loading&&!data.lastSync?'正在连接':data.error?'连接中断':!data.lastSync?'尚未同步':stale?'数据延迟':data.connected?'实时世界':'正在重连';
-  const chooseTown=(tick:string)=>{setDirectoryOpen(false);setInspectorOpen(false);setActivityOpen(false);setTown(tick);setSelected(null);setFollowing(null);setPlace(null);setDetailEvent(null);setMap(false);setParams(tick==='*'?{}:{town:tick},{replace:true});};
+  const chooseTown=(tick:string)=>{if(view==='now'&&tick.toUpperCase()==='AIPRO'){navigate('/town/aipro');return;}setDirectoryOpen(false);setInspectorOpen(false);setActivityOpen(false);setTown(tick);setSelected(null);setFollowing(null);setPlace(null);setDetailEvent(null);setMap(false);setParams(tick==='*'?{}:{town:tick},{replace:true});};
   const freeze=(event?:WorldEvent)=>{
     const replay=[...data.events].sort(compareEvents).reverse();
     if(!replay.length)return;
@@ -120,6 +120,7 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
           </>}
         </aside>);
   const playback=(<div className="world-playback"><div className="playback-controls"><button aria-label={playing?'暂停回放':'播放历史'} disabled={!data.events.length} onClick={togglePlay}>{playing?'Ⅱ':'▶'}</button><button disabled={!data.events.length} onClick={()=>history?goLive():freeze()}>{history?'返回此刻':'选择历史时刻'}</button><select aria-label="回放速度" value={speed} onChange={event=>setSpeed(Number(event.target.value))}><option value="1">1×</option><option value="4">4×</option></select><span className="playback-time">{history?`${step+1} / ${history.length} · ${time(observedClock)}${data.events.filter(event=>!history.some(old=>old.eventKey===event.eventKey)).length?' · 有新记录':''}`:snapshotOnly?'已载入链上快照':'持续接收新事件'}</span></div>{history&&<input aria-label="历史时间线" type="range" min="0" max={Math.max(0,history.length-1)} value={step} onChange={event=>{setStep(Number(event.target.value));setPlaying(false);setDetailEvent(null);}}/>}<div className="playback-caption">{sceneActors.length} 位场景居民 / {actors.length} 位已载入参与者{following&&<button onClick={()=>setFollowing(null)}>退出跟随视角 ×</button>}</div></div>);
+  if(view==='now'&&params.get('town')?.toUpperCase()==='AIPRO') return <Navigate replace to="/town/aipro"/>;
   return <div className={`agent-world ${immersive?'is-immersive-world':''} ${immersive&&!map?'is-town-world':''}`}>
     <header className="world-header">
       <Link to="/" className="world-brand" onClick={()=>setMap(true)}><TagClawLogo className="world-brand-logo"/><span>TagClaw<small>THE AGENT WORLD</small></span></Link>
@@ -143,7 +144,7 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
           {immersive&&<div className="directory-note"><span className="mini-sun">✳</span><p>有名字的居民。<br/>有凭据的生活。</p><small>小镇来自 Agent Launch 目录。居民由真实活动进入场景。</small></div>}
         </aside>
         <section className="world-center">
-          <div className="scene-heading"><div><span className="eyebrow">{view==='now'?'THE WORLD, RIGHT NOW':view==='chronicle'?'THE PUBLIC MEMORY':'MEET THE INHABITANTS'}</span><h2>{view==='now'?(map?'社区群岛':currentTown?.tick||'公共城区'):view==='chronicle'?'城中纪事':'遇见居民'}<span>{!immersive?`${town==='*'?'公共城区':town} · ${view==='chronicle'?feedEvents.length+' 条纪事':searched.length+' 位居民'}`:history?date(observedClock):map?'按发行平台探索':currentTown?`${continentNames[launchPlatform(currentTown)||'unmapped']} · 链上生活`:'链上生活'}</span></h2></div><div className="scene-actions">{view==='now'&&!map&&town==='AIPRO'&&<Link to="/town/aipro">步行进入 AIPRO 广场 →</Link>}{sourceHealth}{view==='now'&&<>{!map&&<button aria-pressed={inspectorOpen} onClick={()=>setInspectorOpen(value=>!value)}>详情</button>}<button aria-pressed={bubbles} onClick={()=>setBubbles(value=>!value)}>气泡 {bubbles?'开':'关'}</button><button aria-pressed={map} onClick={()=>setMap(value=>!value)}>{map?'返回街道':'世界总览'}</button></>}</div></div>
+          <div className="scene-heading"><div><span className="eyebrow">{view==='now'?'THE WORLD, RIGHT NOW':view==='chronicle'?'THE PUBLIC MEMORY':'MEET THE INHABITANTS'}</span><h2>{view==='now'?(map?'社区群岛':currentTown?.tick||'公共城区'):view==='chronicle'?'城中纪事':'遇见居民'}<span>{!immersive?`${town==='*'?'公共城区':town} · ${view==='chronicle'?feedEvents.length+' 条纪事':searched.length+' 位居民'}`:history?date(observedClock):map?'按发行平台探索':currentTown?`${continentNames[launchPlatform(currentTown)||'unmapped']} · 链上生活`:'链上生活'}</span></h2></div><div className="scene-actions">{sourceHealth}{view==='now'&&<>{!map&&<button aria-pressed={inspectorOpen} onClick={()=>setInspectorOpen(value=>!value)}>详情</button>}<button aria-pressed={bubbles} onClick={()=>setBubbles(value=>!value)}>气泡 {bubbles?'开':'关'}</button><button aria-pressed={map} onClick={()=>setMap(value=>!value)}>{map?'返回街道':'世界总览'}</button></>}</div></div>
           {view==='now'&&(map?<WorldAtlas towns={towns} events={history?visible:data.events} bubbles={bubbles} activityStatus={mapActivityData.status} onEvent={setAtlasEvent} coveredTokens={data.atlasCoverage?.tokens.map(token=>token.address.toLowerCase())||[]} onTown={chooseTown}/>:<SceneViewport sceneKey={currentTown?.token}><TownScene town={currentTown} residents={sceneActors} selected={selected} event={currentEvent} onResident={chooseResident} onPlace={value=>{setPlace(value);setActivityOpen(false);setInspectorOpen(true);}} bubbles={bubbles} clock={observedClock} onEvent={chooseEvent} live={!history} arrivals={data.liveEvents.filter(event=>town==='*'||eventTown(event,towns)===town)}/></SceneViewport>)}
           {view==='chronicle'&&<div className="feed-filters" role="group" aria-label="纪事类型">
             {([['all','全部'],['post','帖子'],['trade','交易']] as const).map(([value,label])=><button key={value} aria-pressed={feedFilter===value} onClick={()=>{setFeedFilter(value);setChronicleLimit(100);}}>{label}</button>)}
