@@ -1,0 +1,225 @@
+[
+  {
+    "tick": "GStock",
+    "name": "GStock",
+    "token": "0x97acca21fcf2435f1a0bfa94f9c27d412b88c1c8",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 0,
+    "launchProtocol": "gang-agent"
+  },
+  {
+    "tick": "四_A2FFFF",
+    "name": "四_A2FFFF",
+    "token": "0xa2299d7179afebf5667afbf1e4e45fa051a2ffff",
+    "chainId": 56,
+    "logo": "https://static.four.meme/market/102539gaKdg4Oj.jpg",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 0,
+    "launchProtocol": "four-agent-id"
+  },
+  {
+    "tick": "ai",
+    "name": "ai",
+    "token": "0x478318f7ae11140a30c6cd1940b9f9069b9f4444",
+    "chainId": 56,
+    "logo": "https://static.four.meme/market/10249WsWwSJCwz.png",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 1,
+    "launchProtocol": "four-agent-id"
+  },
+  {
+    "tick": "BIBI_87FFFF",
+    "name": "BIBI_87FFFF",
+    "token": "0x967b26d369571a8c5a035aaac1f4b1594287ffff",
+    "chainId": 56,
+    "logo": "https://static.four.meme/market/1025PV7HSlfCUL.png",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 2,
+    "launchProtocol": "four-agent-id"
+  },
+  {
+    "tick": "4AGENT",
+    "name": "4AGENT",
+    "token": "0x5f6a1ce1733fc4834a526798c0e8cf85137effff",
+    "chainId": 56,
+    "logo": "https://gmgn.ai/external-res/0de9a2a3f8c1204002d163dbc6ea08f5_v2.webp",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 3,
+    "launchProtocol": "four-agent-id"
+  },
+  {
+    "tick": "CURVE",
+    "name": "CURVE",
+    "token": "0x04688bf593975d3c1e9abcea9a85e2f070d17777",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 0,
+    "launchProtocol": "flap-id-agent-curve"
+  },
+  {
+    "tick": "BIBI_0F7777",
+    "name": "BIBI_0F7777",
+    "token": "0xb0e974ee58899dd77eb13c2c0a0adefeb30f7777",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 1,
+    "launchProtocol": "flap-id-agent-curve"
+  },
+  {
+    "tick": "ai_797777",
+    "name": "ai_797777",
+    "token": "0x3437febd7b451a2293787fb84fcdf2f9c9797777",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 2,
+    "launchProtocol": "flap-id-agent-curve"
+  },
+  {
+    "tick": "ai_FD7777",
+    "name": "ai_FD7777",
+    "token": "0xbdfcd595f1d8d2d9b8c7e9754e2636cf29fd7777",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 3,
+    "launchProtocol": "flap-id-agent-curve"
+  },
+  {
+    "tick": "CZ_2E7777",
+    "name": "CZ_2E7777",
+    "token": "0xcf75c12e660b4bb06e69e00f052269e89f2e7777",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 4,
+    "launchProtocol": "flap-id-agent-curve"
+  },
+  {
+    "tick": "F_ai",
+    "name": "F_ai",
+    "token": "0xfec7794fead067ba98734413942e76f895537777",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 5,
+    "launchProtocol": "flap-id-agent-curve"
+  },
+  {
+    "tick": "HEYI_CF7777",
+    "name": "HEYI_CF7777",
+    "token": "0x7832c85c1910945d54494424f606e90c92cf7777",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 6,
+    "launchProtocol": "flap-id-agent-curve"
+  },
+  {
+    "tick": ".ai",
+    "name": ".ai",
+    "token": "0x7ffcf7b3b52adcc00c76f50ce2e37bf3c7e215dc",
+    "chainId": 56,
+    "logo": "",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 0
+  },
+  {
+    "tick": "GANG",
+    "name": "GANG",
+    "token": "0x0c6302401aa5325c2e36f170f52c00b1d220b405",
+    "chainId": 56,
+    "logo": "https://gmgn.ai/external-res/05c8160e8c04cbe4cae5decc4781c5d0_v2.webp",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 1,
+    "launchProtocol": "gang-agent"
+  },
+  {
+    "tick": "AIPRO",
+    "name": "AIPRO",
+    "token": "0xfa81c13f979f0dff4a40b68c4aba147fa0723333",
+    "chainId": 56,
+    "logo": "https://pbs.twimg.com/media/HU_VQUXbkAA9soR.jpg",
+    "version": 15,
+    "isImport": 0,
+    "worldPositionIndex": 0
+  },
+  {
+    "tick": "7AGENT",
+    "name": "7AGENT",
+    "token": "0xb726477d1743b02c5fdae5ab094745665eeb7777",
+    "chainId": 56,
+    "logo": "https://flap.mypinata.cloud/ipfs/bafkreifk6xgblwfwsp4e7eazbdikvoqggmsi2kz7dsf53thdwfmnlwpgrq",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 1
+  },
+  {
+    "tick": "NRX",
+    "name": "NRX",
+    "token": "0x798039c08221220661654c21d0e52be625f03333",
+    "chainId": 56,
+    "logo": "https://tiptag.oss-cn-shenzhen.aliyuncs.com/tiptag/1793357644637258.jpeg",
+    "version": 18,
+    "isImport": 0,
+    "worldPositionIndex": 2
+  },
+  {
+    "tick": "4Broker",
+    "name": "4Broker",
+    "token": "0x74361e7d05b6801c3b7d7f1cce9aa0d557d5ffff",
+    "chainId": 56,
+    "logo": "https://static.four.meme/market/1028QMSeXgna81.png",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 3
+  },
+  {
+    "tick": "Gangstar",
+    "name": "Gangstar",
+    "token": "0x6b2ce31a577d92f73516c7a91febc7672247e694",
+    "chainId": 56,
+    "logo": "https://cdn.gang.fun/ipfs/bafkreif2sddmviporzrhzadhdlgi74reiiaswxfajck53vs6i772lucxwq",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 4
+  },
+  {
+    "tick": "蚂蚁",
+    "name": "蚂蚁",
+    "token": "0x5e9305a3d099b44bb7c50e2eedb6ecf5bd322435",
+    "chainId": 56,
+    "logo": "https://cdn.gang.fun/ipfs/bafkreicsswcv6fgzrueftwcr24xje6ybjii774bv6bdso3jnuqismgphim",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 5
+  },
+  {
+    "tick": "大肥鱼_02FEE8",
+    "name": "大肥鱼_02FEE8",
+    "token": "0xd421e4368ac7d3878d589bb60ec22dd54002fee8",
+    "chainId": 56,
+    "logo": "https://cdn.gang.fun/ipfs/bafkreicj5lx4iklcdgqhejxpveul7aeisxthrqerxmaymhupororlucvri",
+    "version": 10,
+    "isImport": 1,
+    "worldPositionIndex": 6
+  }
+]
