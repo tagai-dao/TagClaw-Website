@@ -1,0 +1,25 @@
+/* Original vector scenery inspired by the top-down Smallville reference. */
+.agent-world{--tagclaw-meadow:#b2d881;--tagclaw-map-water-center:#a6ccd2;--tagclaw-map-water-edge:#82b3c1;--pixel-edge:#575e4b;--pixel-paper:#fff9e8}
+.agent-world .world-header{background:#384b40;color:#fff9e8;border-bottom:4px solid #25392e;box-shadow:0 3px 0 #b8ca90;font-family:ui-monospace,monospace}
+.agent-world .world-brand small{letter-spacing:3px;color:#d0ddbb}.agent-world .world-brand-logo{border-radius:3px;box-shadow:2px 2px 0 #23342c}.agent-world .network-chip{border-radius:2px;background:#637b52}
+.agent-world .world-nav button[aria-current=page]{color:#f8d58b}.agent-world .world-nav button[aria-current=page]:after{background:#f8d58b}
+.agent-world .floating-directory-toggle,.agent-world .scene-actions,.agent-world .scene-heading>div:first-child,.agent-world .town-directory,.agent-world .world-inspector,.agent-world .recent-life,.agent-world .town-activity-toggle,.agent-world .world-live-caption,.agent-world .world-playback,.agent-world .planet-legend{border:2px solid var(--pixel-edge);border-radius:3px;background:var(--pixel-paper);box-shadow:3px 3px 0 #37473340;backdrop-filter:none}
+.agent-world .town-directory .directory-heading{background:var(--pixel-paper)}
+.agent-world .scene-actions button,.agent-world .town-choice,.agent-world .town-monogram{border-radius:2px}.agent-world .town-choice.is-active{background:#e0e9c5;box-shadow:inset 3px 0 #687e4f}.agent-world .scene-actions button[aria-pressed=true]{background:#e0e9c5;border-color:#7a8c60;color:#384b40}
+.agent-world .town-landscape{image-rendering:pixelated}.agent-world .town-camera{background:#b2d881}
+.agent-world .place-label{border:2px solid #77725a;border-radius:2px;background:#fff9e8;box-shadow:2px 2px 0 #596b4440;padding:5px 10px}.agent-world .place-label strong{font-family:ui-monospace,monospace;color:#4c5140}.agent-world .place-label span{font-size:9px;color:#7f826c}.agent-world .place-label.is-active{border-color:#a77339;background:#fff0c6}
+.agent-world .resident-sprite{image-rendering:pixelated;filter:drop-shadow(2px 2px 0 #3d4c3540)}.agent-world .resident-sprite span{border-radius:0}.agent-world .resident-name{border-radius:1px;background:#fffae9eb;color:#354436;font-family:ui-monospace,monospace;border:1px solid #727761}
+.agent-world .speech-bubble,.agent-world .action-bubble{border:2px solid #424b3b;border-radius:3px;background:#fffdf1;color:#354436;box-shadow:3px 3px 0 #37473335;font-family:ui-monospace,monospace}.agent-world .world-pulse{border-radius:2px;background:#fff9e8;border:1px solid #727761}.agent-world .quiet-town{border-radius:3px;background:#fff9e8ed;border:2px solid #77725a;box-shadow:3px 3px 0 #37473325}
+.agent-world .planet-community .planet-activity-bubble{border-radius:3px;border:2px solid #667157;background:#fff9e8;box-shadow:3px 3px 0 #37473325}.agent-world .planet-geography{image-rendering:pixelated}.agent-world .scene-heading h2{font-family:ui-monospace,monospace}
+@media(max-width:760px){.agent-world .world-brand small{letter-spacing:1px}.agent-world .place-label{padding:4px 6px}.agent-world .scene-actions{max-width:calc(100vw - 125px)}}
+/* Archipelago overview: tile coastlines, paper signposts and readable markers. */
+.agent-world .planet-viewport.is-camera{background:#83b9c6}
+.agent-world .planet-continent-name{padding:8px 16px;background:#fff5d9;border:2px solid #60704f;border-radius:2px;box-shadow:4px 4px 0 #3b66593b;min-width:116px;text-align:center}
+.agent-world .planet-continent-name h4{font-family:ui-monospace,monospace;font-size:20px;font-weight:800;letter-spacing:2px;color:#43543d;text-shadow:none;margin:0 0 3px}
+.agent-world .planet-continent-name span{color:#6d7758;font-size:10px;letter-spacing:1px}
+.agent-world .planet-community>button{border-radius:2px;border:2px solid #6d7657;background:#fff9e8;box-shadow:3px 3px 0 #435a3833;padding:5px 10px;transition:background .15s,box-shadow .15s}
+.agent-world .planet-community>button:hover{background:#fff0bd;box-shadow:4px 4px 0 #435a3855}
+.agent-world .planet-community>button:focus-visible{outline:3px solid #374e3b;outline-offset:4px}
+.agent-world .planet-community strong{font-family:ui-monospace,monospace;color:#384b40;text-shadow:none}
+.agent-world .planet-community small{color:#70765b}.agent-world .planet-town-dot{border-radius:0;width:7px;height:7px;border:1px solid #60704f;box-shadow:none;background:#bdc6a4}.agent-world .planet-town-dot.has-life{background:#6fa16a;box-shadow:0 0 0 2px #dce9bf}
+.agent-world .planet-island-bubbles:after{border-radius:0;background:#fff9e8}.agent-world .planet-legend i{border-radius:0}

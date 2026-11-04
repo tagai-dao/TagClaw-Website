@@ -11,24 +11,39 @@ const buildings: {place:Place;title:string;subtitle:string;x:number;y:number;col
   {place:'workshop',title:'IPShare 社区工作室',subtitle:'IPShare · 持有与质押',x:705,y:450,color:'#827e9d'},
 ];
 function Cottage({x,y,color,width=130,active=false}: {x:number;y:number;color:string;width?:number;active?:boolean}) {
-  return <g transform={`translate(${x} ${y})`}>
-    <ellipse cx="0" cy="52" rx={width*.65} ry="15" fill="#374939" opacity=".1" />
-    <path d={`M${-width/2},0 L${width/2},0 L${width/2},48 L${-width/2},48Z`} fill="#fff7e6" stroke="#e1d0b0" strokeWidth="2"/>
-    <path d={`M${-width/2-13},2 L-6,-50 L${width/2+13},-8 L${width/2},7 L-6,-31 L${-width/2},14Z`} fill={color}/>
-    <path d={`M-6,-50 L${width/2+13},-8 L${width/2+13},2 L-6,-38Z`} fill="#ffffff" opacity=".14"/>
-    <rect x="-17" y="15" width="26" height="33" rx="4" fill="#786c58"/>
-    <rect x={-width/2+13} y="16" width="20" height="18" rx="3" fill={active?'#f5d984':'#c0d9ce'} stroke="#e5d8b9" strokeWidth="3"/>
-    <rect x={width/2-34} y="16" width="20" height="18" rx="3" fill={active?'#f5d984':'#c0d9ce'} stroke="#e5d8b9" strokeWidth="3"/>
-    <path d={`M${-width/2-2},49H${width/2+2}`} stroke="#b9a27f" strokeWidth="4"/>
+  const scale=Math.min(1,width/120);
+  width=Math.max(120,width);
+  const w=width/2;
+  return <g transform={`translate(${x} ${y}) scale(${scale})`} shapeRendering="crispEdges">
+    <rect x={-w+6} y="-70" width={width+8} height="130" fill="#3b483c" opacity=".18"/>
+    <rect x={-w-5} y="-82" width={width+10} height="134" fill="#5e625c"/>
+    <rect x={-w} y="-77" width={width} height="124" fill="#e0c692"/>
+    {Array.from({length:15},(_,i)=><path key={i} d={`M${-w} ${-70+i*8}H${w}`} stroke="#b99a68" strokeWidth="1"/>)}
+    <path d={`M${-w} 47V-77H${w}V47`} fill="none" stroke="#f4ecd4" strokeWidth="7"/>
+    <path d={`M${-w+4} 45H-16 M16 45H${w-4}`} stroke="#f4ecd4" strokeWidth="7"/>
+    <rect x={-w+9} y="-67" width={width-18} height="19" fill={color} stroke="#695947" strokeWidth="3"/>
+    {Array.from({length:Math.max(2,Math.floor(width/25))},(_,i)=><g key={i} transform={`translate(${-w+15+i*23} -65)`}><rect width="5" height="12" fill="#eacb77"/><rect x="7" y="2" width="5" height="10" fill="#8babb1"/><rect x="14" width="4" height="12" fill="#b96f58"/></g>)}
+    {[-1,1].map(side=><g key={side} transform={`translate(${side*width*.26} -12)`}>
+      <rect x="-21" y="-9" width="42" height="27" fill="#80604d"/>
+      <rect x="-21" y="-13" width="42" height="25" fill={active?'#f2d997':'#c6a573'} stroke="#735d49" strokeWidth="2"/>
+      <rect x="-8" y="-28" width="16" height="12" fill={color} stroke="#655c50" strokeWidth="2"/>
+      <rect x="-8" y="19" width="16" height="12" fill={color} stroke="#655c50" strokeWidth="2"/>
+      <rect x="-12" y="-8" width="12" height="9" fill="#f7edcd"/><rect x="6" y="-4" width="6" height="6" fill="#628277"/>
+    </g>)}
+    <rect x="-15" y="43" width="30" height="14" fill="#a78559" stroke="#705d44" strokeWidth="2"/>
+    <path d="M-14 48H14 M-14 53H14" stroke="#d9bf8d" strokeWidth="2"/>
   </g>;
 }
 function Tree({x,y,size=1}: {x:number;y:number;size?:number}) {
-  return <g transform={`translate(${x} ${y}) scale(${size})`}>
-    <ellipse cy="12" rx="22" ry="8" fill="#263d32" opacity=".1"/>
-    <path d="M0,-10V12" stroke="#85734b" strokeWidth="7"/>
-    <circle cx="-10" cy="-22" r="18" fill="#9aae72"/><circle cx="10" cy="-24" r="21" fill="#819d66"/><circle cy="-39" r="20" fill="#a3b780"/>
+  return <g transform={`translate(${x} ${y}) scale(${size})`} shapeRendering="crispEdges">
+    <rect x="-15" y="5" width="34" height="10" fill="#587643" opacity=".25"/>
+    <path d="M-4 -13H5V13H-7V7H-4Z" fill="#956a42"/>
+    <path d="M-22 -16V-33H-14V-44H-5V-50H7V-44H17V-34H24V-13H16V-5H-14V-12H-22Z" fill="#486c4c"/>
+    <path d="M-18 -22V-34H-10V-43H5V-38H15V-29H19V-17H8V-12H-10V-19Z" fill="#719954"/>
+    <path d="M-10 -34V-40H3V-34H11V-26H-3V-22H-13V-30Z" fill="#9bbe68"/>
   </g>;
 }
+
 export default function TownScene({town,residents,selected,event,onResident,onPlace,bubbles,clock,live=true,arrivals=[],onEvent}: {
   town:ApiCommunity | null;residents:Resident[];selected:string | null;event:WorldEvent | null;
   onResident:(id:string)=>void;onPlace:(place:Place)=>void;bubbles:boolean;clock:number;live?:boolean;arrivals?:WorldEvent[];onEvent?:(event:WorldEvent)=>void;
@@ -58,22 +73,23 @@ export default function TownScene({town,residents,selected,event,onResident,onPl
     const from=previousPositions.get(id),to=positions.get(id);
     if(from&&to&&(from.x!==to.x||from.y!==to.y))positions.set(id,walkPosition(from,to,Date.now()-action.startedAt));
   }
-  const street=expanded?'M0 305H1000V380H0Z M300 0H365V650H300Z M640 0H705V650H640Z':'M0 298Q270 278 450 307L450 0H540L536 305Q790 282 1000 316V390Q735 363 535 388V650H441V384Q225 357 0 388Z';
+  const street=expanded?'M0 305H1000V380H0Z M300 0H365V650H300Z M640 0H705V650H640Z':'M0 305H445V0H535V305H1000V385H535V650H445V385H0Z';
   const trees=Array.from({length:25},(_,i)=>({x:65+(stableHash(`tree-x-${i}`)%850),y:80+(stableHash(`tree-y-${i}`)%490)}))
     .filter(p=>!((p.y>285&&p.y<385)||(p.x>420&&p.x<560))&&!places.some(building=>Math.abs(p.x-building.x)<125&&Math.abs(p.y-building.y)<110));
   return <div className="town-stage" aria-label={`${town?.name || '公共城区'}：链上事件驱动的示意街道`}>
     <svg className="town-landscape" viewBox="0 0 1000 650" role="img" aria-label={places.map(building=>building.title).join("、")+"组成的街区"}>
       <defs>
-        <pattern id="meadow-dots" width="29" height="29" patternUnits="userSpaceOnUse"><circle cx="8" cy="13" r="1" fill="#99ad7c" opacity=".27"/></pattern>
+        <pattern id="meadow-dots" width="29" height="29" patternUnits="userSpaceOnUse"><path d="M6 12h3v3H6z M10 9h2v3h-2z M21 23h3v2h-3z" fill="#83b25e" opacity=".55"/></pattern>
         <pattern id="street-stones" width="27" height="18" patternUnits="userSpaceOnUse"><path d="M0 0H27V18H0Z M13 0V9 M0 9H27 M7 9V18" fill="none" stroke="#d4c6a6" strokeWidth=".65" opacity=".45"/></pattern>
         <linearGradient id="pond" x2="1" y2="1"><stop stopColor="#bad8d2"/><stop offset="1" stopColor="#91beb7"/></linearGradient>
       </defs>
-      <rect width="1000" height="650" fill="var(--tagclaw-meadow)"/>
+      <rect width="1000" height="650" fill="#b2d881"/>
       <rect width="1000" height="650" fill="url(#meadow-dots)"/>
-      <path d={street} fill="#faf2dd" stroke="#cfcca9" strokeWidth="8"/>
+      <path d={street} fill="#f0dfac" stroke="#c6b884" strokeWidth="8"/>
       <path d={street} fill="url(#street-stones)"/>
       <path d="M0 500Q65 453 110 510T120 650H0Z" fill="url(#pond)"/>
       <path d="M0 520Q62 478 90 520 M20 553Q60 530 98 552 M29 595Q62 574 102 590" fill="none" stroke="#e0ece0" strokeWidth="2" opacity=".65"/>
+      {Array.from({length:22},(_,i)=><Tree key={`border-${i}`} x={22+i*46} y={40} size={.75}/>)}
       {trees.map((p,i)=><Tree key={i} {...p} size={.65+(i%3)*.15}/>)}
       {places.map(building=><g key={building.place}>
         <Cottage x={building.x} y={building.y} color={building.color} active={live&&[...scheduler.current.actions.values()].some(action=>eventPlace(action.event)===building.place)} width={expanded?140:building.place==='market'?168:building.place==='square'?185:145}/>
