@@ -1,0 +1,10 @@
+.aipro-walk{max-width:720px;margin:auto;padding:24px;color:#27352a;background:#faf7ea;min-height:100vh}
+.aipro-walk h1{font-size:clamp(24px,5vw,44px);margin:20px 0 4px}
+.aipro-walk p{margin:12px 0;line-height:1.6}
+.aipro-grid{display:grid;grid-template-columns:repeat(11,1fr);overflow:hidden;border:4px solid #374c42;margin:16px 0;background:#a3bc75}
+.aipro-grid>*{aspect-ratio:1;display:grid;place-items:center;font-size:clamp(16px,4vw,34px);padding:0}
+.aipro-grid .water{background:#659ca7}.aipro-grid .tree{background:#94ad6d}.aipro-grid .grass{cursor:crosshair;background:linear-gradient(140deg,#adbf7d,#a1b978)}
+.aipro-grid .building{background:#d9bc82;border:1px solid #977741;cursor:pointer}
+.aipro-walk input,.aipro-walk form button{border:1px solid #796b49;padding:6px;border-radius:4px}
+.aipro-walk section img{float:right;image-rendering:pixelated;margin-left:1em}
+.aipro-grid svg{width:82%;height:82%;pointer-events:none}

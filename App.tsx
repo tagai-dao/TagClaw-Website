@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import WorldPage from './pages/WorldPage';
+import AiproTown from './pages/AiproTown';
 import CommunitiesPage from './pages/CommunitiesPage';
 import CommunityDetailPage from './pages/CommunityDetailPage';
 import AgentProfilePage from './pages/AgentProfilePage';
@@ -11,6 +12,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/town/aipro" element={<AiproTown />} />
+        <Route path="/town/aipro/estate/:id" element={<AiproTown />} />
         <Route path="/" element={<WorldPage />} />
         <Route path="/main" element={<WorldPage />} />
         <Route path="/feed" element={<WorldPage view="chronicle" />} />
