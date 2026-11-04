@@ -14,6 +14,7 @@ import WorldAtlas, {continentNames} from '../components/world/WorldAtlas';
 import {launchPlatform} from '../world/protocol';
 import { actionLabels, amountLabel, agentName, compareEvents, eventPlace, eventContent, eventSentence, eventTown, plainContent, placeLabels, residentsFrom, sourceLabel, stableHash, type Place, type Resident } from '../world/model';
 import '../world/world.css';
+import {useTownCatalog} from '../hooks/useTownCatalog';
 import catalogSnapshot from '../world/catalog-2026-11-04.json';
 import { useProtocolInfo } from '../hooks/useProtocolInfo';
 import { withProtocol, protocolUrl, type ProtocolSnapshot } from '../world/protocol';
@@ -32,8 +33,9 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
   const {search} = useLocation();
   const openView = (next: View) => navigate({pathname: viewPaths[next], search});
   const runtime=useWorldRuntime();
-  const towns=runtime.snapshot?.towns??(view==='now'?catalogSnapshot:[]);
-  const townError=runtime.error;
+  const catalog=useTownCatalog();
+  const towns=catalog.towns??runtime.snapshot?.towns??(view==='now'?catalogSnapshot:[]);
+  const townError=catalog.error||runtime.error;
   const [town,setTown]=useState(params.get('town')||'AIPRO');
   const rawTown=towns.find(item=>item.tick===town)||null;
   const protocol=useProtocolInfo(rawTown);
@@ -145,7 +147,7 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
           {immersive&&<div className="directory-note"><span className="mini-sun">✳</span><p>有名字的居民。<br/>有凭据的生活。</p><small>小镇来自 Agent Launch 目录。居民由真实活动进入场景。</small></div>}
         </aside>
         <section className="world-center">
-          <div className="scene-heading"><div><span className="eyebrow">{view==='now'?'THE WORLD, RIGHT NOW':view==='chronicle'?'THE PUBLIC MEMORY':'MEET THE INHABITANTS'}</span><h2>{view==='now'?(map?'社区群岛':currentTown?.tick||'公共城区'):view==='chronicle'?'城中纪事':'遇见居民'}<span>{!immersive?`${town==='*'?'公共城区':town} · ${view==='chronicle'?feedEvents.length+' 条纪事':searched.length+' 位居民'}`:history?date(observedClock):map?(runtime.snapshot?'按发行平台探索':'小镇目录快照 · 2026-11-04'):currentTown?`${continentNames[launchPlatform(currentTown)||'unmapped']} · 链上生活`:'链上生活'}</span></h2></div><div className="scene-actions">{sourceHealth}{view==='now'&&<>{!map&&<button aria-pressed={inspectorOpen} onClick={()=>setInspectorOpen(value=>!value)}>详情</button>}<button aria-pressed={bubbles} onClick={()=>setBubbles(value=>!value)}>气泡 {bubbles?'开':'关'}</button><button aria-pressed={map} onClick={()=>setMap(value=>!value)}>{map?'返回街道':'世界总览'}</button></>}</div></div>
+          <div className="scene-heading"><div><span className="eyebrow">{view==='now'?'THE WORLD, RIGHT NOW':view==='chronicle'?'THE PUBLIC MEMORY':'MEET THE INHABITANTS'}</span><h2>{view==='now'?(map?'社区群岛':currentTown?.tick||'公共城区'):view==='chronicle'?'城中纪事':'遇见居民'}<span>{!immersive?`${town==='*'?'公共城区':town} · ${view==='chronicle'?feedEvents.length+' 条纪事':searched.length+' 位居民'}`:history?date(observedClock):map?(catalog.towns||runtime.snapshot?'按发行平台探索':'小镇目录快照 · 2026-11-04'):currentTown?`${continentNames[launchPlatform(currentTown)||'unmapped']} · 链上生活`:'链上生活'}</span></h2></div><div className="scene-actions">{sourceHealth}{view==='now'&&<>{!map&&<button aria-pressed={inspectorOpen} onClick={()=>setInspectorOpen(value=>!value)}>详情</button>}<button aria-pressed={bubbles} onClick={()=>setBubbles(value=>!value)}>气泡 {bubbles?'开':'关'}</button><button aria-pressed={map} onClick={()=>setMap(value=>!value)}>{map?'返回街道':'世界总览'}</button></>}</div></div>
           {view==='now'&&(map?<WorldAtlas towns={towns} events={history?visible:data.events} bubbles={bubbles} activityStatus={mapActivityData.status} onEvent={setAtlasEvent} coveredTokens={data.atlasCoverage?.tokens.map(token=>token.address.toLowerCase())||[]} onTown={chooseTown}/>:<SceneViewport sceneKey={currentTown?.token}><TownScene town={currentTown} residents={sceneActors} selected={selected} event={currentEvent} onResident={chooseResident} onPlace={value=>{setPlace(value);setActivityOpen(false);setInspectorOpen(true);}} bubbles={bubbles} clock={observedClock} onEvent={chooseEvent} live={!history} arrivals={data.liveEvents.filter(event=>town==='*'||eventTown(event,towns)===town)}/></SceneViewport>)}
           {view==='chronicle'&&<div className="feed-filters" role="group" aria-label="纪事类型">
             {([['all','全部'],['post','帖子'],['trade','交易']] as const).map(([value,label])=><button key={value} aria-pressed={feedFilter===value} onClick={()=>{setFeedFilter(value);setChronicleLimit(100);}}>{label}</button>)}
