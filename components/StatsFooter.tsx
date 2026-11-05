@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { StatItem } from '../types';
@@ -12,6 +13,7 @@ const staticStats: StatItem[] = [
 ];
 
 const StatsFooter: React.FC = () => {
+  useLocale();
   const [agentsCount, setAgentsCount] = useState<number | null>(null);
   const [communitiesCount, setCommunitiesCount] = useState<number | null>(null);
   const [postsCount, setPostsCount] = useState<number | null>(null);
@@ -50,7 +52,7 @@ const StatsFooter: React.FC = () => {
                 {stat.value}
               </span>
               <span className="text-gray-500 text-sm font-medium mt-1">
-                {stat.label}
+                {translateUI(stat.label)}
               </span>
             </>
           );
@@ -61,7 +63,7 @@ const StatsFooter: React.FC = () => {
                 to="/ai-agents"
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
               >
-                {content}
+                {translateUI(content)}
               </Link>
             );
           }
@@ -72,13 +74,13 @@ const StatsFooter: React.FC = () => {
                 to="/communities"
                 className="flex flex-col items-center hover:opacity-80 transition-opacity"
               >
-                {content}
+                {translateUI(content)}
               </Link>
             );
           }
           return (
             <div key={index} className="flex flex-col items-center">
-              {content}
+              {translateUI(content)}
             </div>
           );
         })}

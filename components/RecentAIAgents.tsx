@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AgentCardItem } from '../types';
@@ -22,7 +23,7 @@ const AgentCard = ({ agent }: { agent: AgentCardItem }) => (
   >
     <div className="flex items-start gap-3">
       <div className="relative shrink-0">
-        {agent.avatar ? (
+        {translateUI(agent.avatar ? (
           <img
             src={agent.avatar}
             alt={agent.name}
@@ -32,9 +33,9 @@ const AgentCard = ({ agent }: { agent: AgentCardItem }) => (
               (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
             }}
           />
-        ) : null}
+        ) : null)}
         <div className={`w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl font-bold ${agent.avatar ? 'hidden' : ''}`}>
-          {agent.initial}
+          {translateUI(agent.initial)}
         </div>
         {agent.isVerified && (
           <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center border-2 border-white">
@@ -46,15 +47,14 @@ const AgentCard = ({ agent }: { agent: AgentCardItem }) => (
       </div>
       <div className="min-w-0 flex-1">
         <div className="font-bold text-gray-900 truncate">{agent.name}</div>
-        <div className="text-sm text-gray-500 mt-0.5">{agent.joined}</div>
+        <div className="text-sm text-gray-500 mt-0.5">{translateUI(agent.joined)}</div>
         <span className="inline-flex items-center gap-1 text-sm text-sky-500 mt-1">
-          <span>X</span>
+          <span>{translateUI("X")}</span>
           <span>{agent.handle}</span>
         </span>
         {agent.followers != null && agent.followers > 0 && (
           <span className="inline-block mt-2 text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded">
-            {agent.followers >= 1000 ? `${(agent.followers / 1000).toFixed(1)}K` : agent.followers} followers
-          </span>
+            {translateUI(agent.followers >= 1000 ? `${(agent.followers / 1000).toFixed(1)}K` : agent.followers)}{translateUI(" followers ")}</span>
         )}
       </div>
     </div>
@@ -62,6 +62,7 @@ const AgentCard = ({ agent }: { agent: AgentCardItem }) => (
 );
 
 const RecentAIAgents: React.FC = () => {
+  useLocale();
   const [agents, setAgents] = useState<AgentCardItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -92,21 +93,19 @@ const RecentAIAgents: React.FC = () => {
               <RobotIcon />
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-400" aria-hidden />
             </div>
-            <h2 className="text-lg font-bold">Recent AI Agents</h2>
+            <h2 className="text-lg font-bold">{translateUI("Recent AI Agents")}</h2>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-gray-700 font-semibold">{agents.length} active</span>
-            <Link to="/ai-agents" className="text-sky-600 hover:underline font-medium text-sm flex items-center gap-1">
-              View All
-              <span aria-hidden>→</span>
+            <span className="text-gray-700 font-semibold">{translateUI(agents.length)}{translateUI(" active")}</span>
+            <Link to="/ai-agents" className="text-sky-600 hover:underline font-medium text-sm flex items-center gap-1">{translateUI("View All ")}<span aria-hidden>→</span>
             </Link>
           </div>
         </div>
         <div className="bg-white rounded-b-lg border border-t-0 border-gray-200 p-4 overflow-x-auto">
           {loading ? (
-            <div className="py-4 text-center text-gray-500 text-sm">Loading agents...</div>
+            <div className="py-4 text-center text-gray-500 text-sm">{translateUI("Loading agents...")}</div>
           ) : agents.length === 0 ? (
-            <div className="py-4 text-center text-gray-500 text-sm">No agents found</div>
+            <div className="py-4 text-center text-gray-500 text-sm">{translateUI("No agents found")}</div>
           ) : (
             <div className="flex gap-4 pb-2">
               {agents.map((agent) => (

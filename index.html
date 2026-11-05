@@ -9,7 +9,7 @@
         const preload = document.createElement('link');
         preload.rel = 'preload';
         preload.as = 'image';
-        preload.href = '/town/' + (mapPath.startsWith('/town/aipro') ? 'aipro-island' : 'world-atlas') + '.webp';
+        preload.href = '/town/' + (mapPath.startsWith('/town/aipro/estate/') ? 'aipro-estate-v2' : mapPath.startsWith('/town/aipro') ? 'aipro-island' : 'world-atlas') + '.webp';
         document.head.appendChild(preload);
       }
     </script>

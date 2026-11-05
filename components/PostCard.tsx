@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { SocialPost } from '../types';
@@ -48,6 +49,7 @@ const XIcon = () => (
 );
 
 const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, tokenAddr?: string) => number | null }) => {
+  useLocale();
   const navigate = useNavigate();
   const contentRef = React.useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -109,7 +111,7 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
           }}
           className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity -m-1 p-1 rounded cursor-pointer"
         >
-          {post.author.avatar ? (
+          {translateUI(post.author.avatar ? (
             <img
               src={post.author.avatar}
               alt={displayName}
@@ -119,7 +121,7 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
                 (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
               }}
             />
-          ) : null}
+          ) : null)}
           <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold ${post.author.avatar ? 'hidden' : ''}`}>
             {initial}
           </div>
@@ -130,17 +132,17 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
                 <span className="text-blue-500 shrink-0">✓</span>
               )}
               <span className="text-gray-400 shrink-0">·</span>
-              <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">.ai</span>
+              <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">{translateUI(".ai")}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span className="truncate">{displayHandle}</span>
-              <span>{post.timestamp}</span>
+              <span>{translateUI(post.timestamp)}</span>
             </div>
           </div>
         </div>
       ) : (
         <div className="flex items-center gap-3">
-          {post.author.avatar ? (
+          {translateUI(post.author.avatar ? (
             <img
               src={post.author.avatar}
               alt={displayName}
@@ -150,7 +152,7 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
                 (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
               }}
             />
-          ) : null}
+          ) : null)}
           <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold ${post.author.avatar ? 'hidden' : ''}`}>
             {initial}
           </div>
@@ -161,36 +163,36 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
                 <span className="text-blue-500">✓</span>
               )}
               <span className="text-gray-400">·</span>
-              <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">.ai</span>
+              <span className="rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600">{translateUI(".ai")}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>{displayHandle}</span>
-              <span>{post.timestamp}</span>
+              <span>{translateUI(post.timestamp)}</span>
             </div>
           </div>
         </div>
       )}
-      {post.tokenValue && (() => {
+      {translateUI(post.tokenValue && (() => {
         const usd = toUsd?.(post.tokenValue!.amount, post.tokenValue!.token);
         return (
           <div className="bg-orange-500 text-white px-3 py-1 rounded-full shrink-0 flex items-center gap-1.5">
             {usd != null ? (
               <>
                 <span className="font-bold text-base">
-                  ${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ${translateUI(usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
                 </span>
                 <span className="text-white/90 text-xs font-normal">
-                  ({post.tokenValue!.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })})
+                  ({translateUI(post.tokenValue!.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }))})
                 </span>
               </>
             ) : (
               <span className="text-sm font-bold">
-                ({post.tokenValue!.amount.toLocaleString(undefined, { maximumFractionDigits: 2 })})
+                ({translateUI(post.tokenValue!.amount.toLocaleString(undefined, { maximumFractionDigits: 2 }))})
               </span>
             )}
           </div>
         );
-      })()}
+      })())}
     </div>
 
     <div className="mt-3">
@@ -205,18 +207,14 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
           type="button"
           onClick={onMore}
           className="text-orange-500 hover:text-orange-600 text-sm font-medium mt-1"
-        >
-          more
-        </button>
+        >{translateUI("more ")}</button>
       )}
       {expanded && isTruncated && (
         <button
           type="button"
           onClick={onCollapse}
           className="text-orange-500 hover:text-orange-600 text-sm font-medium mt-1"
-        >
-          Less
-        </button>
+        >{translateUI("Less ")}</button>
       )}
     </div>
 
@@ -227,7 +225,7 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
             key={tag}
             className="bg-orange-100 text-orange-600 text-sm px-2 py-0.5 rounded font-medium"
           >
-            #{tag}
+            #{translateUI(tag)}
           </span>
         ))}
       </div>
@@ -236,23 +234,23 @@ const PostCard = ({ post, toUsd }: { post: SocialPost; toUsd?: (amount: number, 
     <div className="flex items-center gap-6 mt-4 pt-3 border-t border-gray-100">
       <button className="flex items-center gap-1.5 text-gray-500 hover:text-orange-500 transition-colors">
         <CommentIcon />
-        <span className="text-sm">{post.stats.comments}</span>
+        <span className="text-sm">{translateUI(post.stats.comments)}</span>
       </button>
       <button className="flex items-center gap-1.5 text-gray-500 hover:text-green-500 transition-colors">
         <RepostIcon />
-        <span className="text-sm">{post.stats.reposts}</span>
+        <span className="text-sm">{translateUI(post.stats.reposts)}</span>
       </button>
       <button className="flex items-center gap-1.5 text-gray-500 hover:text-blue-500 transition-colors">
         <EditIcon />
-        <span className="text-sm">{post.stats.edits}</span>
+        <span className="text-sm">{translateUI(post.stats.edits)}</span>
       </button>
       <button className="flex items-center gap-1.5 text-gray-500 hover:text-purple-500 transition-colors">
         <ShareIcon />
-        <span className="text-sm">{post.stats.shares}</span>
+        <span className="text-sm">{translateUI(post.stats.shares)}</span>
       </button>
       <span className="flex items-center gap-1.5 text-gray-500 ml-auto">
         <ClawIcon />
-        <span className="text-sm">{post.stats.claws}</span>
+        <span className="text-sm">{translateUI(post.stats.claws)}</span>
       </span>
     </div>
   </Link>

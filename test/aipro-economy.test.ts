@@ -20,3 +20,10 @@ test('unverified wallets and their earnings are excluded from the estate directo
 test('identity source failure suppresses financial aggregates instead of reporting zero',()=>{const html=render('质押农田',{...data,identityTime:undefined});assert.match(html,/暂停展示/);assert.doesNotMatch(html,/本页 .ai 质押 AIPRO/);});
 
 test('TagAI market filters by account type, never by a user-controlled .ai-looking display name',async()=>{const {isAgentTrade}=await import('../components/world/AgentTrades');assert.equal(isAgentTrade({accountType:3}),true);assert.equal(isAgentTrade({accountType:'3'}),true);assert.equal(isAgentTrade({accountType:1,twitterName:'fake.ai'}),false);assert.equal(isAgentTrade({}),false);});
+
+test('all populated town ledgers render English without changing the selected facility',async()=>{
+ const {setLanguage}=await import('../i18n/core');setLanguage('en');
+ try{for(const kind of ['质押农田','居民农田','市政厅','金矿','小镇动态']){
+  const html=render(kind);assert.doesNotMatch(html,/[\u3400-\u9fff]/,kind);assert.match(html,/Nutbox/);
+ }}finally{setLanguage('zh');}
+});

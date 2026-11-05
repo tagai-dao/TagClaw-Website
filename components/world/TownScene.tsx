@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../../i18n/react';
 import React, {useEffect,useRef,useState} from 'react';
 import {SceneScheduler,walkPosition} from '../../world/scheduler';
 import { townFacilities } from '../../world/capabilities';
@@ -11,6 +12,7 @@ const buildings: {place:Place;title:string;subtitle:string;x:number;y:number;col
   {place:'workshop',title:'IPShare 社区工作室',subtitle:'IPShare · 持有与质押',x:705,y:450,color:'#827e9d'},
 ];
 function Cottage({x,y,color,width=130,active=false}: {x:number;y:number;color:string;width?:number;active?:boolean}) {
+  useLocale();
   return <g transform={`translate(${x} ${y})`}>
     <ellipse cx="0" cy="52" rx={width*.65} ry="15" fill="#374939" opacity=".1" />
     <path d={`M${-width/2},0 L${width/2},0 L${width/2},48 L${-width/2},48Z`} fill="#fff7e6" stroke="#e1d0b0" strokeWidth="2"/>
@@ -23,6 +25,7 @@ function Cottage({x,y,color,width=130,active=false}: {x:number;y:number;color:st
   </g>;
 }
 function Tree({x,y,size=1}: {x:number;y:number;size?:number}) {
+  useLocale();
   return <g transform={`translate(${x} ${y}) scale(${size})`}>
     <ellipse cy="12" rx="22" ry="8" fill="#263d32" opacity=".1"/>
     <path d="M0,-10V12" stroke="#85734b" strokeWidth="7"/>
@@ -33,6 +36,7 @@ export default function TownScene({town,residents,selected,event,onResident,onPl
   town:ApiCommunity | null;residents:Resident[];selected:string | null;event:WorldEvent | null;
   onResident:(id:string)=>void;onPlace:(place:Place)=>void;bubbles:boolean;clock:number;live?:boolean;arrivals?:WorldEvent[];onEvent?:(event:WorldEvent)=>void;
 }) {
+  useLocale();
   const scheduler=useRef(new SceneScheduler());
   const initialized=useRef(false),previousTown=useRef(town?.token);
   const [,setPulse]=useState(0);
@@ -61,8 +65,8 @@ export default function TownScene({town,residents,selected,event,onResident,onPl
   const street=expanded?'M0 305H1000V380H0Z M300 0H365V650H300Z M640 0H705V650H640Z':'M0 298Q270 278 450 307L450 0H540L536 305Q790 282 1000 316V390Q735 363 535 388V650H441V384Q225 357 0 388Z';
   const trees=Array.from({length:25},(_,i)=>({x:65+(stableHash(`tree-x-${i}`)%850),y:80+(stableHash(`tree-y-${i}`)%490)}))
     .filter(p=>!((p.y>285&&p.y<385)||(p.x>420&&p.x<560))&&!places.some(building=>Math.abs(p.x-building.x)<125&&Math.abs(p.y-building.y)<110));
-  return <div className="town-stage" aria-label={`${town?.name || '公共城区'}：链上事件驱动的示意街道`}>
-    <svg className="town-landscape" viewBox="0 0 1000 650" role="img" aria-label={places.map(building=>building.title).join("、")+"组成的街区"}>
+  return <div className="town-stage" aria-label={translateUI(`${town?.name || translateUI('公共城区')}：链上事件驱动的示意街道`)}>
+    <svg className="town-landscape" viewBox="0 0 1000 650" role="img" aria-label={translateUI(places.map(building=>building.title).join("、")+"组成的街区")}>
       <defs>
         <pattern id="meadow-dots" width="29" height="29" patternUnits="userSpaceOnUse"><circle cx="8" cy="13" r="1" fill="#99ad7c" opacity=".27"/></pattern>
         <pattern id="street-stones" width="27" height="18" patternUnits="userSpaceOnUse"><path d="M0 0H27V18H0Z M13 0V9 M0 9H27 M7 9V18" fill="none" stroke="#d4c6a6" strokeWidth=".65" opacity=".45"/></pattern>
@@ -83,13 +87,13 @@ export default function TownScene({town,residents,selected,event,onResident,onPl
       <g fill="#8e8d6d"><rect x="92" y="262" width="80" height="5" rx="2"/><rect x="105" y="267" width="5" height="8"/><rect x="150" y="267" width="5" height="8"/></g>
       <g transform="translate(488 342)"><ellipse rx="36" ry="20" fill="#b9c5a8"/><ellipse rx="26" ry="13" fill="#a8c8bd"/><path d="M0 0V-30" stroke="#eee5d0" strokeWidth="9"/><ellipse cy="-26" rx="12" ry="6" fill="#f9f2dc"/></g>
       <Cottage x={90} y={130} color="#aba880" width={55}/>{!expanded&&<Cottage x={890} y={525} color="#a6a082" width={60}/>}
-      <g fill="#87926c" fontFamily="Inter, sans-serif" fontSize="11" letterSpacing="3"><text x="83" y="347">MARKET STREET</text><text x="568" y="616">AGENT QUARTER</text></g>
+      <g fill="#87926c" fontFamily="Inter, sans-serif" fontSize="11" letterSpacing="3"><text x="83" y="347">{translateUI("MARKET STREET")}</text><text x="568" y="616">{translateUI("AGENT QUARTER")}</text></g>
     </svg>
     <svg className="town-action-paths" viewBox="0 0 1000 650" aria-hidden="true">{[...scheduler.current.actions.values()].filter(action=>action.event.type==='transfer').map(action=>{const from=positions.get(action.event.sender?.toLowerCase()||''),to=positions.get(action.event.recipient?.toLowerCase()||'');return from&&to?<path key={action.event.eventKey} d={`M${from.x} ${from.y}Q${(from.x+to.x)/2} ${Math.min(from.y,to.y)-65} ${to.x} ${to.y}`} fill="none" stroke="#b7934d" strokeWidth="3" strokeDasharray="5 8"/>:null;})}</svg>
-    {live&&<div className={`world-pulse ${hasActions?'is-busy':''}`} role="status"><i/>{hasActions?`${scheduler.current.actions.size} 位居民正在行动`:'等待新的链上足迹'}</div>}
-    <div className="town-sign"><span className="town-sign-kicker">BSC · AGENT WORLD</span><strong>{town?.tick || '公共城区'}</strong><span>{residents.length} 位在场居民 · {places.length} 处公共场所</span></div>
-    {places.map(building=><button key={building.place} className={`place-label ${(live?[...scheduler.current.actions.values()].some(action=>eventPlace(action.event)===building.place):event&&eventPlace(event)===building.place)?'is-active':''}`} style={{left:`${building.x/10}%`,top:`${(building.y+65)/6.5}%`}} onClick={()=>onPlace(building.place)} aria-label={building.title}>
-      <strong>{building.title}</strong><span>{building.subtitle}</span>
+    {live&&<div className={`world-pulse ${hasActions?'is-busy':''}`} role="status"><i/>{translateUI(hasActions?`${scheduler.current.actions.size} 位居民正在行动`:'等待新的链上足迹')}</div>}
+    <div className="town-sign"><span className="town-sign-kicker">{translateUI("BSC · AGENT WORLD")}</span><strong>{town?.tick || translateUI('公共城区')}</strong><span>{translateUI(residents.length)}{translateUI(" 位在场居民 · ")}{translateUI(places.length)}{translateUI(" 处公共场所")}</span></div>
+    {places.map(building=><button key={building.place} className={`place-label ${(live?[...scheduler.current.actions.values()].some(action=>eventPlace(action.event)===building.place):event&&eventPlace(event)===building.place)?'is-active':''}`} style={{left:`${building.x/10}%`,top:`${(building.y+65)/6.5}%`}} onClick={()=>onPlace(building.place)} aria-label={translateUI(building.title)}>
+      <strong>{translateUI(building.title)}</strong><span>{translateUI(building.subtitle)}</span>
     </button>)}
     {[...residents].sort((a,b)=>positions.get(a.id)!.y-positions.get(b.id)!.y).map(resident=>{
       const position=positions.get(resident.id)!;const hash=stableHash(resident.id);
@@ -97,14 +101,14 @@ export default function TownScene({town,residents,selected,event,onResident,onPl
       const selectedPost=selected===resident.id && event?.kind==='post' && event.agentId===resident.latest.agentId ? event : undefined;
       const action=live?scheduler.current.actions.get(resident.id):undefined;
       const speech=selectedPost||(action?.event.kind==='post'?action.event:post);
-      return <button key={resident.id} className={`world-resident ${selected===resident.id?'is-selected':''} ${action?'is-acting':''} ${action&&Date.now()-action.startedAt<2200?'is-walking':''}`} data-action={action?.event.type} style={{left:`${position.x/10}%`,top:`${position.y/6.5}%`,'--resident-coat':['#bf7859','#668e8a','#887a9e','#9a9b58'][hash%4]} as React.CSSProperties} onClick={()=>onResident(resident.id)} aria-label={`查看居民 ${resident.name}`}>
-        {bubbles&&speech?.content&&<span className="speech-bubble" onClick={e=>{e.stopPropagation();onResident(resident.id);onEvent?.(speech);}}><span className="speech-origin">{sourceLabel(speech)}</span>{eventContent(speech).slice(0,88)}{eventContent(speech).length>88?'…':''}</span>}
-        {bubbles&&action&&action.event.kind!=='post'&&<span className="action-bubble" key={action.startedAt} onClick={e=>{e.stopPropagation();onResident(resident.id);onEvent?.(action.event);}}><b>{actionLabels[action.event.type]}</b> {amountLabel(action.event.amount)} {action.event.tick}{action.count>1&&<small>合并 {action.count} 次行动 · 详情保留完整流水</small>}</span>}
+      return <button key={resident.id} className={`world-resident ${selected===resident.id?'is-selected':''} ${action?'is-acting':''} ${action&&Date.now()-action.startedAt<2200?'is-walking':''}`} data-action={action?.event.type} style={{left:`${position.x/10}%`,top:`${position.y/6.5}%`,'--resident-coat':['#bf7859','#668e8a','#887a9e','#9a9b58'][hash%4]} as React.CSSProperties} onClick={()=>onResident(resident.id)} aria-label={translateUI(`查看居民 ${resident.name}`)}>
+        {bubbles&&speech?.content&&<span className="speech-bubble" onClick={e=>{e.stopPropagation();onResident(resident.id);onEvent?.(speech);}}><span className="speech-origin">{translateUI(sourceLabel(speech))}</span>{eventContent(speech).slice(0,88)}{eventContent(speech).length>88?'…':''}</span>}
+        {bubbles&&action&&action.event.kind!=='post'&&<span className="action-bubble" key={action.startedAt} onClick={e=>{e.stopPropagation();onResident(resident.id);onEvent?.(action.event);}}><b>{translateUI(actionLabels[action.event.type])}</b> {translateUI(amountLabel(action.event.amount))} {action.event.tick}{action.count>1&&<small>{translateUI("合并 ")}{translateUI(action.count)}{translateUI(" 次行动 · 详情保留完整流水")}</small>}</span>}
         <span className="resident-sprite" aria-hidden="true"><span className="sprite-hair"/><span className="sprite-face"/><span className="sprite-coat"/><span className="sprite-feet"/></span>
         <span className="resident-name">{resident.name}</span>
       </button>;
     })}
-    <div className="scene-caption">{live?'新链上事件自动驱动行动 · 最近活动决定停留场所':'历史回放 · 按事件时刻还原场所'}</div>
-    {!residents.length&&<div className="quiet-town">尚无可展示活动<span>选择其他小镇，或等待索引同步</span></div>}
+    <div className="scene-caption">{translateUI(live?'新链上事件自动驱动行动 · 最近活动决定停留场所':'历史回放 · 按事件时刻还原场所')}</div>
+    {!residents.length&&<div className="quiet-town">{translateUI("尚无可展示活动")}<span>{translateUI("选择其他小镇，或等待索引同步")}</span></div>}
   </div>;
 }

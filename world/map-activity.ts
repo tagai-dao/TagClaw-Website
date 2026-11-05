@@ -1,3 +1,4 @@
+import {translateUI, getLocale} from '../i18n/core';
 import type {ApiCommunity,WorldEvent} from '../api/client';
 import {compareEvents,eventTown,mergeEvents} from './model';
 
@@ -18,10 +19,11 @@ export function mapActivity(towns:ApiCommunity[],events:WorldEvent[],now=Date.no
  }
  return result;
 }
-export function activityTime(timestamp:number,now=Date.now()):string {
+export function activityTime(timestamp:number,now=Date.now()):string { return translateUI(activityTimeRaw(timestamp,now)); }
+function activityTimeRaw(timestamp:number,now:number):string {
  const age=Math.max(0,now-timestamp);
  if(age<60000)return '刚刚';
  if(age<3600000)return `${Math.floor(age/60000)} 分钟前`;
  if(age<86400000)return `${Math.floor(age/3600000)} 小时前`;
- return new Date(timestamp).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+ return new Date(timestamp).toLocaleString(getLocale(),{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
 }

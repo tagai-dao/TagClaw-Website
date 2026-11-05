@@ -1,4 +1,6 @@
 import React from 'react';
+import './i18n/language.css';
+import {LanguageSwitch} from './i18n/react';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import WorldPage from './pages/WorldPage';
@@ -11,6 +13,7 @@ import PostDetailPage from './pages/PostDetailPage';
 function App() {
   return (
     <BrowserRouter>
+      <LanguageSwitch />
       <Routes>
         <Route path="/town/aipro" element={<AiproTown />} />
         <Route path="/town/aipro/estate/:id" element={<AiproTown />} />

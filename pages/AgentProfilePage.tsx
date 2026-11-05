@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -68,6 +69,7 @@ const XIcon = () => (
 );
 
 const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) => {
+  useLocale();
   const { id: idParam, username: usernameParam } = useParams<{ id?: string; username?: string }>();
   const id = idParam;
   const username = usernameParam;
@@ -417,8 +419,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-brand-ink">Agent ID not provided.</p>
-          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">Back to Home</Link>
+          <p className="text-brand-ink">{translateUI("Agent ID not provided.")}</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">{translateUI("Back to Home")}</Link>
         </div>
       </div>
     );
@@ -428,8 +430,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-brand-ink">Username not provided.</p>
-          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">Back to Home</Link>
+          <p className="text-brand-ink">{translateUI("Username not provided.")}</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">{translateUI("Back to Home")}</Link>
         </div>
       </div>
     );
@@ -439,7 +441,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-brand-muted">Loading agent profile...</p>
+          <p className="text-brand-muted">{translateUI("Loading agent profile...")}</p>
         </div>
       </div>
     );
@@ -451,7 +453,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-brand-muted">Loading agent profile...</p>
+          <p className="text-brand-muted">{translateUI("Loading agent profile...")}</p>
         </div>
       </div>
     );
@@ -462,7 +464,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-          <p className="text-brand-muted">Loading agent profile...</p>
+          <p className="text-brand-muted">{translateUI("Loading agent profile...")}</p>
         </div>
       </div>
     );
@@ -474,9 +476,9 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         <Navbar />
         <div className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
           <div className="py-4 px-4 rounded-lg bg-red-50 text-red-700 text-sm mb-6">
-            {error}
+            {translateUI(error)}
           </div>
-          <Link to="/ai-agents" className="text-orange-600 hover:underline">Back to Agents</Link>
+          <Link to="/ai-agents" className="text-orange-600 hover:underline">{translateUI("Back to Agents")}</Link>
         </div>
       </div>
     );
@@ -498,7 +500,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         {/* Profile header */}
         <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
           <div className="flex items-start gap-4 min-w-0 flex-1">
-            {avatar ? (
+            {translateUI(avatar ? (
               <img
                 src={avatar}
                 alt={displayName}
@@ -508,7 +510,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                 }}
               />
-            ) : null}
+            ) : null)}
             <div className={`w-20 h-20 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink text-3xl font-bold shrink-0 ${avatar ? 'hidden' : ''}`}>
               {initial}
             </div>
@@ -534,7 +536,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-brand-ink hover:text-brand-ink transition-colors"
-                  title="View owner on X"
+                  title={translateUI("View owner on X")}
                 >
                   <XIcon />
                 </a>}
@@ -555,10 +557,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                     className="hover:text-brand-ink transition-colors cursor-pointer"
                   >
                     <span className="font-medium text-brand-ink">
-                      {formatCount(tagclawFollowCount?.followerCount ?? agentInfo?.followers ?? 0)}
-                    </span>{' '}
-                    Followers
-                  </button>
+                      {translateUI(formatCount(tagclawFollowCount?.followerCount ?? agentInfo?.followers ?? 0))}
+                    </span>{translateUI(' ')}{translateUI("Followers ")}</button>
                   <button
                     type="button"
                     onClick={() => {
@@ -573,10 +573,8 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                     className="hover:text-brand-ink transition-colors cursor-pointer"
                   >
                     <span className="font-medium text-brand-ink">
-                      {formatCount(tagclawFollowCount?.followingCount ?? agentInfo?.followings ?? 0)}
-                    </span>{' '}
-                    Following
-                  </button>
+                      {translateUI(formatCount(tagclawFollowCount?.followingCount ?? agentInfo?.followings ?? 0))}
+                    </span>{translateUI(' ')}{translateUI("Following ")}</button>
                 </div>
                 {myApiKey && myAgentId && myAgentId !== effectiveId && (
                   <div className="flex flex-col items-start gap-1">
@@ -626,14 +624,14 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                             : 'border border-blue-500 text-blue-400 bg-transparent hover:bg-blue-500/10'
                       }`}
                     >
-                      {followLoading
+                      {translateUI(followLoading
                         ? '...'
                         : isFollowing
                           ? (followHover ? 'Unfollow' : 'Following')
-                          : 'Follow'}
+                          : 'Follow')}
                     </button>
                     {followError && (
-                      <span className="text-red-400 text-xs">{followError}</span>
+                      <span className="text-red-400 text-xs">{translateUI(followError)}</span>
                     )}
                   </div>
                 )}
@@ -645,7 +643,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                     <circle cx="12" cy="16" r="1" fill="currentColor" />
                     <path d="M12 11V8" />
                   </svg>
-                  <span className="font-mono text-xs">{agentInfo.ethAddr.slice(0, 6)}...{agentInfo.ethAddr.slice(-4)}</span>
+                  <span className="font-mono text-xs">{translateUI(agentInfo.ethAddr.slice(0, 6))}...{translateUI(agentInfo.ethAddr.slice(-4))}</span>
                 </div>
               )}
             </div>
@@ -655,29 +653,29 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
           <div className="w-full lg:w-auto lg:max-w-[580px] flex flex-wrap gap-4 lg:justify-end shrink-0">
             <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white rounded-xl border border-brand-border p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-brand-ink text-sm">IPShare</span>
+                <span className="font-semibold text-brand-ink text-sm">{translateUI("IPShare")}</span>
               </div>
 
               {ipShareLoading ? (
-                <div className="text-xs text-brand-muted">Loading IPShare data...</div>
+                <div className="text-xs text-brand-muted">{translateUI("Loading IPShare data...")}</div>
               ) : (
                 <div className="space-y-2 text-xs text-brand-muted">
                   <div className="flex items-center justify-between gap-4">
-                    <span>Price</span>
+                    <span>{translateUI("Price")}</span>
                     <span className="font-medium text-brand-ink">
-                      {formatUsdValue(ipShareMetrics?.priceUsd)}
+                      {translateUI(formatUsdValue(ipShareMetrics?.priceUsd))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
-                    <span>Supply</span>
+                    <span>{translateUI("Supply")}</span>
                     <span className="font-medium text-brand-ink">
-                      {formatShareAmount(ipShareMetrics?.supply)}
+                      {translateUI(formatShareAmount(ipShareMetrics?.supply))}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
-                    <span>Total Staked</span>
+                    <span>{translateUI("Total Staked")}</span>
                     <span className="font-medium text-brand-ink">
-                      {formatShareAmount(ipShareMetrics?.staked)}
+                      {translateUI(formatShareAmount(ipShareMetrics?.staked))}
                     </span>
                   </div>
                 </div>
@@ -686,33 +684,33 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
             <div className="flex-1 min-w-[240px] lg:flex-none lg:w-[280px] bg-white rounded-xl border border-brand-border p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-brand-ink text-sm">Rewards</span>
+                <span className="font-semibold text-brand-ink text-sm">{translateUI("Rewards")}</span>
               </div>
 
               <div className="text-xs text-brand-muted mb-2">
                 <div className="flex items-center justify-between">
-                  <span>Claimable Sum</span>
+                  <span>{translateUI("Claimable Sum")}</span>
                   <span className="font-medium text-brand-ink">
-                    {Math.floor(totalRewards).toLocaleString()}{' '}
-                    ({formatUsdTotal(totalRewardsUsd)})
+                    {translateUI(Math.floor(totalRewards).toLocaleString())}{translateUI(' ')}
+                    ({translateUI(formatUsdTotal(totalRewardsUsd))})
                   </span>
                 </div>
               </div>
               <div className="text-xs text-brand-muted mb-2">
                 <div className="flex items-center justify-between">
-                  <span>Pending settled Sum</span>
+                  <span>{translateUI("Pending settled Sum")}</span>
                   <span className="font-medium text-brand-ink">
-                    {Math.floor(totalUnclaimableRewards).toLocaleString()}{' '}
-                    ({formatUsdTotal(totalUnclaimableRewardsUsd)})
+                    {translateUI(Math.floor(totalUnclaimableRewards).toLocaleString())}{translateUI(' ')}
+                    ({translateUI(formatUsdTotal(totalUnclaimableRewardsUsd))})
                   </span>
                 </div>
               </div>
               <div className="text-xs text-brand-muted">
                 <div className="flex items-center justify-between">
-                  <span>TagClaw Pending settled</span>
+                  <span>{translateUI("TagClaw Pending settled")}</span>
                   <span className="font-medium text-brand-ink">
-                    {Math.floor(tagclawUnclaimableRewards).toLocaleString()}{' '}
-                    ({formatUsdTotal(tagclawUnclaimableRewardsUsd)})
+                    {translateUI(Math.floor(tagclawUnclaimableRewards).toLocaleString())}{translateUI(' ')}
+                    ({translateUI(formatUsdTotal(tagclawUnclaimableRewardsUsd))})
                   </span>
                 </div>
               </div>
@@ -727,23 +725,19 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               mainTab === 'activity' ? 'bg-orange-500 text-brand-ink' : 'text-brand-ink hover:bg-white'
             }`}
-          >
-            Activity
-          </button>
+          >{translateUI("Activity ")}</button>
           <button
             onClick={() => setMainTab('tweet')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               mainTab === 'tweet' ? 'bg-orange-500 text-brand-ink' : 'text-brand-ink hover:bg-white'
             }`}
-          >
-            Posts
-          </button>
+          >{translateUI("Posts ")}</button>
         </div>
 
         {/* Error message */}
         {error && (
           <div className="py-4 px-4 rounded-lg bg-red-50 text-red-700 text-sm mb-6">
-            {error}
+            {translateUI(error)}
           </div>
         )}
 
@@ -753,9 +747,9 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
         {mainTab === 'tweet' && (
           <div className="space-y-4">
             {loading && posts.length === 0 ? (
-              <div className="py-12 text-center text-brand-muted">Loading posts...</div>
+              <div className="py-12 text-center text-brand-muted">{translateUI("Loading posts...")}</div>
             ) : posts.length === 0 ? (
-              <div className="py-12 text-center text-brand-muted">No posts found for this agent</div>
+              <div className="py-12 text-center text-brand-muted">{translateUI("No posts found for this agent")}</div>
             ) : (
               posts.map((post) => (
                 <div
@@ -791,13 +785,13 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-gray-900">{post.author.name}</span>
                           <span className="text-gray-500 text-sm">{post.author.handle}</span>
-                          <span className="text-gray-400 text-sm">{post.timestamp}</span>
+                          <span className="text-gray-400 text-sm">{translateUI(post.timestamp)}</span>
                         </div>
                         <p className="text-gray-800 text-sm mt-2 whitespace-pre-line">{post.content}</p>
                         {post.tags && post.tags.length > 0 && (
                           <div className="flex gap-2 mt-2 flex-wrap">
                             {post.tags.map((tag, i) => (
-                              <span key={i} className="text-green-600 text-sm font-medium">#{tag}</span>
+                              <span key={i} className="text-green-600 text-sm font-medium">#{translateUI(tag)}</span>
                             ))}
                           </div>
                         )}
@@ -815,7 +809,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
                             </svg>
-                            {post.stats.comments}
+                            {translateUI(post.stats.comments)}
                           </span>
                           <span className="flex items-center gap-1">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -824,13 +818,13 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                               <path d="M7 23l-4-4 4-4" />
                               <path d="M21 13v2a4 4 0 0 1-4 4H3" />
                             </svg>
-                            {post.stats.reposts}
+                            {translateUI(post.stats.reposts)}
                           </span>
                           <span className="flex items-center gap-1">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                             </svg>
-                            {post.stats.claws}
+                            {translateUI(post.stats.claws)}
                           </span>
                           <span className="flex items-center gap-1">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -838,18 +832,18 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                               <polyline points="16 6 12 2 8 6" />
                               <line x1="12" y1="2" x2="12" y2="15" />
                             </svg>
-                            {post.stats.shares}
+                            {translateUI(post.stats.shares)}
                           </span>
                         </div>
                       </div>
                     </div>
                     {post.tokenValue && (
                       <div className="text-right shrink-0 text-gray-900 font-medium text-sm">
-                        {Math.floor(post.tokenValue.amount).toLocaleString()}
+                        {translateUI(Math.floor(post.tokenValue.amount).toLocaleString())}
                         {post.tokenValue.tick && (
                           <span className="text-gray-500 ml-1">${post.tokenValue.tick}</span>
                         )}
-                        {formatUsd(post.tokenValue.amount, post.tokenValue.token)}
+                        {translateUI(formatUsd(post.tokenValue.amount, post.tokenValue.token))}
                       </div>
                     )}
                   </div>
@@ -864,7 +858,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                   disabled={loading}
                   className="px-6 py-2.5 bg-white hover:bg-white/20 border border-brand-border text-brand-ink text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Loading...' : 'Load more'}
+                  {translateUI(loading ? 'Loading...' : 'Load more')}
                 </button>
               </div>
             )}
@@ -873,9 +867,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
 
         {/* TagCoins tab */}
         {mainTab === 'tagcoins' && (
-          <div className="py-12 text-center text-brand-muted">
-            Posts data coming soon
-          </div>
+          <div className="py-12 text-center text-brand-muted">{translateUI("Posts data coming soon ")}</div>
         )}
       </div>
 
@@ -890,7 +882,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-brand-border">
-              <span className="font-semibold text-brand-ink capitalize">{followListModal}</span>
+              <span className="font-semibold text-brand-ink capitalize">{translateUI(followListModal)}</span>
               <button
                 type="button"
                 onClick={() => setFollowListModal(null)}
@@ -901,10 +893,10 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
             </div>
             <div className="overflow-y-auto flex-1 p-2">
               {followListLoading ? (
-                <div className="py-8 text-center text-brand-muted text-sm">Loading...</div>
+                <div className="py-8 text-center text-brand-muted text-sm">{translateUI("Loading...")}</div>
               ) : followListData.length === 0 ? (
                 <div className="py-8 text-center text-brand-muted text-sm">
-                  {followListModal === 'followers' ? 'No followers yet' : 'Not following anyone yet'}
+                  {translateUI(followListModal === 'followers' ? 'No followers yet' : 'Not following anyone yet')}
                 </div>
               ) : (
                 followListData.map((agent) => {
@@ -918,7 +910,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                       onClick={() => setFollowListModal(null)}
                       className="flex items-center gap-3 p-3 hover:bg-white rounded-lg cursor-pointer"
                     >
-                      {agent.profile ? (
+                      {translateUI(agent.profile ? (
                         <img
                           src={agent.profile}
                           alt={displayName}
@@ -928,7 +920,7 @@ const AgentProfilePage: React.FC<{ byUsername?: boolean }> = ({ byUsername }) =>
                             (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                           }}
                         />
-                      ) : null}
+                      ) : null)}
                       <div className={`w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold shrink-0 ${agent.profile ? 'hidden' : ''}`}>
                         {initial}
                       </div>

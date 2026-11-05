@@ -14,8 +14,8 @@ export interface MiningPool {pool:string;name:string;asset:string;poolType:strin
 export interface Operation {index?:number;id?:string;account?:string;user?:string;pool?:string;opType?:string;amountRaw?:string;amount?:string;txHash?:string;opTimestamp?:number;timestamp?:number;orderId?:string}
 export interface Estate {id:number;owner:string;level:number;miningWeight:bigint;indexMiningActive:boolean;indexMiningWeight:bigint;pendingIndexRewards:bigint;seed:bigint;ownerPending?:bigint;error?:boolean}
 export interface Economy {observedAt:string;block:bigint;pools:MiningPool[];nft:Record<string,any>;lp:Record<string,{active?:boolean;total?:bigint;decimals?:number;symbol?:string;pair?:string;positions?:{address:string;amount:bigint|null}[]}>;history:Operation[]|null;historyMore:boolean;claims:Operation[]|null;claimsTotal:number|null;estates:Estate[];estateTotal:number;identities:Record<string,string>;identityTime?:string;warnings:string[];rewardSummary:Record<string,any>|null}
-const client=createPublicClient({chain:bsc,transport:fallback([http('https://bsc-dataseed.binance.org',{batch:true,timeout:10000,retryCount:0}),http('https://bsc-dataseed2.binance.org',{batch:true,timeout:10000,retryCount:0})])});
-const abi=parseAbi([
+export const client=createPublicClient({chain:bsc,transport:fallback([http('https://bsc-dataseed.binance.org',{batch:true,timeout:10000,retryCount:0}),http('https://bsc-dataseed2.binance.org',{batch:true,timeout:10000,retryCount:0})])});
+export const abi=parseAbi([
  'function totalSupply() view returns(uint256)','function maxSupply() view returns(uint256)','function renderer() view returns(address)','function indexToken() view returns(address)',
  'function totalActiveIndexMiningWeight() view returns(uint256)','function queuedIndexRewards() view returns(uint256)','function getTotalStakedAmount() view returns(uint256)',
  'function getUserStakedAmount(address) view returns(uint256)',
@@ -24,13 +24,13 @@ const abi=parseAbi([
  'function symbol() view returns(string)','function decimals() view returns(uint8)',
  'function getNFTInfo(uint256) view returns((address owner,uint32 level,uint256 referrerTokenId,uint256 referralCount,uint256 miningWeight,bool miningActive,bool indexMiningActive,uint256 indexMiningWeight,uint256 pendingIndexRewards,uint256 seed,uint256 revealBlock,uint256 revealRound,bool revealPending))',
 ]);
-async function identities(signal:AbortSignal):Promise<AtlasBundle>{
+export async function identities(signal:AbortSignal):Promise<AtlasBundle>{
  const read=async (file:string)=>{const r=await fetch(API_BASE+'/tagclaw/atlas/activity/'+file,{signal:AbortSignal.any([signal,AbortSignal.timeout(8000)])});if(!r.ok)throw Error('Identity unavailable');return r.json();};
  const [manifest,agents]=await Promise.all([read('manifest.json'),read('agents.json')]);
  if(manifest.chainId!==56||manifest.identitySnapshotBlock!==manifest.snapshotBlock||!Array.isArray(agents)||!Number.isFinite(Date.parse(manifest.snapshotTime)))throw Error('Invalid identity snapshot');
  return {manifest,agents,feed:[]};
 }
-async function api(path:string,signal:AbortSignal){const r=await fetch(API_BASE+'/nutbox'+path,{signal:AbortSignal.any([signal,AbortSignal.timeout(15000)])});if(!r.ok)throw Error(path);const b=await r.json();if(b.success!==true)throw Error(path);return b;}
+export async function api(path:string,signal:AbortSignal){const r=await fetch(API_BASE+'/nutbox'+path,{signal:AbortSignal.any([signal,AbortSignal.timeout(15000)])});if(!r.ok)throw Error(path);const b=await r.json();if(b.success!==true)throw Error(path);return b;}
 export async function loadEconomy(page:number,signal:AbortSignal):Promise<Economy>{
  const warnings:string[]=[];
  async function optional<T>(fn:()=>Promise<T>,label:string):Promise<T|null>{try{return await fn();}catch{warnings.push(label);return null;}}

@@ -1,3 +1,4 @@
+import {translateUI, getLocale} from '../i18n/core';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import type {ApiCommunity,WorldEvent} from '../api/client';
 import type {AtlasManifest} from '../world/atlas';
@@ -18,7 +19,7 @@ export function useWorldLife(town?:ApiCommunity|null){
  },[town?.token,cursor,busy,more]);
  const coverage=runtime.snapshot?.coverage,chain=coverage?.chain;
  const historyLabel=coverage?.chainHistory?.state==='backfilling'?`链上历史回填中（${coverage.chainHistory.completeSources||0}/${coverage.chainHistory.sources||0} 个扫描区间）`:coverage?.chainHistory?.state==='complete'?'已适配链上范围回填完成':coverage?.history?.state==='complete'?'TagAI 已索引历史已补齐':coverage?.history?.state==='backfilling'?'历史正在后台补齐':'历史覆盖待确认';
- const notice=runtime.snapshot?`${runtime.snapshot.environment==='test'?'本地测试数据 · 非真实链上记录 · ':''}持久世界快照 · ${runtime.snapshot.totalEvents.toLocaleString()} 条已索引记忆 · ${historyLabel}${chain?.indexedBlock?` · BSC #${chain.indexedBlock}，距链头 ${chain.lagBlocks} 块`:''}。资产和 IPShare 在居民详情按区块读取。`:'正在连接持久世界服务，读取社区目录与居民状态…';
+ const notice=runtime.snapshot?`${runtime.snapshot.environment==='test'?translateUI('本地测试数据 · 非真实链上记录 · '):''}持久世界快照 · ${runtime.snapshot.totalEvents.toLocaleString(getLocale())} 条已索引记忆 · ${translateUI(historyLabel)}${chain?.indexedBlock?translateUI(` · BSC #${chain.indexedBlock}，距链头 ${chain.lagBlocks} 块`):''}。资产和 IPShare 在居民详情按区块读取。`:'正在连接持久世界服务，读取社区目录与居民状态…';
  const events=useMemo(()=>mergeEvents(runtime.snapshot?.events||[],history,20000),[runtime.snapshot?.events,history]);
  return {events,source:'world' as const,notice,error:error||runtime.error,lastSync:runtime.receivedAt||null,loading:!runtime.snapshot||busy,more,loadHistory,townNotice:'',townBusy:false,atlasCoverage:null as AtlasManifest|null,refresh:reconnectRuntime,liveEvents:runtime.liveEvents,connected:runtime.connected,coverage,totalEvents:runtime.snapshot?.totalEvents||0};
 }

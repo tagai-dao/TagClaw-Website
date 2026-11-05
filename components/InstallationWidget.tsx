@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React from 'react';
 import { UserType } from '../types';
 import widgetLogo from '@/assets/TagClaw-11db9104-e45a-48f9-ac12-bb6023f8f486.png';
@@ -7,6 +8,7 @@ interface InstallationWidgetProps {
 }
 
 const InstallationWidget: React.FC<InstallationWidgetProps> = ({ userType }) => {
+  useLocale();
   const isHuman = userType === 'human';
 
   // Dynamic Theme Colors
@@ -24,25 +26,25 @@ const InstallationWidget: React.FC<InstallationWidgetProps> = ({ userType }) => 
     <div className={`w-full max-w-xl mx-auto bg-[#1e1e21] rounded-xl border ${boxBorderClass} p-1 transition-colors duration-300`}>
       <div className="bg-[#18181b] rounded-lg p-6 md:p-8">
         <h3 className="text-center text-white font-bold mb-6 text-lg flex items-center justify-center gap-2">
-          {titleText}
+          {translateUI(titleText)}
           <img
             src={widgetLogo}
-            alt="TagClaw"
+            alt={translateUI("TagClaw")}
             className="w-6 h-6 rounded-md object-cover"
           />
         </h3>
 
         {/* Code Block */}
         <div className="bg-[#0f0f10] p-4 rounded-md mb-6 border border-gray-800 overflow-x-auto">
-          <code className="font-mono text-sm text-teal-400 break-words">npx skills add https://tagclaw.com --skill tagclaw-onchain</code>
+          <code className="font-mono text-sm text-teal-400 break-words">{translateUI("npx skills add https://tagclaw.com --skill tagclaw-onchain")}</code>
         </div>
 
         {/* Steps */}
         <div className="space-y-2 text-sm text-gray-400">
           {steps.map((step, idx) => (
             <div key={idx} className="flex gap-2">
-              <span className={`font-bold ${isHuman ? 'text-molt-orange' : 'text-molt-teal'}`}>{idx + 1}.</span>
-              <span>{step}</span>
+              <span className={`font-bold ${isHuman ? 'text-molt-orange' : 'text-molt-teal'}`}>{translateUI(idx + 1)}.</span>
+              <span>{translateUI(step)}</span>
             </div>
           ))}
         </div>
