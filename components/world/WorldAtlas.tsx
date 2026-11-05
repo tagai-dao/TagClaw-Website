@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import type {ApiCommunity,WorldEvent} from '../../api/client';
 import {launchPlatform,type LaunchPlatform} from '../../world/protocol';
+import starIsland from '../../assets/star-island.webp';
 import IslandGround from './IslandGround';
 import {zoomMap} from '../../world/map-camera';
 import {mapActivity,activityTime} from '../../world/map-activity';
@@ -9,12 +10,13 @@ import {eventSentence,eventContent,eventTown,stableHash} from '../../world/model
 type Continent=LaunchPlatform|'unmapped';
 export const continentNames:Record<Continent,string>={gang:'GANG 岛',flap:'Flap 岛',four:'Four 岛',tagai:'TagAI 岛',unmapped:'散落的星星岛'};
 const atlasWidth=1680,atlasHeight=930;
+const starIslandSize={width:100*Math.sqrt(15),height:56*Math.sqrt(15)};
 const geography:{key:Continent;x:number;y:number;width:number;height:number}[]=[
  {key:'gang',x:350,y:225,width:480,height:230},
  {key:'flap',x:1250,y:250,width:540,height:240},
  {key:'four',x:360,y:680,width:490,height:210},
  {key:'tagai',x:1260,y:710,width:510,height:200},
- {key:'unmapped',x:758,y:807,width:100*Math.sqrt(5),height:56*Math.sqrt(5)},
+ {key:'unmapped',x:758,y:807,...starIslandSize},
 ];
 export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bubbles=true,activityStatus}:{towns:ApiCommunity[];events:WorldEvent[];coveredTokens:string[];onTown:(tick:string)=>void;onEvent:(event:WorldEvent)=>void;bubbles?:boolean;activityStatus?:string}){
  const [camera,setCamera]=useState({zoom:1,x:0,y:0}),[size,setSize]=useState({width:1400,height:1060}),[now,setNow]=useState(Date.now());
@@ -62,11 +64,8 @@ export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bu
    onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onClickCapture={event=>{if(moved.current){event.preventDefault();event.stopPropagation();moved.current=false;}}}>
    <div className="planet-map" style={{width:mapWidth,height:mapHeight,left,top,transform:`scale(${scale})`}}>
    <IslandGround src="/town/world-atlas.webp"/>
-   <svg className="star-island-ground" viewBox="0 0 100 56" aria-hidden="true" style={{position:'absolute',left:(758-50*Math.sqrt(5))/atlasWidth*100+'%',top:(807-28*Math.sqrt(5))/atlasHeight*100+'%',width:100*Math.sqrt(5)/atlasWidth*100+'%',height:56*Math.sqrt(5)/atlasHeight*100+'%',pointerEvents:'none'}}>
-    <path d="M8 20H20V12H38V4H63V10H80V18H94V36H84V46H66V52H35V46H18V38H8Z" fill="#467898" stroke="#b7eff0" strokeWidth="3"/>
-    <path d="M10 18H24V10H44V4H64V10H79V17H90V32H80V40H63V46H37V40H23V33H10Z" fill="#91b85d" stroke="#e8d99b" strokeWidth="3"/>
-    <path d="m48 12 4 9 10 1-8 6 2 10-9-6-9 5 2-10-7-7 10 1Z" fill="#f8de83"/>
-   </svg>
+   <img className="star-island-ground" src={starIsland} alt="" aria-hidden="true" style={{position:'absolute',left:(758-starIslandSize.width/2)/atlasWidth*100+'%',top:(807-starIslandSize.height/2)/atlasHeight*100+'%',width:starIslandSize.width/atlasWidth*100+'%',height:starIslandSize.height/atlasHeight*100+'%',pointerEvents:'none',imageRendering:'pixelated'}}/>
+
    {regions.map(region=><button key={region.key} className="island-sign" style={{left:region.x/atlasWidth*100+'%',top:(region.y-region.height/2-40)/atlasHeight*100+'%'}} onClick={()=>selectIsland(region.key)}>{continentNames[region.key]} · {groups.get(region.key)!.length}</button>)}
    {locations.map(({town,x,y,diameter})=>{const count=activity.get(town.tick)?.size||0,rows=recent.get(town.tick)||[],latest=rows.find(row=>row.kind!=='post'),speech=rows.find(row=>row.kind==='post');return <div key={town.token||town.tick} className="planet-community town-marker" style={{width:diameter,height:diameter,left:`${x/atlasWidth*100}%`,top:`${y/atlasHeight*100}%`}}>
     {bubbles&&(latest||speech)&&<div className="planet-island-bubbles">{[latest,speech].filter((item):item is WorldEvent=>!!item).map(latest=><button key={latest.eventKey} className={`planet-activity-bubble ${latest.kind==='post'?'is-speech':'is-transaction'}`} aria-label={`查看 ${town.tick} 的最新${latest.kind==='post'?'发言':'链上动态'}：${eventSentence(latest)}`} onClick={()=>onEvent(latest)}>
