@@ -1,0 +1,42 @@
+import React,{useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {AIPRO,NUTBOX_URL,loadEstateOwner,sameAddress,units,type Economy,type Operation} from '../../world/aipro-economy';
+import type {useAiproEconomy} from '../../hooks/useAiproEconomy';
+const short=(a:string)=>a.slice(0,6)+'…'+a.slice(-4);
+const scan=(a:string)=>'https://bscscan.com/address/'+a;
+function Person({address,data}:{address:string;data:Economy}){return <a href={scan(address)} target="_blank" rel="noreferrer">{data.identities[address.toLowerCase()]||short(address)} <small>{data.identities[address.toLowerCase()]?'已验证 .ai':'钱包 · 未匹配 .ai'}</small></a>;}
+function Metric({label,value}:{label:string;value:React.ReactNode}){return <article><small>{label}</small><strong>{value}</strong></article>;}
+function Operations({rows,data,token='AIPRO',decimals=18}:{rows:Operation[]|null;data:Economy;token?:string;decimals?:number}){
+ if(rows===null)return <p role="status">记录暂不可用，请重试。</p>;
+ if(!rows.length)return <p>当前已载入范围内暂无参与记录。</p>;
+ return <div>{rows.map((r,i)=><article className="town-ledger-row" key={r.id||r.index||`${r.txHash}-${i}`}><Person address={r.account||r.user||''} data={data}/><p>{({DEPOSIT:'存入',WITHDRAW:'取出',CLAIM:'领取',HARVEST:'收获',LOCK:'锁定'} as Record<string,string>)[r.opType||'']||r.opType||'领取交易挖矿奖励'}{r.amountRaw!=null?` · ${units(r.amountRaw,['CLAIM','HARVEST'].includes(r.opType||'')?18:decimals)} ${['CLAIM','HARVEST'].includes(r.opType||'')?'AIPRO':token}`:''}</p><small>{new Date(Number(r.opTimestamp??r.timestamp)*1000).toLocaleString('zh-CN')}</small>{r.txHash&&/^0x[\da-f]{64}$/i.test(r.txHash)&&<a target="_blank" rel="noreferrer" href={'https://bscscan.com/tx/'+r.txHash}>交易凭据 ↗</a>}</article>)}</div>;
+}
+export function EstateOwner({id,data}:{id:string;data:Economy|null}){
+ const [owner,setOwner]=useState<string|null|undefined>(),[error,setError]=useState(false);
+ useEffect(()=>{let active=true;setOwner(undefined);setError(false);loadEstateOwner(Number(id)).then(o=>{if(active)setOwner(o);}).catch(()=>{if(active)setError(true);});return()=>{active=false;};},[id,data?.block]);
+ return <p>{error?'持有者暂不可读取，请重试。':owner===undefined?'正在读取庄园持有者…':owner===null?'该门牌尚未铸造，暂未有居民入住。':!data?.identities[owner.toLowerCase()]?'该庄园暂无可展示的已验证 .ai 居民。':sameAddress(owner,AIPRO.amm)?'该庄园处于 NFT AMM 库存，暂无居民。':<>当前庄园持有者：{data?<Person address={owner} data={data}/>:<a href={scan(owner)}>{short(owner)}</a>}</>}</p>;
+}
+export default function TownEconomy({kind,state}:{kind:string;state:ReturnType<typeof useAiproEconomy>}){
+ const {data:raw,loading,error,page,setPage,refresh}=state;
+ const agent=(a?:string)=>!!a&&!!raw?.identities[a.toLowerCase()];
+ const d=raw?.identityTime?{...raw,estates:raw.estates.filter(e=>agent(e.owner)),history:raw.history?.filter(r=>agent(r.account))??null,claims:raw.claims?.filter(r=>agent(r.user))??null,lp:Object.fromEntries(Object.entries(raw.lp).map(([k,v])=>[k,{...v,positions:v.positions?.filter(p=>agent(p.address))}]))}:null;
+ const nft=d?.pools.find(p=>sameAddress(p.pool,AIPRO.nft));
+ const trade=d?.pools.find(p=>sameAddress(p.pool,AIPRO.trade));
+ const farm=kind==='质押农田'||kind==='居民农田';
+ return <div className="town-ledger town-economy">
+  <p>仅展示已验证 .ai Agent ID 的参与及收益记录；未匹配身份不展示。</p><div className="town-economy-toolbar"><a href={NUTBOX_URL} target="_blank" rel="noreferrer">打开 Nutbox 矿池 ↗</a><button disabled={loading} onClick={refresh}>{loading?'读取中…':'刷新数据'}</button></div>
+  {raw&&!raw.identityTime&&<p role="status">.ai 身份来源暂不可用，参与及收益数据暂停展示，避免混入未验证地址。</p>}{error&&<p role="alert">{error}</p>}{loading&&!d&&<p role="status">正在读取链上账本与参与记录…</p>}
+  {d&&<>
+   <p className="town-ledger-caption">BSC #{String(d.block)} · {new Date(d.observedAt).toLocaleString('zh-CN')} · 每分钟更新</p>
+   {d.warnings.length>0&&<details className="town-data-warning"><summary>部分来源暂不可用（{d.warnings.length}）</summary>{d.warnings.map(w=><p key={w}>{w}</p>)}</details>}
+   {kind==='金矿'&&<><p>两处流动性矿区 · 提供 LP 参与 AIPRO 分发。矿池启用与是否已有质押分别显示。</p>{d.pools.filter(p=>p.poolType==='ERC20_STAKING').map((p,i)=>{const live=d.lp[p.pool.toLowerCase()];const rows=d.history?.filter(r=>sameAddress(r.pool,p.pool)&&['DEPOSIT','WITHDRAW','LOCK','CLAIM','HARVEST'].includes(r.opType||''))??null;const accounts=[...new Set((rows||[]).map(r=>r.account).filter(Boolean))];return <section className="town-economy-card" key={p.pool}><h3>金矿 {i+1} · {live?.pair||live?.symbol||'LP 流动性池'}</h3><p>{live?.active===true?(live.total===0n?'待首位矿工 · 合约已启用':'矿池已启用'):live?.active===false?'矿池未启用':'启用状态待读取'}</p><div className="town-ledger-metrics"><Metric label="本批 .ai 当前质押 LP" value={!d.identityTime||live?.decimals==null?'待读取':units(live.positions?.reduce((n,p)=>n+(p.amount??0n),0n),live.decimals)}/><Metric label="社区分发权重 · 非 APR" value={p.ratio/100+'%'}/><Metric label="本批记录匹配 .ai 地址" value={rows===null||!d.identityTime?'待读取':accounts.filter(a=>d.identities[a!.toLowerCase()]).length}/></div><p><a href={scan(p.pool)} target="_blank" rel="noreferrer">矿池 {short(p.pool)} ↗</a> · <a href={scan(p.asset)} target="_blank" rel="noreferrer">LP 资产 {short(p.asset)} ↗</a></p><h4>矿工当前仓位</h4>{live?.positions?.length?live.positions.map(pos=><p key={pos.address}><Person address={pos.address} data={d}/> · {live.decimals==null?'待读取':units(pos.amount,live.decimals)} LP</p>):<p>本批参与记录中暂无可核验仓位。</p>}<p className="town-ledger-caption">从最近操作发现矿工，最多核验 30 个地址的当前仓位；不代表完整持仓人数。</p><Operations rows={rows} data={d} token="LP" decimals={live?.decimals??18}/></section>;})}<p className="town-ledger-caption">参与记录取社区最近 100 条操作{d.historyMore?'，还有更早记录可在 Nutbox 查看':''}；历史参与不等于当前仍在质押。</p></>}
+   {farm&&<><p>{kind==='质押农田'?'持有居民 NFT + 质押 AIPRO，获得 CyberCab ETF。':'持有居民 NFT，按居民挖矿权重获得 AIPRO。两块农田的奖励分别核算。'}</p><div className="town-ledger-metrics">
+    {kind==='质押农田'?<><Metric label="本页 .ai 质押 AIPRO" value={units(d.estates.reduce((n,e)=>n+e.indexMiningWeight,0n))}/><Metric label="本页 .ai 待领取 CyberCab" value={d.nft.rewardDecimals==null?'待读取':units(d.estates.reduce((n,e)=>n+e.pendingIndexRewards,0n),d.nft.rewardDecimals)}/></>:<><Metric label="本页 .ai 居民 NFT" value={d.estates.length}/><Metric label="社区分发权重 · 非 APR" value={nft?nft.ratio/100+'%':'待读取'}/><Metric label="本页 .ai 挖矿权重" value={String(d.estates.reduce((n,e)=>n+e.miningWeight,0n))}/></>}
+   </div><h3>庄园收益账本</h3>{kind==='居民农田'&&<p className="town-ledger-caption">AIPRO 待领取金额按持有者汇总；同一持有者的多座庄园共享该数值，请勿重复相加。</p>}</>}
+   {kind==='小镇动态'&&<section className="town-economy-card"><h3>集思广益 · Trade Curation</h3><p>社交交易挖矿 → AIPRO。交易动态与已领取奖励分别展示。</p><div className="town-ledger-metrics"><Metric label="矿池索引状态" value={trade?.status==='OPENED'?'已启用':trade?.status||'待读取'}/><Metric label="社区分发权重 · 非 APR" value={trade?trade.ratio/100+'%':'待读取'}/><Metric label="本批领取地址数" value={d.claims===null?'待读取':new Set(d.claims.map(r=>r.user?.toLowerCase()).filter(Boolean)).size}/></div><h3>最近参与者与奖励领取</h3><Operations rows={d.claims} data={d}/><p className="town-ledger-caption">最多展示最近 100 条领取；尚未领取的交易不包含在内。</p></section>}
+   {kind==='市政厅'&&<><section className="town-economy-card"><h3>市政收益 · 待开启</h3><p>持有 AIPRO → AIPRO / BNB 外盘交易手续费 → 回购 AIPRO ETF → 持有人分红。</p><p>等待 AIPRO 出外盘后创建对应 ETF 与分红模块，当前没有此项可领取金额。</p><small>农田现用 CyberCab ETF，属于 NFT 质押收益，不计入这里的 AIPRO 持仓分红。</small></section><h3>小镇居民名册</h3><p>每枚已铸造 NFT 对应同编号庄园，拥有者实时从链上读取。AMM 库存单独标记，不计作居民身份。</p></>}
+   {(farm||kind==='市政厅')&&<><div className="town-estate-list">{d.estates.map(e=><article className="town-economy-card" key={e.id}><Link to={'/town/aipro/estate/'+e.id}>庄园 #{e.id} ↗</Link>{e.error?<p>该庄园读取失败</p>:<><p>{sameAddress(e.owner,AIPRO.amm)?'NFT AMM 库存 · 暂无居民':<Person address={e.owner} data={d}/>}</p><small>等级 {e.level} · {e.seed===0n?'未揭图':'已揭图'}</small>{kind==='质押农田'&&<p>质押 {units(e.indexMiningWeight)} AIPRO<br/>待领取 {d.nft.rewardDecimals==null?'待读取':units(e.pendingIndexRewards,d.nft.rewardDecimals)} {d.nft.rewardSymbol}</p>}{kind==='居民农田'&&<p>挖矿权重 {String(e.miningWeight)}<br/>持有者合计待领取 {units(e.ownerPending)} AIPRO</p>}</>}</article>)}</div>{d.estates.length===0&&<p>本页暂无可验证的 .ai 居民与庄园收益记录。</p>}<div className="town-economy-toolbar"><button disabled={page===0||loading} onClick={()=>setPage(page-1)}>上一页</button><span>第 {page+1} 页 · 按 NFT 编号分页筛选 .ai</span><button disabled={(page+1)*20>=d.estateTotal||loading} onClick={()=>setPage(page+1)}>下一页</button></div></>}
+   <p className="town-ledger-caption">{d.identityTime?`.ai 身份快照：${new Date(d.identityTime).toLocaleString('zh-CN')}`:'未取得 .ai 身份快照；钱包不自动视作 Agent。'}</p>
+  </>}
+ </div>;
+}
