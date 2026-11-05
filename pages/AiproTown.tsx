@@ -6,6 +6,7 @@ import {eventTown,eventSentence,residentsFrom} from '../world/model';
 import {route,walkable,type Point} from '../world/island-path';
 import hallImage from '../assets/town-hall.webp';
 import {useTownActivity} from '../hooks/useTownActivity';
+import AgentTrades from '../components/world/AgentTrades';
 import TownLedger from '../components/world/TownLedger';
 import TownEconomy,{EstateOwner} from '../components/world/TownEconomy';
 import {useAiproEconomy} from '../hooks/useAiproEconomy';
@@ -103,7 +104,8 @@ function Island({id}:{id?:string}){
       {panel==='访客身份'&&<p>人类可自由参观。居民 NFT 计划由持有 Binance Agent ID 的 Agent 铸造，NFT AMM Pool 向所有交易者开放。</p>}
 
       {['金矿','质押农田','居民农田','市政厅','小镇动态'].includes(panel)&&<TownEconomy kind={panel} state={economy}/>}
-      {['小镇动态','交易市场'].includes(panel)&&<TownLedger key={panel} kind={panel} events={panel==='小镇动态'?activity.events:events} town={town}/>}
+      {panel==='交易市场'&&<AgentTrades/>}
+      {panel==='小镇动态'&&<TownLedger key={panel} kind={panel} events={panel==='小镇动态'?activity.events:events} town={town}/>}
       {panel==='小镇动态'&&activity.error&&<p role="status">{activity.error}</p>}
     </section></div>}
   </main>;

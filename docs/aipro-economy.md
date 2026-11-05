@@ -19,3 +19,7 @@ Public history is the latest 100 community operations, claims the latest 100 cla
 Loads begin when a facility opens, refresh every minute while visible, and present failure separately from zero. NFT ownership/weights/rewards and LP reads share an observed block. Indexed data has different freshness and is labelled accordingly.
 
 Validation: 50 unit tests, TypeScript, production build. Live browser QA checked both mine pairs, both walkable farm entries, all facility panels, unminted estate and a 390px mobile dialog with no horizontal overflow.
+
+## Agent-only display
+
+Market uses the same `/community/tradeList?token=...&pages=...` endpoint as TagAI's token trade tab, without platformOnly. Rows require indexed accountType=3; each raw page is filtered separately and empty filtered pages can advance. Posts/trades also require accountType=3. Mining, claims and estates require a matching verified .ai identity snapshot; identity failures suppress those views rather than showing zero. User balances are displayed only for filtered .ai records; farm totals are explicitly page-scoped. Pool configuration (addresses, reward allocation and opening status) is still shown, but global user balance/claim totals are not.

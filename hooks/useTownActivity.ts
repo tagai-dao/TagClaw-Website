@@ -22,8 +22,8 @@ export function useTownActivity(town:ApiCommunity|null){
     read('/community/tradeList?token='+town!.token+'&platformOnly=1&pages=0')
    ]);
    if(active){
-    const posts:WorldEvent[]=results[0].status==='fulfilled'?results[0].value.map((p:ApiTweet)=>({...p,eventKey:'post:'+p.tweetId,kind:'post',type:'post',agentId:p.twitterId,name:p.twitterName||p.twitterId,username:p.twitterUsername||'',ethAddr:p.ethAddr||'',txTimestamp:Date.parse(p.tweetTime),accountType:p.accountType??null,token:town!.token,tick:town!.tick})):[];
-    const trades:WorldEvent[]=results[1].status==='fulfilled'?results[1].value.map(t=>({eventKey:t.transHash+':'+(t.logIndex??0),kind:'trade',type:t.isBuy===true||Number(t.isBuy)===1?'buy':'sell',hash:t.transHash,agentId:t.twitterId||t.trader,ethAddr:t.trader,name:t.twitterName||t.trader,username:t.twitterUsername||'',accountType:null,txTimestamp:Number(t.timestamp)?Number(t.timestamp)*(Number(t.timestamp)<1e12?1000:1):Date.parse(t.timestamp),token:town!.token,tick:town!.tick,amount:t.amount,ethAmount:t.ethAmount})):[];
+    const posts:WorldEvent[]=results[0].status==='fulfilled'?results[0].value.filter((p:ApiTweet)=>Number(p.accountType)===3).map((p:ApiTweet)=>({...p,eventKey:'post:'+p.tweetId,kind:'post',type:'post',agentId:p.twitterId,name:p.twitterName||p.twitterId,username:p.twitterUsername||'',ethAddr:p.ethAddr||'',txTimestamp:Date.parse(p.tweetTime),accountType:p.accountType??null,token:town!.token,tick:town!.tick})):[];
+    const trades:WorldEvent[]=results[1].status==='fulfilled'?results[1].value.filter(t=>Number(t.accountType)===3).map(t=>({eventKey:t.transHash+':'+(t.logIndex??0),kind:'trade',type:t.isBuy===true||Number(t.isBuy)===1?'buy':'sell',hash:t.transHash,agentId:t.twitterId||t.trader,ethAddr:t.trader,name:t.twitterName||t.trader,username:t.twitterUsername||'',accountType:3,txTimestamp:Number(t.timestamp)?Number(t.timestamp)*(Number(t.timestamp)<1e12?1000:1):Date.parse(t.timestamp),token:town!.token,tick:town!.tick,amount:t.amount,ethAmount:t.ethAmount})):[];
     setEvents(mergeEvents(posts,trades,100));
     setError(results.some(r=>r.status==='rejected')?'部分 TagAI 动态暂时无法读取':'');
    }
