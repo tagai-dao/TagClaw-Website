@@ -7,6 +7,8 @@ import {route,walkable,type Point} from '../world/island-path';
 import hallImage from '../assets/town-hall.webp';
 import {useTownActivity} from '../hooks/useTownActivity';
 import TownLedger from '../components/world/TownLedger';
+import TownEconomy,{EstateOwner} from '../components/world/TownEconomy';
+import {useAiproEconomy} from '../hooks/useAiproEconomy';
 import catalog from '../world/catalog-2026-11-04.json';
 import IslandGround from '../components/world/IslandGround';
 import IslandRadio from '../components/world/IslandRadio';
@@ -18,7 +20,8 @@ const sites=[
   {label:'庄园',x:42,y:34,door:{x:42,y:38}},
   {label:'小镇动态',x:115,y:37,door:{x:114,y:42}},
   {label:'市政厅',x:75,y:55,door:{x:75,y:57}},
-  {label:'农田',x:41,y:72,door:{x:54,y:62}},
+  {label:'质押农田',x:35,y:68,door:{x:54,y:62}},
+  {label:'居民农田',x:46,y:78,door:{x:55,y:63}},
   {label:'金矿',x:105,y:72,door:{x:106,y:60}},
 ];
 const position=(p:Point)=>({left:p.x/1.5+'%',top:p.y+'%'});
@@ -37,6 +40,7 @@ function Island({id}:{id?:string}){
   const events=(snapshot?.events||[]).filter(e=>eventTown(e,snapshot?.towns||catalog)==='AIPRO');
   const residents=residentsFrom(events,12);
   const [actor,move]=useState(spawn),[panel,open]=useState(''),[door,setDoor]=useState(id||'1');
+  const economy=useAiproEconomy(['金矿','质押农田','居民农田','市政厅','小镇动态','庄园'].includes(panel));
   const room=useIslandRoom(id||'square',actor);
   const [draft,setDraft]=useState('');
   const messages=useRef<HTMLDivElement>(null);
@@ -78,6 +82,7 @@ function Island({id}:{id?:string}){
         <IslandGround/>
         <img className="town-hall-scene" src={hallImage} alt="" aria-hidden="true"/>
 
+        <div className="town-farm-divider" aria-hidden="true"/>
         {sites.map(s=><button key={s.label} className="ip-site" style={position(s)} aria-label={s.label} onClick={()=>go(s.door,s.label)}><span>{names?s.label:'◆'}</span></button>)}
         {people&&Object.entries(room.peers).map(([key,p])=><div key={key} className="ip-resident" style={position(p)}><img src="/town/scout.svg" alt="在线访客"/><small>访客 {key.slice(0,5)}</small></div>)}
         <div className="ip-avatar" style={position(actor)}><img alt="访客角色" src="/town/scout.svg"/><small>你 · 访客</small></div>
@@ -85,22 +90,21 @@ function Island({id}:{id?:string}){
     </div>
     <header className="ip-title"><button aria-label="小镇菜单" onClick={()=>show('小镇菜单')}>☰</button><strong>{id?'庄园 #'+id:'AIPRO · 居民广场'}</strong><IslandRadio/></header>
     <div className="ip-network">◆ {room.online?(Object.keys(room.peers).length+1)+' 人在线':'连接中…'}</div>
-    <nav className="ip-tools">{[['▣','庄园'],['♜','交易市场'],['⌂','市政厅'],['♙','小镇动态']].map(([icon,label])=><button key={label} onClick={()=>open(label)}><b>{icon}</b>{label}</button>)}</nav>
+    <nav className="ip-tools">{[['▣','庄园'],['♜','交易市场'],['⌂','市政厅'],['♙','小镇动态'],['♧','质押农田'],['♧','居民农田'],['◆','金矿']].map(([icon,label])=><button key={label} aria-label={label} onClick={()=>show(label)}><b>{icon}</b>{label}</button>)}</nav>
     <aside className="ip-log"><button onClick={()=>setLog(!log)} aria-expanded={log}>房间聊天 {log?'−':'+'}</button>
       {log&&<>
         <div className="ip-messages" role="log" ref={messages}>{room.lines.length?room.lines.map((line,i)=><p key={i}>{line}</p>):<p>本房间的在线访客可以在此聊天。</p>}</div>
         <form onSubmit={e=>{e.preventDefault();if(room.send(draft))setDraft('');}}><input aria-label="聊天消息" maxLength={200} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="说点什么…"/><button disabled={!room.online||!draft.trim()}>发送</button></form>
       </>}</aside>
     <footer className="ip-switch"><button aria-pressed={people} onClick={()=>setPeople(!people)}>● 访客</button><button aria-pressed={names} onClick={()=>setNames(!names)}>◆ 门牌</button></footer>
-    {panel&&<div className="ip-shade" onClick={()=>show('')}><section role="dialog" aria-label={panel} className={'ip-dialog '+(['交易市场','市政厅','小镇动态'].includes(panel)?'is-ledger':'')} onClick={e=>e.stopPropagation()}><button autoFocus className="ip-close" aria-label="关闭" onClick={()=>{show('');board.current?.focus();}}>×</button><small>AIPRO ISLAND</small><h2>{panel}</h2>
-      {panel==='庄园' &&<><img className="ip-portrait" src={'https://ipfs.4everland.io/ipfs/'+cid+'/'+(id||door).padStart(4,'0')+'.png'} alt="庄园系列肖像"/><p>3333 个门牌 · NFT 持有者为对应庄园拥有者。当前居民 NFT 合约与门牌映射待接入。</p><form onSubmit={e=>{e.preventDefault();show('');navigate('/town/aipro/estate/'+Number(door));}}><label>门牌 <input required type="number" min="1" max="3333" value={door} onChange={e=>setDoor(e.target.value)}/></label><button>进入庄园</button></form></>}
+    {panel&&<div className="ip-shade" onClick={()=>show('')}><section role="dialog" aria-label={panel} className={'ip-dialog '+(['交易市场','市政厅','小镇动态','金矿','质押农田','居民农田'].includes(panel)?'is-ledger':'')} onClick={e=>e.stopPropagation()}><button autoFocus className="ip-close" aria-label="关闭" onClick={()=>{show('');board.current?.focus();}}>×</button><small>AIPRO ISLAND</small><h2>{panel}</h2>
+      {panel==='庄园' &&<><img className="ip-portrait" src={'https://ipfs.4everland.io/ipfs/'+cid+'/'+(id||door).padStart(4,'0')+'.png'} alt="庄园系列肖像"/><p>3333 个门牌 · NFT 持有者为对应庄园拥有者。肖像为该门牌系列预览，未铸造不代表已经拥有庄园。</p><EstateOwner id={id||door} data={economy.data}/><form onSubmit={e=>{e.preventDefault();show('');navigate('/town/aipro/estate/'+Number(door));}}><label>门牌 <input required type="number" min="1" max="3333" value={door} onChange={e=>setDoor(e.target.value)}/></label><button>进入庄园</button></form></>}
       {panel==='小镇菜单'&&<><p>点击道路或用方向键 / WASD 行走，点击设施到访。</p>{id&&<Link to="/town/aipro">返回广场 · </Link>}<Link to="/">社区群岛 ↗</Link></>}
       {panel==='访客身份'&&<p>人类可自由参观。居民 NFT 计划由持有 Binance Agent ID 的 Agent 铸造，NFT AMM Pool 向所有交易者开放。</p>}
 
-      {['小镇动态','交易市场','市政厅'].includes(panel)&&<TownLedger key={panel} kind={panel} events={panel==='小镇动态'?activity.events:events} town={town}/>}
+      {['金矿','质押农田','居民农田','市政厅','小镇动态'].includes(panel)&&<TownEconomy kind={panel} state={economy}/>}
+      {['小镇动态','交易市场'].includes(panel)&&<TownLedger key={panel} kind={panel} events={panel==='小镇动态'?activity.events:events} town={town}/>}
       {panel==='小镇动态'&&activity.error&&<p role="status">{activity.error}</p>}
-      {panel==='农田'&&<p>农田待开放。接入质押合约后展示居民 NFT、AIPRO 质押与收获记录。</p>}
-      {panel==='金矿'&&<p>金矿待开放。接入指定流动性池后展示庄园的 LP 仓位与奖励。</p>}
     </section></div>}
   </main>;
 }
