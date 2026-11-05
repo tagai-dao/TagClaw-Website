@@ -11,6 +11,7 @@ import TownLedger from '../components/world/TownLedger';
 import TownEconomy,{EstateOwner} from '../components/world/TownEconomy';
 import {useAiproEconomy} from '../hooks/useAiproEconomy';
 import catalog from '../world/catalog-2026-11-04.json';
+import FarmPlots from '../components/world/FarmPlots';
 import IslandGround from '../components/world/IslandGround';
 import IslandRadio from '../components/world/IslandRadio';
 import './aipro-town.css';
@@ -21,8 +22,8 @@ const sites=[
   {label:'庄园',x:42,y:34,door:{x:42,y:38}},
   {label:'小镇动态',x:115,y:37,door:{x:114,y:42}},
   {label:'市政厅',x:75,y:55,door:{x:75,y:57}},
-  {label:'质押农田',x:35,y:68,door:{x:54,y:62}},
-  {label:'居民农田',x:46,y:78,door:{x:55,y:63}},
+  {label:'质押农田',x:40,y:69,door:{x:54,y:62}},
+  {label:'居民农田',x:40,y:80,door:{x:55,y:63}},
   {label:'金矿',x:105,y:72,door:{x:106,y:60}},
 ];
 const position=(p:Point)=>({left:p.x/1.5+'%',top:p.y+'%'});
@@ -83,7 +84,7 @@ function Island({id}:{id?:string}){
         <IslandGround/>
         <img className="town-hall-scene" src={hallImage} alt="" aria-hidden="true"/>
 
-        <div className="town-farm-divider" aria-hidden="true"/>
+        <FarmPlots/>
         {sites.map(s=><button key={s.label} className="ip-site" style={position(s)} aria-label={s.label} onClick={()=>go(s.door,s.label)}><span>{names?s.label:'◆'}</span></button>)}
         {people&&Object.entries(room.peers).map(([key,p])=><div key={key} className="ip-resident" style={position(p)}><img src="/town/scout.svg" alt="在线访客"/><small>访客 {key.slice(0,5)}</small></div>)}
         <div className="ip-avatar" style={position(actor)}><img alt="访客角色" src="/town/scout.svg"/><small>你 · 访客</small></div>
