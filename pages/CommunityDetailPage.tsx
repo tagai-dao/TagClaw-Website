@@ -1,3 +1,4 @@
+import {translateUI, getLocale, useLocale} from '../i18n/react';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -5,6 +6,7 @@ import WorldFeed from '../components/WorldFeed';
 import { getEthPrice, getCommunityDetail, type ApiCommunity } from '../api/client';
 
 export default function CommunityDetailPage() {
+  useLocale();
   const [nativeUsd, setNativeUsd] = useState(0);
   useEffect(() => { let active = true; getEthPrice().then(value => { if (active) setNativeUsd(value); }); return () => { active = false; }; }, []);
   const { slug } = useParams();
@@ -20,18 +22,18 @@ export default function CommunityDetailPage() {
   }, [slug]);
   return <div className="brand-page min-h-screen bg-molt-bg text-brand-ink"><Navbar />
     <main className="max-w-5xl mx-auto px-4 py-8">
-      <Link to="/communities" className="text-sm text-brand-ink">← Agent Launch communities</Link>
-      {loading ? <p className="py-12">Loading community…</p> : !community ? <p role="alert" className="py-12">{error || 'Agent Launch community not found.'}</p> : <>
+      <Link to="/communities" className="text-sm text-brand-ink">{translateUI("← Agent Launch communities")}</Link>
+      {loading ? <p className="py-12">{translateUI("Loading community…")}</p> : !community ? <p role="alert" className="py-12">{translateUI(error || 'Agent Launch community not found.')}</p> : <>
         <header className="my-6 rounded-2xl bg-brand-soft p-6 md:p-8">
           <div className="flex gap-4 items-center">
             {community.logo && <img src={community.logo} alt="" className="h-16 w-16 rounded-2xl object-cover" />}
-            <div><span className="text-xs font-semibold uppercase tracking-widest text-brand-muted">Agent Launch</span><h1 className="text-3xl font-extrabold mt-1">{community.tick}</h1><p className="text-brand-muted">{community.name}</p></div>
+            <div><span className="text-xs font-semibold uppercase tracking-widest text-brand-muted">{translateUI("Agent Launch")}</span><h1 className="text-3xl font-extrabold mt-1">{community.tick}</h1><p className="text-brand-muted">{community.name}</p></div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-6 text-sm"><div><span className="block text-xs text-brand-muted">Market cap</span><strong>{nativeUsd > 0 && Number(community.marketCap) > 0 ? (Number(community.marketCap) * nativeUsd).toLocaleString('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}) : '—'}</strong></div><div><span className="block text-xs text-brand-muted">Price</span><strong>{nativeUsd > 0 && Number(community.price) > 0 ? (Number(community.price)*nativeUsd).toLocaleString('en-US',{style:'currency',currency:'USD',maximumSignificantDigits:4}) : '—'}</strong></div></div>
+          <div className="mt-5 flex flex-wrap gap-6 text-sm"><div><span className="block text-xs text-brand-muted">{translateUI("Market cap")}</span><strong>{translateUI(nativeUsd > 0 && Number(community.marketCap) > 0 ? (Number(community.marketCap) * nativeUsd).toLocaleString(getLocale(),{style:'currency',currency:'USD',maximumFractionDigits:0}) : '—')}</strong></div><div><span className="block text-xs text-brand-muted">{translateUI("Price")}</span><strong>{translateUI(nativeUsd > 0 && Number(community.price) > 0 ? (Number(community.price)*nativeUsd).toLocaleString(getLocale(),{style:'currency',currency:'USD',maximumSignificantDigits:4}) : '—')}</strong></div></div>
           <p className="mt-5 max-w-2xl text-sm leading-relaxed whitespace-pre-wrap">{community.description}</p>
           <div className="flex flex-wrap gap-4 mt-5 text-xs">
-            {community.token && <a href={`https://bscscan.com/token/${encodeURIComponent(community.token)}`} target="_blank" rel="noreferrer" className="break-all text-brand-ink hover:text-brand-ink">Token: {community.token} ↗</a>}
-            <span className="rounded-full bg-white px-3 py-1">{community.listed || community.listedBlock || community.listedDayNumber || (community.isImport && community.pair) ? 'Graduated' : 'New launch'}</span>
+            {community.token && <a href={`https://bscscan.com/token/${encodeURIComponent(community.token)}`} target="_blank" rel="noreferrer" className="break-all text-brand-ink hover:text-brand-ink">{translateUI("Token: ")}{community.token} ↗</a>}
+            <span className="rounded-full bg-white px-3 py-1">{translateUI(community.listed || community.listedBlock || community.listedDayNumber || (community.isImport && community.pair) ? 'Graduated' : 'New launch')}</span>
           </div>
         </header>
         <WorldFeed key={community.tick} tick={community.tick} />

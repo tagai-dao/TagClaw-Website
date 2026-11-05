@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -57,29 +58,30 @@ const ClawIcon = () => (
 
 /** 小火苗 = 1 VP */
 const SmallFlameIcon = () => (
-  <span className="inline-flex text-sm" title="1 VP" aria-hidden>🔥</span>
+  <span className="inline-flex text-sm" title={translateUI("1 VP")} aria-hidden>🔥</span>
 );
 
 /** 大火苗 = 5 VP */
 const LargeFlameIcon = () => (
-  <span className="inline-flex text-sm" title="5 VP" aria-hidden>❤️‍🔥</span>
+  <span className="inline-flex text-sm" title={translateUI("5 VP")} aria-hidden>❤️‍🔥</span>
 );
 
 /** 蓝色火苗 = 1 个代表消耗 3 VP（回复） */
 const BlueFlameIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0 text-blue-500" aria-label="3 VP">
+  <svg width="14" height="14" viewBox="0 0 24 24" className="shrink-0 text-blue-500" aria-label={translateUI("3 VP")}>
     <path fill="currentColor" d="M12 23c5 0 9-4 9-9 0-2-1-3.8-2.5-5.2-.8.6-1.5 1.2-2 1.8-.8-1.2-1.3-2.5-1.3-4 0-2 1-4 2.5-5.5C17 2 15 1 12.5 1 10 1 8 2 6.5 3.5 5 5 4 7 4 9c0 1.5.5 2.8 1.3 4-.5-.6-1.2-1.2-2-1.8C2 10.2 1 11.5 1 14c0 5 4 9 9 9z" />
   </svg>
 );
 
 /** 根据 curationVp 和 replyVp 渲染 VP 图标：小火苗=1VP，大火苗=5VP，蓝色火苗=1个代表消耗3VP（回复） */
 function VpIcons({ curationVp = 0, replyVp = 0 }: { curationVp?: number; replyVp?: number }) {
+  useLocale();
   const large = Math.floor(curationVp / 5);
   const small = curationVp % 5;
   return (
     <span className="inline-flex items-center gap-0.5">
-      {Array.from({ length: large }, (_, i) => <LargeFlameIcon key={`l-${i}`} />)}
-      {Array.from({ length: small }, (_, i) => <SmallFlameIcon key={`s-${i}`} />)}
+      {translateUI(Array.from({ length: large }, (_, i) => <LargeFlameIcon key={`l-${i}`} />))}
+      {translateUI(Array.from({ length: small }, (_, i) => <SmallFlameIcon key={`s-${i}`} />))}
       {replyVp > 0 && <BlueFlameIcon />}
     </span>
   );
@@ -110,6 +112,7 @@ function getDaysLeft(dayNumber: number | undefined): string | null {
 }
 
 const PostDetailPage: React.FC = () => {
+  useLocale();
   const { id: tweetId } = useParams<{ id: string }>();
   const [tweet, setTweet] = useState<ApiTweetDetail | null>(null);
 
@@ -273,8 +276,8 @@ const PostDetailPage: React.FC = () => {
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
-          <p className="text-brand-ink">未指定帖子</p>
-          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">返回首页</Link>
+          <p className="text-brand-ink">{translateUI("未指定帖子")}</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">{translateUI("返回首页")}</Link>
         </div>
       </div>
     );
@@ -284,7 +287,7 @@ const PostDetailPage: React.FC = () => {
     return (
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
-        <div className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full text-center text-brand-muted">加载中...</div>
+        <div className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full text-center text-brand-muted">{translateUI("加载中...")}</div>
       </div>
     );
   }
@@ -294,8 +297,8 @@ const PostDetailPage: React.FC = () => {
       <div className="brand-page min-h-screen flex flex-col font-sans bg-molt-bg text-brand-ink">
         <Navbar />
         <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
-          <p className="text-brand-ink">帖子不存在</p>
-          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">返回首页</Link>
+          <p className="text-brand-ink">{translateUI("帖子不存在")}</p>
+          <Link to="/" className="text-orange-600 hover:underline mt-4 inline-block">{translateUI("返回首页")}</Link>
         </div>
       </div>
     );
@@ -316,10 +319,10 @@ const PostDetailPage: React.FC = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              {(() => {
+              {translateUI((() => {
                 const authorContent = (
                   <>
-                    {tweet.profile ? (
+                    {translateUI(tweet.profile ? (
                       <img
                         src={tweet.profile}
                         alt={name}
@@ -329,7 +332,7 @@ const PostDetailPage: React.FC = () => {
                           (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                         }}
                       />
-                    ) : null}
+                    ) : null)}
                     <div className={`w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink font-bold text-lg shrink-0 ${tweet.profile ? 'hidden' : ''}`}>
                       {initial}
                     </div>
@@ -341,7 +344,7 @@ const PostDetailPage: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
                         <span>{handle}</span>
-                        <span>{formatTimeAgo(tweet.tweetTime)}</span>
+                        <span>{translateUI(formatTimeAgo(tweet.tweetTime))}</span>
                       </div>
                     </div>
                   </>
@@ -357,7 +360,7 @@ const PostDetailPage: React.FC = () => {
                   );
                 }
                 return authorContent;
-              })()}
+              })())}
             </div>
             {(tweet.amount != null || tweet.authorAmount != null) && (
               <div className="relative shrink-0" ref={rewardPopoverRef}>
@@ -366,20 +369,20 @@ const PostDetailPage: React.FC = () => {
                   onClick={() => setRewardPopoverOpen((v) => !v)}
                   className="bg-orange-500 text-brand-ink px-3 py-1.5 rounded-full hover:bg-orange-600 transition-colors shrink-0 flex items-center gap-1.5"
                 >
-                  {(() => {
+                  {translateUI((() => {
                     const totalAmt = Number(tweet.amount ?? tweet.authorAmount ?? 0);
                     const usd = toUsd(totalAmt, tweet.token);
                     return usd != null ? (
                       <>
-                        <span className="font-bold text-base">${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <span className="text-brand-ink text-xs font-normal">({totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
+                        <span className="font-bold text-base">${translateUI(usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}</span>
+                        <span className="text-brand-ink text-xs font-normal">({translateUI(totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 }))})</span>
                       </>
                     ) : (
-                      <span className="text-sm font-bold">({totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
+                      <span className="text-sm font-bold">({translateUI(totalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 }))})</span>
                     );
-                  })()}
+                  })())}
                 </button>
-                {rewardPopoverOpen && (() => {
+                {translateUI(rewardPopoverOpen && (() => {
                   // 总奖励池：优先用 amount，否则用 authorAmount+curateAmount，或按 20/80 反推
                   const total = Number(
                     tweet.amount ??
@@ -403,23 +406,23 @@ const PostDetailPage: React.FC = () => {
                       <div className="bg-white rounded-lg border border-gray-200 shadow-lg py-3 px-4">
                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-200 rotate-45" />
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <span className="text-gray-600 text-sm">Author</span>
-                          <span className="text-gray-900 font-medium text-sm">{format(authorVal)}</span>
+                          <span className="text-gray-600 text-sm">{translateUI("Author")}</span>
+                          <span className="text-gray-900 font-medium text-sm">{translateUI(format(authorVal))}</span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <span className="text-gray-600 text-sm">Curators</span>
-                          <span className="text-gray-900 font-medium text-sm">{format(curatorsVal)}</span>
+                          <span className="text-gray-600 text-sm">{translateUI("Curators")}</span>
+                          <span className="text-gray-900 font-medium text-sm">{translateUI(format(curatorsVal))}</span>
                         </div>
                         {daysLeft != null && (
                           <div className="flex justify-between items-center py-2">
-                            <span className="text-gray-600 text-sm">End time:</span>
-                            <span className="text-gray-900 text-sm">{daysLeft}</span>
+                            <span className="text-gray-600 text-sm">{translateUI("End time:")}</span>
+                            <span className="text-gray-900 text-sm">{translateUI(daysLeft)}</span>
                           </div>
                         )}
                       </div>
                     </div>
                   );
-                })()}
+                })())}
               </div>
             )}
           </div>
@@ -435,7 +438,7 @@ const PostDetailPage: React.FC = () => {
                   key={tag}
                   className="bg-green-100 text-green-800 text-sm px-2.5 py-1 rounded-full font-medium"
                 >
-                  #{tag}
+                  #{translateUI(tag)}
                 </span>
               ))}
             </div>
@@ -444,22 +447,22 @@ const PostDetailPage: React.FC = () => {
           <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
             <span className="flex items-center gap-1.5 text-gray-500">
               <CommentIcon />
-              <span className="text-sm">{tweet.replyCount ?? 0}</span>
+              <span className="text-sm">{translateUI(tweet.replyCount ?? 0)}</span>
             </span>
             <span className="flex items-center gap-1.5 text-gray-500">
               <RepostIcon />
-              <span className="text-sm">{tweet.retweetCount ?? 0}</span>
+              <span className="text-sm">{translateUI(tweet.retweetCount ?? 0)}</span>
             </span>
             <span className="flex items-center gap-1.5 text-gray-500">
               <EditIcon />
-              <span className="text-sm">{tweet.quoteCount ?? 0}</span>
+              <span className="text-sm">{translateUI(tweet.quoteCount ?? 0)}</span>
             </span>
             <span className="flex items-center gap-1.5 text-gray-500">
               <ShareIcon />
             </span>
             <span className="flex items-center gap-1.5 text-orange-500 ml-auto">
               <ClawIcon />
-              <span className="text-sm font-medium">{tweet.likeCount ?? 0}</span>
+              <span className="text-sm font-medium">{translateUI(tweet.likeCount ?? 0)}</span>
             </span>
           </div>
         </div>
@@ -468,15 +471,12 @@ const PostDetailPage: React.FC = () => {
         {curateCount > 0 && (
           <div className="mt-4 rounded-lg border border-purple-200 bg-purple-50/50 px-4 py-3 flex items-center justify-between">
             <span className="text-gray-700 text-sm font-medium">
-              {curateCount} guys has curated
-            </span>
+              {translateUI(curateCount)}{translateUI(" guys has curated ")}</span>
             <button
               type="button"
               onClick={() => setRewardsModalOpen(true)}
               className="text-orange-500 font-medium text-sm hover:underline"
-            >
-              More &gt;&gt;
-            </button>
+            >{translateUI("More >> ")}</button>
           </div>
         )}
 
@@ -491,7 +491,7 @@ const PostDetailPage: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
-                <h3 className="font-bold text-gray-900">策展奖励列表</h3>
+                <h3 className="font-bold text-gray-900">{translateUI("策展奖励列表")}</h3>
                 <button
                   type="button"
                   onClick={() => setRewardsModalOpen(false)}
@@ -502,9 +502,9 @@ const PostDetailPage: React.FC = () => {
               </div>
               <div className="overflow-y-auto flex-1 p-4 space-y-3">
                 {curateListLoading && curateList.length === 0 ? (
-                  <div className="text-gray-500 text-center py-8">加载中...</div>
+                  <div className="text-gray-500 text-center py-8">{translateUI("加载中...")}</div>
                 ) : curateList.length === 0 ? (
-                  <div className="text-gray-500 text-center py-8">暂无奖励记录</div>
+                  <div className="text-gray-500 text-center py-8">{translateUI("暂无奖励记录")}</div>
                 ) : (
                   curateList.map((r, idx) => {
                     const name = r.twitterName || r.twitterUsername || 'User';
@@ -519,7 +519,7 @@ const PostDetailPage: React.FC = () => {
                       >
                         {/* 左侧：头像 + @用户名 */}
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                          {r.profile ? (
+                          {translateUI(r.profile ? (
                             <img
                               src={r.profile}
                               alt={name}
@@ -529,7 +529,7 @@ const PostDetailPage: React.FC = () => {
                                 (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                               }}
                             />
-                          ) : null}
+                          ) : null)}
                           <div className={`w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-brand-ink font-bold shrink-0 ${r.profile ? 'hidden' : ''}`}>
                             {initial}
                           </div>
@@ -540,17 +540,17 @@ const PostDetailPage: React.FC = () => {
                           <div className="flex items-center gap-1.5">
                             <VpIcons curationVp={r.curationVp ?? 0} replyVp={r.replyVp ?? 0} />
                             <span className="text-gray-900 font-bold text-base">
-                              {usdVal != null ? (
+                              {translateUI(usdVal != null ? (
                                 <>
-                                  ${usdVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  <span className="text-gray-500 font-normal text-sm ml-0.5">({rewardAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })})</span>
+                                  ${translateUI(usdVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                                  <span className="text-gray-500 font-normal text-sm ml-0.5">({translateUI(rewardAmount.toLocaleString(undefined, { maximumFractionDigits: 2 }))})</span>
                                 </>
                               ) : (
                                 rewardAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                              )}
+                              ))}
                             </span>
                           </div>
-                          <div className="text-gray-500 text-xs mt-0.5">{formatTimeAgo(r.createAt)}</div>
+                          <div className="text-gray-500 text-xs mt-0.5">{translateUI(formatTimeAgo(r.createAt))}</div>
                         </div>
                       </div>
                     );
@@ -559,12 +559,12 @@ const PostDetailPage: React.FC = () => {
                 {curateList.length > 0 && (
                   <div ref={loadMoreCurateRef} className="py-4 flex justify-center">
                     {curateListHasMore && !curateListLoading && (
-                      <span className="text-gray-400 text-sm">加载更多...</span>
+                      <span className="text-gray-400 text-sm">{translateUI("加载更多...")}</span>
                     )}
                   </div>
                 )}
                 {curateList.length > 0 && !curateListHasMore && (
-                  <div className="text-center text-gray-400 text-sm py-2">No more</div>
+                  <div className="text-center text-gray-400 text-sm py-2">{translateUI("No more")}</div>
                 )}
               </div>
             </div>
@@ -573,11 +573,11 @@ const PostDetailPage: React.FC = () => {
 
         {/* 评论列表 */}
         <div className="mt-6">
-          <h2 className="font-bold text-gray-900 text-lg mb-4">Comments</h2>
+          <h2 className="font-bold text-gray-900 text-lg mb-4">{translateUI("Comments")}</h2>
           {repliesLoading && replies.length === 0 ? (
-            <div className="text-gray-500 text-sm py-4">加载中...</div>
+            <div className="text-gray-500 text-sm py-4">{translateUI("加载中...")}</div>
           ) : replies.length === 0 ? (
-            <div className="text-gray-500 text-sm py-4">暂无评论</div>
+            <div className="text-gray-500 text-sm py-4">{translateUI("暂无评论")}</div>
           ) : (
             <ul className="space-y-4">
               {replies.map((r) => {
@@ -587,31 +587,31 @@ const PostDetailPage: React.FC = () => {
                 return (
                   <li key={r.replyId} className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-start gap-3">
-                      {r.profile ? (
+                      {translateUI(r.profile ? (
                         <img
                           src={r.profile}
-                          alt={replyName}
+                          alt={translateUI(replyName)}
                           className="w-10 h-10 rounded-full bg-gray-200 object-cover shrink-0"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                             (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                           }}
                         />
-                      ) : null}
+                      ) : null)}
                       <div className={`w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center text-brand-ink font-bold shrink-0 ${r.profile ? 'hidden' : ''}`}>
-                        {replyInitial}
+                        {translateUI(replyInitial)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-gray-900">{replyName}</span>
+                          <span className="font-bold text-gray-900">{translateUI(replyName)}</span>
                           <XIcon />
                         </div>
-                        <div className="text-sm text-gray-500 mt-0.5">{replyHandle}</div>
+                        <div className="text-sm text-gray-500 mt-0.5">{translateUI(replyHandle)}</div>
                         <p className="mt-2 text-gray-800 text-sm leading-relaxed whitespace-pre-line break-words">
                           {r.content}
                         </p>
                         <div className="mt-2 text-gray-400 text-xs">
-                          {formatTimeAgo(r.operateTime)}
+                          {translateUI(formatTimeAgo(r.operateTime))}
                         </div>
                       </div>
                     </div>
@@ -623,17 +623,17 @@ const PostDetailPage: React.FC = () => {
           {replies.length > 0 && (
             <div ref={loadMoreRepliesRef} className="py-4 flex justify-center">
               {repliesHasMore && !repliesLoading && (
-                <span className="text-gray-400 text-sm">加载更多...</span>
+                <span className="text-gray-400 text-sm">{translateUI("加载更多...")}</span>
               )}
             </div>
           )}
           {replies.length > 0 && !repliesHasMore && (
-            <div className="text-center text-gray-400 text-sm py-4">No more</div>
+            <div className="text-center text-gray-400 text-sm py-4">{translateUI("No more")}</div>
           )}
         </div>
 
         <div className="mt-8">
-          <Link to="/" className="text-teal-500 hover:underline font-medium">← 返回首页</Link>
+          <Link to="/" className="text-teal-500 hover:underline font-medium">{translateUI("← 返回首页")}</Link>
         </div>
       </main>
     </div>

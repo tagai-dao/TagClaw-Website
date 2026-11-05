@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   getAgentActivity,
@@ -291,7 +292,7 @@ function renderCanvas(
     if (a.lastTx && a.labelOpacity > 0.01) {
       ctx.globalAlpha = Math.min(a.labelOpacity, 1);
       const txC = TX_COLORS[a.lastTx];
-      const label = `${TX_LABELS[a.lastTx]} ${a.lastAmount || ''}`;
+      const label = `${translateUI(TX_LABELS[a.lastTx])} ${a.lastAmount || ''}`;
       ctx.font = 'bold 10px monospace';
       const tw = ctx.measureText(label).width;
       const lx = a.x - tw / 2 - 6;
@@ -314,6 +315,7 @@ function renderCanvas(
 // ============================================
 
 const AgentActivity: React.FC = () => {
+  useLocale();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tokensRef = useRef<TokenNode[]>([]);
@@ -875,7 +877,7 @@ const AgentActivity: React.FC = () => {
       <div className="rounded-lg overflow-hidden border border-gray-800 bg-[#0a0e17] flex items-center justify-center" style={{ minHeight: 560 }}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-green-900 border-t-green-400 rounded-full animate-spin" />
-          <span className="text-gray-500 text-sm font-mono">Loading Agent Activity...</span>
+          <span className="text-gray-500 text-sm font-mono">{translateUI("Loading Agent Activity...")}</span>
         </div>
       </div>
     );
@@ -885,10 +887,8 @@ const AgentActivity: React.FC = () => {
     return (
       <div className="rounded-lg overflow-hidden border border-gray-800 bg-[#0a0e17] flex items-center justify-center" style={{ minHeight: 560 }}>
         <div className="text-center">
-          <div className="text-red-400 text-sm font-mono mb-3">{error}</div>
-          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded font-mono">
-            Retry
-          </button>
+          <div className="text-red-400 text-sm font-mono mb-3">{translateUI(error)}</div>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded font-mono">{translateUI("Retry ")}</button>
         </div>
       </div>
     );
@@ -904,15 +904,15 @@ const AgentActivity: React.FC = () => {
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded ${isLive ? 'text-green-400' : 'text-gray-500'}`}
           >
             <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
-            {isLive ? 'LIVE' : 'PAUSED'}
+            {translateUI(isLive ? 'LIVE' : 'PAUSED')}
           </button>
-          <span className="text-gray-400">Indexed BSC activity</span>
+          <span className="text-gray-400">{translateUI("Indexed BSC activity")}</span>
         </div>
         <div className="flex items-center gap-4 text-gray-400">
-          <span>Txns <span className="text-white">{stats.txCount}</span></span>
-          <span>Agents <span className="text-white">{stats.activeAgents}</span></span>
-          <span className="text-green-400">{stats.claims} claims</span>
-          <span className="text-amber-400">{stats.trades} trades</span>
+          <span>{translateUI("Txns ")}<span className="text-white">{translateUI(stats.txCount)}</span></span>
+          <span>{translateUI("Agents ")}<span className="text-white">{translateUI(stats.activeAgents)}</span></span>
+          <span className="text-green-400">{translateUI(stats.claims)}{translateUI(" claims")}</span>
+          <span className="text-amber-400">{translateUI(stats.trades)}{translateUI(" trades")}</span>
         </div>
       </div>
 
@@ -925,7 +925,7 @@ const AgentActivity: React.FC = () => {
             {(['claim', 'buy', 'sell', 'transfer'] as TxType[]).map(t => (
               <span key={t} className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TX_COLORS[t] }} />
-                <span style={{ color: TX_COLORS[t] }}>{TX_LABELS[t]}</span>
+                <span style={{ color: TX_COLORS[t] }}>{translateUI(TX_LABELS[t])}</span>
               </span>
             ))}
           </div>
@@ -934,12 +934,12 @@ const AgentActivity: React.FC = () => {
         {/* Feed Sidebar */}
         <div className="w-72 border-l border-gray-800 bg-[#0d1220] flex-col shrink-0 hidden md:flex">
           <div className="px-3 py-2 border-b border-gray-800 flex items-center justify-between">
-            <span className="text-xs font-mono font-bold text-gray-300 tracking-wider">TRANSACTIONS</span>
-            <span className="text-[10px] font-mono text-gray-500">{stats.txCount} txns</span>
+            <span className="text-xs font-mono font-bold text-gray-300 tracking-wider">{translateUI("TRANSACTIONS")}</span>
+            <span className="text-[10px] font-mono text-gray-500">{translateUI(stats.txCount)}{translateUI(" txns")}</span>
           </div>
           <div ref={feedListRef} className="flex-1 overflow-y-auto" style={{ maxHeight: 480 }}>
             {feed.length === 0 && (
-              <div className="text-gray-600 text-xs font-mono text-center py-8">No transactions</div>
+              <div className="text-gray-600 text-xs font-mono text-center py-8">{translateUI("No transactions")}</div>
             )}
             {feed.map(tx => (
               <div
@@ -978,16 +978,16 @@ const AgentActivity: React.FC = () => {
                       className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
                       style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
                     >
-                      {tx.agentInitial}
+                      {translateUI(tx.agentInitial)}
                     </span>
                   )}
                 </div>
                 {/* Col 3: Amount + TagCoin icon */}
                 <div className="min-w-0 flex items-center gap-1.5">
                   <span className="text-xs font-mono font-semibold truncate" style={{ color: TX_COLORS[tx.type] }}>
-                    {tx.amount}
+                    {translateUI(tx.amount)}
                   </span>
-                  {tx.communityLogo ? (
+                  {translateUI(tx.communityLogo ? (
                     <img
                       src={tx.communityLogo}
                       alt=""
@@ -1001,14 +1001,14 @@ const AgentActivity: React.FC = () => {
                     >
                       {tx.tick.slice(0, 2).toUpperCase()}
                     </span>
-                  ) : null}
+                  ) : null)}
                 </div>
                 {/* Col 4: Time */}
                 <span
                   className="text-[10px] font-mono text-gray-600 text-right"
-                  title={fmtFullTime(tx.timestamp)}
+                  title={translateUI(fmtFullTime(tx.timestamp))}
                 >
-                  {fmtTime(tx.timestamp)}
+                  {translateUI(fmtTime(tx.timestamp))}
                 </span>
               </div>
             ))}
@@ -1021,11 +1021,11 @@ const AgentActivity: React.FC = () => {
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-green-500' : 'bg-gray-600'}`} />
-            {isLive ? 'Online' : 'Offline'}
+            {translateUI(isLive ? 'Online' : 'Offline')}
           </span>
-          <span>TagClaw Agent Activity · BSC</span>
+          <span>{translateUI("TagClaw Agent Activity · BSC")}</span>
         </div>
-        <span className="text-gray-600">Powered by TagClaw</span>
+        <span className="text-gray-600">{translateUI("Powered by TagClaw")}</span>
       </div>
     </div>
   );

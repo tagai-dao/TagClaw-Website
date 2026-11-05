@@ -1,3 +1,4 @@
+import {translateUI, getLocale} from '../i18n/core';
 import type { ApiCommunity, WorldEvent } from '../api/client';
 
 export type Place = 'market' | 'square' | 'rewards' | 'workshop' | 'vault' | 'burn';
@@ -32,18 +33,19 @@ export function eventTown(event: WorldEvent, towns: ApiCommunity[]): string | nu
 }
 export function amountLabel(value: string | number | undefined): string {
   const n = Number(value);
-  return value != null && Number.isFinite(n) ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(n) : '—';
+  return value != null && Number.isFinite(n) ? new Intl.NumberFormat(getLocale(), { notation: 'compact', maximumFractionDigits: 2 }).format(n) : '—';
 }
 export function agentName(event:WorldEvent):string{return /^[a-zA-Z0-9-]{3,32}\.ai$/.test(event.agentId)?event.agentId:event.name||event.username||event.agentId;}
-export function eventSentence(event: WorldEvent): string {
+export function eventSentence(event: WorldEvent): string { return translateUI(eventSentenceRaw(event)); }
+function eventSentenceRaw(event: WorldEvent): string {
   const name = agentName(event);
-  if(event.kind==='ipshare')return `${name} ${{buy:'买入',sell:'卖出',stake:'质押',unstake:'申请退出质押',create:'发行'}[event.protocolAction||'buy']} ${amountLabel(event.amount)} IPShare${event.subject?` · ${event.subject.slice(0,6)}…${event.subject.slice(-4)}`:''}`;
+  if(event.kind==='ipshare')return `${name} ${translateUI({buy:'买入',sell:'卖出',stake:'质押',unstake:'申请退出质押',create:'发行'}[event.protocolAction||'buy'])} ${amountLabel(event.amount)} IPShare${event.subject?` · ${event.subject.slice(0,6)}…${event.subject.slice(-4)}`:''}`;
   if(event.contentSource==='x')return `关联 X @${event.xHandle||event.username} 发布了公开内容` ;
   const asset = (event.amountUnit==='shares'&&event.kind==='trade'?`${event.tick||'代币'}份额`:event.tick) || (event.token ? `${event.token.slice(0, 6)}…${event.token.slice(-4)}` : '代币');
   if (event.type === 'post') return `${name} 发布了公开内容`;
   if (event.type === 'transfer') return `${name} 转出 ${amountLabel(event.amount)} ${asset}`;
   if (event.type === 'claim') return `${name} 领取了 ${amountLabel(event.amount)} ${asset}`;
-  return `${name} ${actionLabels[event.type]} ${amountLabel(event.amount)} ${asset}`;
+  return `${name} ${translateUI(actionLabels[event.type])} ${amountLabel(event.amount)} ${asset}`;
 }
 export function plainContent(content = ''): string {
   // React renders the result as text. No untrusted HTML is interpreted.
@@ -69,11 +71,12 @@ export function residentPosition(resident: Resident): {x: number; y: number} {
   return { x: base.x + (hash % 5 - 2) * 33, y: base.y + (Math.floor(hash / 5) % 3 - 1) * 35 };
 }
 export function eventContent(event:WorldEvent):string{return event.contentSource==='x'?String(event.content||''):plainContent(event.content);}
-export function sourceLabel(event: WorldEvent): string {
+export function sourceLabel(event: WorldEvent): string { return translateUI(sourceLabelRaw(event)); }
+function sourceLabelRaw(event: WorldEvent): string {
   if(event.contentSource==='x')return `关联 X @${event.xHandle||event.username} · 未验证钱包控制权`;
   if(event.identityRangeFrom&&event.identityRangeTo)return `BSC · NodeReal 区块 #${event.blockNumber} · 身份连续核验 #${event.identityRangeFrom}–#${event.identityRangeTo}`;
-  if (event.identitySource==='chain-registry') return `BSC · NodeReal 区块 #${event.blockNumber} · ${event.identityAtEvent?'事件时身份':'注册身份核验'} #${event.identitySnapshotBlock}`;
-  if (event.chainSource==='nodereal') return `BSC · NodeReal 区块 #${event.blockNumber}${event.identitySource==='atlas-registry'?` · 身份快照 #${event.identitySnapshotBlock}`:''}`;
+  if (event.identitySource==='chain-registry') return `BSC · NodeReal 区块 #${event.blockNumber} · ${translateUI(event.identityAtEvent?'事件时身份':'注册身份核验')} #${event.identitySnapshotBlock}`;
+  if (event.chainSource==='nodereal') return `BSC · NodeReal 区块 #${event.blockNumber}${event.identitySource==='atlas-registry'?translateUI(` · 身份快照 #${event.identitySnapshotBlock}`):''}`;
   if (event.identitySource === 'atlas-registry') return `ATLAS · 注册身份快照 #${event.identitySnapshotBlock} · 交易区块 #${event.blockNumber}`;
   if (event.kind !== 'post') return 'BSC · 已索引事件';
   return event.contentSource === 'tagclaw' ? 'TagClaw 原生内容' : 'TagAI · 已收录公开内容';

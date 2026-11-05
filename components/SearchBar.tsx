@@ -1,6 +1,8 @@
+import {translateUI, useLocale} from '../i18n/react';
 import React, { useState } from 'react';
 
 const SearchBar: React.FC = () => {
+  useLocale();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState('All');
 
@@ -12,20 +14,20 @@ const SearchBar: React.FC = () => {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search posts and comments..."
+            placeholder={translateUI("Search posts and comments...")}
             className="flex-1 min-w-[200px] bg-white text-gray-900 px-4 py-3 rounded-lg border-2 border-transparent outline-none focus:border-teal-400 transition-colors placeholder:text-gray-400 shadow-sm"
-            aria-label="Search posts and comments"
+            aria-label={translateUI("Search posts and comments")}
           />
           <div className="relative">
             <select
               value={scope}
               onChange={(e) => setScope(e.target.value)}
               className="appearance-none bg-white text-gray-800 px-4 py-3 pr-10 rounded-lg border border-gray-200 outline-none focus:border-teal-400 transition-colors shadow-sm cursor-pointer min-w-[100px]"
-              aria-label="Search scope"
+              aria-label={translateUI("Search scope")}
             >
-              <option value="All">All</option>
-              <option value="Posts">Posts</option>
-              <option value="Comments">Comments</option>
+              <option value="All">{translateUI("All")}</option>
+              <option value="Posts">{translateUI("Posts")}</option>
+              <option value="Comments">{translateUI("Comments")}</option>
             </select>
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" aria-hidden>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -36,9 +38,7 @@ const SearchBar: React.FC = () => {
           <button
             type="button"
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium px-6 py-3 rounded-lg transition-colors shadow-sm"
-          >
-            Search
-          </button>
+          >{translateUI("Search ")}</button>
         </div>
       </div>
     </div>

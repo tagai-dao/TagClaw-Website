@@ -1,3 +1,4 @@
+import {translateUI, useLocale} from '../../i18n/react';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import type {ApiCommunity,WorldEvent} from '../../api/client';
 import {launchPlatform,type LaunchPlatform} from '../../world/protocol';
@@ -19,6 +20,7 @@ const geography:{key:Continent;x:number;y:number;width:number;height:number}[]=[
  {key:'unmapped',x:758,y:807,...starIslandSize},
 ];
 export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bubbles=true,activityStatus}:{towns:ApiCommunity[];events:WorldEvent[];coveredTokens:string[];onTown:(tick:string)=>void;onEvent:(event:WorldEvent)=>void;bubbles?:boolean;activityStatus?:string}){
+  useLocale();
  const [camera,setCamera]=useState({zoom:1,x:0,y:0}),[size,setSize]=useState({width:1400,height:1060}),[now,setNow]=useState(Date.now());
  const [selectedIsland,selectIsland]=useState<Continent|null>(null);
  const viewport=useRef<HTMLDivElement>(null),drag=useRef<{x:number;y:number;originX:number;originY:number}|null>(null),moved=useRef(false);
@@ -57,8 +59,8 @@ export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bu
    });
  });
  const selectedTowns=selectedIsland?groups.get(selectedIsland)||[]:[];
- return <section className="world-atlas planet-atlas" aria-label="社区群岛世界地图">
-  <div className={`planet-viewport is-camera ${camera.zoom>1?'is-zoomed':''}`} ref={viewport} tabIndex={0} aria-label="群岛地图：滚轮缩放，放大后拖动，双击恢复全景" onDoubleClick={()=>setCamera({zoom:1,x:0,y:0})} onKeyDown={event=>{if(event.key==='Escape'||event.key==='0')setCamera({zoom:1,x:0,y:0});}}
+ return <section className="world-atlas planet-atlas" aria-label={translateUI("社区群岛世界地图")}>
+  <div className={`planet-viewport is-camera ${camera.zoom>1?'is-zoomed':''}`} ref={viewport} tabIndex={0} aria-label={translateUI("群岛地图：滚轮缩放，放大后拖动，双击恢复全景")} onDoubleClick={()=>setCamera({zoom:1,x:0,y:0})} onKeyDown={event=>{if(event.key==='Escape'||event.key==='0')setCamera({zoom:1,x:0,y:0});}}
    onPointerDown={event=>{if(event.button!==0)return;moved.current=false;drag.current={x:event.clientX,y:event.clientY,originX:camera.x,originY:camera.y};}}
    onPointerMove={event=>{if(!drag.current||camera.zoom===1)return;const dx=event.clientX-drag.current.x,dy=event.clientY-drag.current.y;if(Math.hypot(dx,dy)<5)return;moved.current=true;event.currentTarget.setPointerCapture(event.pointerId);setCamera(previous=>({...previous,x:drag.current!.originX+dx,y:drag.current!.originY+dy}));}}
    onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onClickCapture={event=>{if(moved.current){event.preventDefault();event.stopPropagation();moved.current=false;}}}>
@@ -66,22 +68,22 @@ export default function WorldAtlas({towns,events,coveredTokens,onTown,onEvent,bu
    <IslandGround src="/town/world-atlas.webp"/>
    <img className="star-island-ground" src={starIsland} alt="" aria-hidden="true" style={{position:'absolute',left:(758-starIslandSize.width/2)/atlasWidth*100+'%',top:(807-starIslandSize.height/2)/atlasHeight*100+'%',width:starIslandSize.width/atlasWidth*100+'%',height:starIslandSize.height/atlasHeight*100+'%',pointerEvents:'none',imageRendering:'pixelated'}}/>
 
-   {regions.map(region=><button key={region.key} className="island-sign" style={{left:region.x/atlasWidth*100+'%',top:(region.y-region.height/2-40)/atlasHeight*100+'%'}} onClick={()=>selectIsland(region.key)}>{continentNames[region.key]} · {groups.get(region.key)!.length}</button>)}
+   {regions.map(region=><button key={region.key} className="island-sign" style={{left:region.x/atlasWidth*100+'%',top:(region.y-region.height/2-40)/atlasHeight*100+'%'}} onClick={()=>selectIsland(region.key)}>{translateUI(continentNames[region.key])} · {translateUI(groups.get(region.key)!.length)}</button>)}
    {locations.map(({town,x,y,diameter})=>{const count=activity.get(town.tick)?.size||0,rows=recent.get(town.tick)||[],latest=rows.find(row=>row.kind!=='post'),speech=rows.find(row=>row.kind==='post');return <div key={town.token||town.tick} className="planet-community town-marker" style={{width:diameter,height:diameter,left:`${x/atlasWidth*100}%`,top:`${y/atlasHeight*100}%`}}>
-    {bubbles&&(latest||speech)&&<div className="planet-island-bubbles">{[latest,speech].filter((item):item is WorldEvent=>!!item).map(latest=><button key={latest.eventKey} className={`planet-activity-bubble ${latest.kind==='post'?'is-speech':'is-transaction'}`} aria-label={`查看 ${town.tick} 的最新${latest.kind==='post'?'发言':'链上动态'}：${eventSentence(latest)}`} onClick={()=>onEvent(latest)}>
-      <span key={latest.eventKey} className="map-bubble-content"><span className="map-bubble-meta"><b>{latest.kind==='post'?'发言':'链上动态'}</b><time dateTime={new Date(latest.txTimestamp).toISOString()}>{latest.identitySource==='atlas-registry'?(latest.chainSource==='nodereal'?'身份快照 · ':'历史快照 · '):''}{activityTime(latest.txTimestamp,now)}</time></span>
-      <span className="map-bubble-text">{latest.kind==='post'?`${latest.contentSource==='x'?`关联 X @${latest.xHandle}`:latest.name}：${eventContent(latest)||'发布了公开内容'}`:eventSentence(latest)}</span><span className="map-bubble-more">查看详情 ↗</span></span>
+    {bubbles&&(latest||speech)&&<div className="planet-island-bubbles">{[latest,speech].filter((item):item is WorldEvent=>!!item).map(latest=><button key={latest.eventKey} className={`planet-activity-bubble ${latest.kind==='post'?'is-speech':'is-transaction'}`} aria-label={translateUI(`查看 ${town.tick} 的最新${translateUI(latest.kind==='post'?'发言':'链上动态')}：${eventSentence(latest)}`)} onClick={()=>onEvent(latest)}>
+      <span key={latest.eventKey} className="map-bubble-content"><span className="map-bubble-meta"><b>{translateUI(latest.kind==='post'?'发言':'链上动态')}</b><time dateTime={new Date(latest.txTimestamp).toISOString()}>{translateUI(latest.identitySource==='atlas-registry'?(latest.chainSource==='nodereal'?'身份快照 · ':'历史快照 · '):'')}{translateUI(activityTime(latest.txTimestamp,now))}</time></span>
+      <span className="map-bubble-text">{latest.kind==='post'?`${latest.contentSource==='x'?translateUI(`关联 X @${latest.xHandle}`):latest.name}：${eventContent(latest)||translateUI('发布了公开内容')}`:eventSentence(latest)}</span><span className="map-bubble-more">{translateUI("查看详情 ↗")}</span></span>
      </button>)}</div>}
-    <button className="token-pin" title={town.tick+' · '+(town.name||town.tick)} onClick={()=>onTown(town.tick)} aria-label={`进入 ${town.tick} 小镇`} style={{backgroundColor:`hsl(${stableHash(town.tick)%360} 44% 35%)`,fontSize:diameter*.38}}>
+    <button className="token-pin" title={translateUI(town.tick+' · '+(town.name||town.tick))} onClick={()=>onTown(town.tick)} aria-label={translateUI(`进入 ${town.tick} 小镇`)} style={{backgroundColor:`hsl(${stableHash(town.tick)%360} 44% 35%)`,fontSize:diameter*.38}}>
       <span aria-hidden="true">{Array.from(town.tick).slice(0,2).join('')}</span>
       {town.logo&&<img key={town.logo} src={town.logo} alt="" referrerPolicy="no-referrer" onError={e=>{e.currentTarget.hidden=true;}}/>}
       {(count>0||coveredTokens.includes(town.token?.toLowerCase()||''))&&<i className="token-activity" aria-hidden="true"/>}
     </button>
    </div>;})}
   </div></div>
-  <div className="island-toolbar" aria-label="选择平台岛屿">{regions.map(r=><button key={r.key} onClick={()=>selectIsland(r.key)}>{continentNames[r.key]}</button>)}</div>
-  {selectedIsland&&<aside className="island-manifest" aria-label="岛屿代币目录"><button className="manifest-close" aria-label="关闭目录" onClick={()=>selectIsland(null)}>×</button><h3>{continentNames[selectedIsland]}</h3>
-    <p>{selectedTowns.length} 座小镇</p>{selectedTowns.map(t=><button key={t.token||t.tick} onClick={()=>onTown(t.tick)}>{t.tick} ↗</button>)}{!selectedTowns.length&&<small>暂无已载入代币</small>}</aside>}
-  <footer className="planet-legend"><span><i className="legend-live"/> 已载入活动</span><span><i/> 社区小镇 · 点击进入</span><small>滚轮缩放 · 拖动探索 · 双击恢复全景</small></footer>
+  <div className="island-toolbar" aria-label={translateUI("选择平台岛屿")}>{regions.map(r=><button key={r.key} onClick={()=>selectIsland(r.key)}>{translateUI(continentNames[r.key])}</button>)}</div>
+  {selectedIsland&&<aside className="island-manifest" aria-label={translateUI("岛屿代币目录")}><button className="manifest-close" aria-label={translateUI("关闭目录")} onClick={()=>selectIsland(null)}>×</button><h3>{translateUI(continentNames[selectedIsland])}</h3>
+    <p>{translateUI(selectedTowns.length)}{translateUI(" 座小镇")}</p>{selectedTowns.map(t=><button key={t.token||t.tick} onClick={()=>onTown(t.tick)}>{t.tick} ↗</button>)}{!selectedTowns.length&&<small>{translateUI("暂无已载入代币")}</small>}</aside>}
+  <footer className="planet-legend"><span><i className="legend-live"/>{translateUI(" 已载入活动")}</span><span><i/>{translateUI(" 社区小镇 · 点击进入")}</span><small>{translateUI("滚轮缩放 · 拖动探索 · 双击恢复全景")}</small></footer>
  </section>;
 }
