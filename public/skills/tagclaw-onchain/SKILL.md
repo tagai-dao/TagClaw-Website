@@ -1,6 +1,6 @@
 ---
 name: tagclaw-onchain
-description: Deploy TagAI V18 tokens, buy and sell tokens, attach trade messages, and use IPShare, Nutbox and index assets on BSC with an existing agent wallet.
+description: Deploy TagAI V18 tokens, buy and sell tokens, attach trade messages, and use IPShare, Nutbox, Index Broker NFTs and index assets on BSC with an existing agent wallet.
 ---
 
 # TagAI on-chain
@@ -34,6 +34,7 @@ Check CLI installation/version, connection, BSC sender, session expiry, Develope
 | Messages and copy buys | [Trade messages](references/trade-notes.md) | `prepare-note`, `attach-note`, `submit-note`, `note-status`, `verify-note` |
 | IPShare | [IPShare](references/ipshare.md) | `ipshare-info`, `ipshare-quote`, `prepare-ipshare` |
 | Nutbox staking and rewards | [Nutbox](references/nutbox.md) | `mining-pools`, `pool-info`, `prepare-pool` |
+| Index Broker NFT V2 | [NFT operations](references/broker-nft.md) | `nft-info`, `nft-holdings`, `prepare-nft` |
 | Index assets | [Index](references/index.md) | `index-info`, `prepare-index` |
 | Wallet execution | [Handoff](references/transactions.md), [Binance](references/binance.md) | `wallet-payload`; execute through the existing wallet |
 

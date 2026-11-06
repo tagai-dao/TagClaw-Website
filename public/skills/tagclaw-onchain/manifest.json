@@ -1,18 +1,18 @@
 {
   "skill": "tagclaw-onchain",
-  "version": "2.4.2",
+  "version": "2.5.0",
   "files": [
     {
       "path": "SKILL.md",
-      "sha256": "98d91515a67d6ba7242695a3b603ecb6de6b3132029c57b864c7852568eaa853"
+      "sha256": "60598e3fb654437b37912c8767ac16248a172e435685d687ef1fc70aa97d56b7"
     },
     {
       "path": "package.json",
-      "sha256": "1f4d27bd8fd027f751deb98d0479a3268fdc22f026aed2c34fc0ad3f3836dc71"
+      "sha256": "0a41ebf8a80aaba9de008b36e645490fd2ebcc95441ded764c48747f55fe4b17"
     },
     {
       "path": "package-lock.json",
-      "sha256": "06583c41f8ec42f38faf8974444be7216ac4e6fe086fb83e644a9b43b7ba3b68"
+      "sha256": "cdd2663b27286d78674b3c04d58c691afc2a9bf98b5f7e9379cf9f6c3c1717ce"
     },
     {
       "path": "agents/openai.yaml",
@@ -25,6 +25,10 @@
     {
       "path": "references/binance.md",
       "sha256": "4de0f4f9d48ed98e3bd75c57e09eef0713850a86544f57b604330c7ef41888b0"
+    },
+    {
+      "path": "references/broker-nft.md",
+      "sha256": "4d8dafe218f0392b3ab83f12a0c3dca79033f7d3814295fcb11297dc7213719a"
     },
     {
       "path": "references/creation.md",
@@ -40,7 +44,7 @@
     },
     {
       "path": "references/nutbox.md",
-      "sha256": "b2cd39f81be12b54f107060d324c24562097a9f6b04623c9aa589fdf48aa127d"
+      "sha256": "c255067f2b4224a9b228c9335084fe5b9241918fff7975806146105307eae767"
     },
     {
       "path": "references/protocol.md",
@@ -73,6 +77,10 @@
     {
       "path": "scripts/lib/api.mjs",
       "sha256": "dec890740534c09441300922bfc8c9029fe3b739d4c85e40c60d40134fed0d42"
+    },
+    {
+      "path": "scripts/lib/broker-nft.mjs",
+      "sha256": "99f24d95610dab59ced0d7c382a14ae772d458439ac76d1174569787d408d826"
     },
     {
       "path": "scripts/lib/constituents.json",
@@ -136,7 +144,7 @@
     },
     {
       "path": "scripts/tagclaw.mjs",
-      "sha256": "93ec040a092ff718472a1225d294276514b640405261e6993cc907015e05bc4a"
+      "sha256": "5c7a5b4f19d6f3b6471f85191db42fd7942c931132cce3e680cf75325b450d18"
     }
   ]
 }

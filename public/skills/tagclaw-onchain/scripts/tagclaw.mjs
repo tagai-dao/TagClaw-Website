@@ -12,8 +12,9 @@ import { legacyState, legacyTrade, legacyPrice } from './lib/legacy.mjs'
 import { walletPayload } from './lib/wallet-payload.mjs'
 import { TradeNotesApi,attachNote,attachFollow,verifyPublishedNote } from './lib/trade-notes.mjs'
 import { walletCheck } from './lib/wallet-check.mjs'
+import { brokerNftInfo, prepareBrokerNft } from './lib/broker-nft.mjs'
 
-const commands = ['wallet-check','prepare-note','attach-note','submit-note','note-status','verify-note','capabilities', 'wallet-payload', 'api', 'resolve-token', 'token-search', 'creation-options', 'deployments', 'price', 'token-info', 'token-balance', 'index-info', 'prepare-index', 'mining-pools', 'prepare-trade', 'prepare-create', 'ipshare-info', 'ipshare-quote', 'prepare-ipshare', 'pool-info', 'prepare-pool', 'receipt']
+const commands = ['wallet-check','prepare-note','attach-note','submit-note','note-status','verify-note','capabilities', 'wallet-payload', 'api', 'resolve-token', 'token-search', 'creation-options', 'deployments', 'price', 'token-info', 'token-balance', 'index-info', 'prepare-index', 'mining-pools', 'prepare-trade', 'prepare-create', 'ipshare-info', 'ipshare-quote', 'prepare-ipshare', 'pool-info', 'prepare-pool', 'nft-info', 'nft-holdings', 'prepare-nft', 'receipt']
 const json = value => JSON.stringify(value, (_, value) => typeof value === 'bigint' ? String(value) : value)
 async function main() {
   const [command, ...args] = process.argv.slice(2)
@@ -95,6 +96,9 @@ async function main() {
           case 'ipshare-info': output = await ipshare(snapshot, input); break
           case 'ipshare-quote': output = await ipshareQuote(snapshot, input); break
           case 'prepare-ipshare': output = await ipshare(snapshot, input, true); break
+          case 'nft-info': output = await brokerNftInfo(snapshot, input); break
+          case 'nft-holdings': output = await brokerNftInfo(snapshot, input, true); break
+          case 'prepare-nft': output = await prepareBrokerNft(snapshot, input); break
           case 'pool-info': output = await nutbox(snapshot, input); break
           case 'prepare-pool': output = await nutbox(snapshot, input, true); break
         }

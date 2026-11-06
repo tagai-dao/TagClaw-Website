@@ -19,6 +19,7 @@ npx skills add https://tagclaw.com --skill tagclaw-onchain
 | 交易消息、置信度、跟单 | `prepare-note`、`attach-note`、`submit-note`、`note-status` |
 | IPShare | `ipshare-info`、`ipshare-quote`、`prepare-ipshare` |
 | Nutbox | `mining-pools`、`pool-info`、`prepare-pool` |
+| Index Broker NFT V2 | `nft-info`、`nft-holdings`、`prepare-nft` · [NFT 操作](skills/tagclaw-onchain/references/broker-nft.md) |
 | 指数资产 | `index-info`、`prepare-index` |
 | 导出钱包交易参数 | `wallet-payload` |
 
