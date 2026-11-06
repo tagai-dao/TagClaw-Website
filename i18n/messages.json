@@ -3086,5 +3086,17 @@
   "{0} days left": {
     "en": "{0} days left",
     "zh": "剩余 {0} 天"
+  },
+  "音乐暂不可用，请重试": {
+    "zh": "音乐暂不可用，请重试",
+    "en": "Music unavailable. Please retry"
+  },
+  "暂停音乐 · 庄园微风": {
+    "zh": "暂停音乐 · 庄园微风",
+    "en": "Pause music · Garden Breeze"
+  },
+  "播放音乐 · 庄园微风 · 72 BPM": {
+    "zh": "播放音乐 · 庄园微风 · 72 BPM",
+    "en": "Play music · Garden Breeze · 72 BPM"
   }
 }
