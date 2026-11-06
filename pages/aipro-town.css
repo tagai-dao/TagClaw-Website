@@ -20,3 +20,7 @@
 .town-farm-plots{position:absolute;left:16.4%;top:58.8%;width:20.6%;height:22%;pointer-events:none;image-rendering:pixelated;filter:drop-shadow(0 3px 1px #263d2c88)}
 .town-economy-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:14px 0}.town-economy-card{border:1px solid #bdab82;background:#f4ecd8;padding:16px;border-radius:10px;margin:12px 0;overflow-wrap:anywhere}.town-economy-card h3{margin:0 0 10px}.town-estate-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}.town-estate-list .town-economy-card{margin:0}.town-data-warning{background:#fff1c9;border:1px solid #c6a76d;border-radius:8px;padding:10px}.town-economy .town-ledger-caption{line-height:1.6}.town-economy small{letter-spacing:0}.ip-tools{top:20%;max-height:50%;overflow:auto}
 @media(max-width:650px){.town-estate-list{grid-template-columns:1fr}.ip-dialog.is-ledger{padding:20px 16px}.town-economy-toolbar{font-size:12px}.town-ledger-metrics{gap:6px}.town-ledger-metrics article{padding:9px}.ip-tools{gap:4px}.ip-tools button{font-size:10px}.ip-tools b{font-size:16px}}
+
+/* Camera and local avatar move in the same React commit. Match their interpolation
+   so camera tracking cannot jump ahead of the avatar and create a sawtooth wobble. */
+.ip-island{transition:left 65ms linear,top 65ms linear}
