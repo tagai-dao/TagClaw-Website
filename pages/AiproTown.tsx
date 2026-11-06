@@ -1,4 +1,4 @@
-import {translateUI, useLocale} from '../i18n/react';
+import {translateUI, useLocale, LanguageControls} from '../i18n/react';
 import AiproEstate from './AiproEstate';
 import React,{useEffect,useRef,useState} from 'react';
 import {Link,useNavigate,useParams} from 'react-router-dom';
@@ -49,6 +49,7 @@ function Island({id}:{id?:string}){
   const economy=useAiproEconomy(['金矿','质押农田','居民农田','市政厅','小镇动态','庄园'].includes(panel));
   const room=useIslandRoom(id||'square',actor);
   const [draft,setDraft]=useState('');
+  const [destination,setDestination]=useState<Point|null>(null);
   const messages=useRef<HTMLDivElement>(null);
   useEffect(()=>{if(messages.current)messages.current.scrollTop=messages.current.scrollHeight;},[room.lines]);
   const [names,setNames]=useState(true),[people,setPeople]=useState(true),[log,setLog]=useState(true);
@@ -63,7 +64,8 @@ function Island({id}:{id?:string}){
       const direction=keys[held.current];
       const next=direction?{x:current.current.x+direction[0],y:current.current.y+direction[1]}:path.current.shift();
       if(next&&walkable(next)){current.current=next;move(next);}
-      if(!path.current.length&&arrival.current){open(arrival.current);arrival.current='';}
+      if(!next&&!path.current.length)setDestination(null);
+      if(!next&&!path.current.length&&arrival.current){open(arrival.current);arrival.current='';}
     },65);
     return ()=>{clearInterval(interval);window.removeEventListener('resize',resize);window.removeEventListener('blur',stop);};
   },[]);
@@ -71,12 +73,14 @@ function Island({id}:{id?:string}){
   const offset=(view:number,size:number,fraction:number)=>Math.min(0,Math.max(view-size,view/2-size*fraction));
   function go(to:Point,after=''){
     if(!walkable(to))return;
-    held.current='';path.current=route(current.current,to);arrival.current=after;board.current?.focus();
+    const nextPath=route(current.current,to);
+    if(!nextPath.length){if(current.current.x===to.x&&current.current.y===to.y){show(after);}return;}
+    held.current='';path.current=nextPath;setDestination(nextPath[nextPath.length-1]);arrival.current=after;board.current?.focus({preventScroll:true});
   }
-  function show(label:string){path.current=[];arrival.current='';held.current='';open(label);}
+  function show(label:string){setDestination(null);path.current=[];arrival.current='';held.current='';open(label);}
   return <main className="ip-game" aria-label={translateUI("AIPRO 像素小镇")} onKeyDown={e=>{if(e.key==='Escape'){show('');board.current?.focus();}}}>
     <div className="ip-camera" ref={board} tabIndex={0} aria-label={translateUI("步行地图，方向键或 WASD 移动")} onBlur={()=>{held.current='';}}
-      onKeyDown={e=>{if(keys[e.key]){e.preventDefault();held.current=e.key;path.current=[];arrival.current='';}if(e.key==='e'){const near=sites.find(s=>Math.hypot(actor.x-s.door.x,actor.y-s.door.y)<6);if(near)open(near.label);}}}
+      onKeyDown={e=>{if(keys[e.key]){e.preventDefault();held.current=e.key;setDestination(null);path.current=[];arrival.current='';}if(e.key==='e'){const near=sites.find(s=>Math.hypot(actor.x-s.door.x,actor.y-s.door.y)<6);if(near)show(near.label);}}}
       onKeyUp={e=>{if(held.current===e.key)held.current='';}}>
       <div className="ip-island" style={{width,height,left:offset(screen.w,width,actor.x/150),top:offset(screen.h,height,actor.y/100)}} onPointerMove={e=>{
         if(e.buttons!==1||e.target!==e.currentTarget)return;
@@ -91,10 +95,11 @@ function Island({id}:{id?:string}){
         <FarmPlots/>
         {sites.map(s=><button key={s.label} className="ip-site" style={position(s)} aria-label={translateUI(s.label)} onClick={()=>go(s.door,s.label)}><span>{translateUI(names?s.label:'◆')}</span></button>)}
         {people&&Object.entries(room.peers).map(([key,p])=><div key={key} className="ip-resident" style={position(p)}><img src="/town/scout.svg" alt={translateUI("在线访客")}/><small>{translateUI("访客 ")}{translateUI(key.slice(0,5))}</small></div>)}
-        <div className="ip-avatar" style={position(actor)}><img alt={translateUI("访客角色")} src="/town/scout.svg"/><small>{translateUI("你 · 访客")}</small></div>
+        {destination&&<div className="walk-target" data-testid="walk-target" style={position(destination)} aria-hidden="true"><i/><span/></div>}
+        <div className="ip-avatar" style={position(actor)}><i className="player-arrow" aria-hidden="true"/><img alt={translateUI("访客角色")} src="/town/scout.svg"/><small>{translateUI("你 · 访客")}</small></div>
       </div>
     </div>
-    <header className="ip-title"><button aria-label={translateUI("小镇菜单")} onClick={()=>show('小镇菜单')}>☰</button><strong>{translateUI(id?'庄园 #'+id:'AIPRO · 居民广场')}</strong><IslandRadio/></header>
+    <header className="ip-title"><button aria-label={translateUI("小镇菜单")} onClick={()=>show('小镇菜单')}>☰</button><strong title={translateUI('AIPRO · 居民广场')}>{translateUI(id?'庄园 #'+id:'AIPRO · 居民广场')}</strong><IslandRadio/><LanguageControls inline/></header>
     <div className="ip-network">◆ {translateUI(room.online?(Object.keys(room.peers).length+1)+' 人在线':'连接中…')}</div>
     <nav className="ip-tools">{[['▣','庄园'],['♜','交易市场'],['⌂','市政厅'],['♙','小镇动态'],['♧','质押农田'],['♧','居民农田'],['◆','金矿']].map(([icon,label])=><button key={label} aria-label={translateUI(label)} onClick={()=>show(label)}><b>{translateUI(icon)}</b>{translateUI(label)}</button>)}</nav>
     <aside className="ip-log"><button onClick={()=>setLog(!log)} aria-expanded={log}>{translateUI("房间聊天 ")}{translateUI(log?'−':'+')}</button>

@@ -1,5 +1,6 @@
 import React from 'react';
 import './i18n/language.css';
+import './styles/movement.css';
 import {LanguageSwitch} from './i18n/react';
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';

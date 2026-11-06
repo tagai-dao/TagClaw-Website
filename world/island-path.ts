@@ -7,10 +7,10 @@ const roads = [
   [57,52,61,62],[52,60,61,64],[88,52,92,60],[90,58,111,61]
 ];
 export const walkable=({x,y}:Point)=>roads.some(([left,top,right,bottom])=>x>=left&&x<=right&&y>=top&&y<=bottom);
-export function route(start:Point,end:Point):Point[] {
+export function route(start:Point,end:Point,isWalkable:(point:Point)=>boolean=walkable):Point[] {
   const origin={x:Math.round(start.x),y:Math.round(start.y)};
   const goal={x:Math.round(end.x),y:Math.round(end.y)};
-  if(!walkable(goal))return [];
+  if(!isWalkable(goal))return [];
   const key=(p:Point)=>p.y*151+p.x;
   const seen=new Map<number,Point>([[key(origin),origin]]);
   const queue=[origin];
@@ -23,7 +23,7 @@ export function route(start:Point,end:Point):Point[] {
     }
     for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
       const q={x:p.x+dx,y:p.y+dy};
-      if(!seen.has(key(q))&&walkable(q)){seen.set(key(q),p);queue.push(q);}
+      if(!seen.has(key(q))&&isWalkable(q)){seen.set(key(q),p);queue.push(q);}
     }
   }
   return [];
