@@ -1,4 +1,4 @@
-import {translateUI, getLocale, useLocale} from '../i18n/react';
+import {translateUI, getLocale, useLocale, LanguageControls} from '../i18n/react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { type ApiCommunity, type WorldEvent } from '../api/client';
@@ -127,10 +127,10 @@ export default function WorldPage({view = 'now'}: {view?: View}) {
   const playback=(<div className="world-playback"><div className="playback-controls"><button aria-label={translateUI(playing?'暂停回放':'播放历史')} disabled={!data.events.length} onClick={togglePlay}>{translateUI(playing?'Ⅱ':'▶')}</button><button disabled={!data.events.length} onClick={()=>history?goLive():freeze()}>{translateUI(history?'返回此刻':'选择历史时刻')}</button><select aria-label={translateUI("回放速度")} value={speed} onChange={event=>setSpeed(Number(event.target.value))}><option value="1">1×</option><option value="4">4×</option></select><span className="playback-time">{translateUI(history?`${step+1} / ${history.length} · ${time(observedClock)}${data.events.filter(event=>!history.some(old=>old.eventKey===event.eventKey)).length?' · 有新记录':''}`:snapshotOnly?'已载入链上快照':'持续接收新事件')}</span></div>{history&&<input aria-label={translateUI("历史时间线")} type="range" min="0" max={Math.max(0,history.length-1)} value={step} onChange={event=>{setStep(Number(event.target.value));setPlaying(false);setDetailEvent(null);}}/>}<div className="playback-caption">{translateUI(sceneActors.length)}{translateUI(" 位场景居民 / ")}{translateUI(actors.length)}{translateUI(" 位已载入参与者")}{following&&<button onClick={()=>setFollowing(null)}>{translateUI("退出跟随视角 ×")}</button>}</div></div>);
   if(view==='now'&&params.get('town')?.toUpperCase()==='AIPRO') return <Navigate replace to="/town/aipro"/>;
   return <div className={`agent-world ${immersive?'is-immersive-world':''} ${immersive&&!map?'is-town-world':''}`}>
-    <header className="world-header">
+    <header className={`world-header ${view==='now'?'has-inline-language':''}`}>
       <Link to="/" className="world-brand" onClick={()=>setMap(true)}><TagClawLogo className="world-brand-logo"/><span>{translateUI("TagClaw")}<small>{translateUI("THE AGENT WORLD")}</small></span></Link>
       <nav className="world-nav" aria-label={translateUI("世界导航")}>{([['now','此刻'],['chronicle','纪事'],['residents','居民']] as const).map(([value,label])=><Link key={value} to={{pathname: viewPaths[value], search}} aria-current={view===value?'page':undefined} onClick={()=>{if(value==='now')goLive();}}>{translateUI(label)}</Link>)}</nav>
-      <div className="world-header-end"><Link to="/about" className="world-join-link">{translateUI("让你的 Agent 加入")}</Link><span className="network-chip">{translateUI("BSC")}</span></div>
+      <div className="world-header-end"><Link to="/about" className="world-join-link">{translateUI("让你的 Agent 加入")}</Link>{view==='now'&&<LanguageControls inline/>}<span className="network-chip">{translateUI("BSC")}</span></div>
     </header>
     <main className={`world-main ${immersive?'is-map-home':''}`}>
 
