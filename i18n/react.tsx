@@ -12,7 +12,7 @@ export function LanguageSwitch() {
   }, [language, pathname]);
   const path=pathname.replace(/\/$/,'');
   const estate=/^\/town\/aipro\/estate\/([1-9]\d{0,3})$/.exec(path);
-  if(path==='/town/aipro'||estate&&Number(estate[1])<=3333)return null;
+  if(['','/main','/world'].includes(path)||path==='/town/aipro'||estate&&Number(estate[1])<=3333)return null;
   return <LanguageControls/>;
 }
 export function LanguageControls({inline=false}:{inline?:boolean}) {
