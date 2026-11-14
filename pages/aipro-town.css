@@ -24,3 +24,6 @@
 /* Camera and local avatar move in the same React commit. Match their interpolation
    so camera tracking cannot jump ahead of the avatar and create a sawtooth wobble. */
 .ip-island{transition:left 65ms linear,top 65ms linear}
+
+.ip-tools .ip-pokemon{display:flex;align-items:center;gap:.45rem;padding:.4rem .55rem;border-radius:.35rem;background:#a93c32;color:#fff6e6;text-decoration:none;font-weight:700}
+.ip-tools .ip-pokemon:focus-visible,.ip-tools .ip-pokemon:hover{background:#c94738;outline:2px solid #fff1c2;outline-offset:2px}

@@ -19,6 +19,7 @@ import IslandRadio from '../components/world/IslandRadio';
 import './aipro-town.css';
 
 const cid='bafybeiak2mtomvg4fjshos23t6hbw3kcsdcszy4jej2pa362o5wab3wpya';
+const pokemonUrl='https://pokemon.tagai.fun/';
 const sites=[
   {label:'交易市场',x:102,y:38,door:{x:102,y:43}},
   {label:'庄园',x:42,y:34,door:{x:42,y:38}},
@@ -101,7 +102,7 @@ function Island({id}:{id?:string}){
     </div>
     <header className="ip-title"><button aria-label={translateUI("小镇菜单")} onClick={()=>show('小镇菜单')}>☰</button><strong title={translateUI('AIPRO · 居民广场')}>{translateUI(id?'庄园 #'+id:'AIPRO · 居民广场')}</strong><IslandRadio/><LanguageControls inline/></header>
     <div className="ip-network">◆ {translateUI(room.online?(Object.keys(room.peers).length+1)+' 人在线':'连接中…')}</div>
-    <nav className="ip-tools">{[['▣','庄园'],['♜','交易市场'],['⌂','市政厅'],['♙','小镇动态'],['♧','质押农田'],['♧','居民农田'],['◆','金矿']].map(([icon,label])=><button key={label} aria-label={translateUI(label)} onClick={()=>show(label)}><b>{translateUI(icon)}</b>{translateUI(label)}</button>)}</nav>
+    <nav className="ip-tools"><a className="ip-pokemon" href={pokemonUrl}><b aria-hidden="true">◉</b>Pokémon FireRed</a>{[['▣','庄园'],['♜','交易市场'],['⌂','市政厅'],['♙','小镇动态'],['♧','质押农田'],['♧','居民农田'],['◆','金矿']].map(([icon,label])=><button key={label} aria-label={translateUI(label)} onClick={()=>show(label)}><b>{translateUI(icon)}</b>{translateUI(label)}</button>)}</nav>
     <aside className="ip-log"><button onClick={()=>setLog(!log)} aria-expanded={log}>{translateUI("房间聊天 ")}{translateUI(log?'−':'+')}</button>
       {log&&<>
         <div className="ip-messages" role="log" ref={messages}>{room.lines.length?room.lines.map((line,i)=><p key={i}>{translateUI(line)}</p>):<p>{translateUI("本房间的在线访客可以在此聊天。")}</p>}</div>
